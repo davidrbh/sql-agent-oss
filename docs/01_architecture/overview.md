@@ -56,3 +56,24 @@ El proyecto se construye sobre tecnologías 100% Open Source, con la única exce
 
 ## 5. Estrategia de Evaluación
 La calidad se mide mediante **Precisión de Ejecución (Execution Accuracy)**. Mantenemos un "Golden Dataset" (pares de Pregunta/SQL Correcto) y utilizamos contenedores efímeros (`testcontainers`) para validar que el agente produce los mismos *datos* que la consulta de referencia, independientemente de cómo escriba el SQL.
+
+graph TD
+    User[👤 Usuario] -->|Pregunta| Semantic[📚 Capa Semántica\n(Diccionario + Fuzzy Search)]
+    Semantic -->|Contexto Enriquecido| Planner[🧠 Agente Planificador]
+    
+    subgraph "Bucle de Razonamiento (LangGraph)"
+        Planner --> Generator[✍️ Generador SQL]
+        Generator --> Validator[🛡️ Guardrails (SQLGlot)]
+        
+        Validator -->|❌ Inseguro| Generator
+        Validator -->|✅ Seguro| Executor[impar Database]
+        
+        Executor -->|❌ Error DB| Corrector[🔧 Corrector de Errores]
+        Corrector --> Generator
+    end
+    
+    Executor -->|✅ Datos| Synthesizer[💬 Sintetizador de Respuesta]
+    Synthesizer --> User
+
+    style Validator fill:#f96,stroke:#333,stroke-width:2px
+    style Executor fill:#9f9,stroke:#333,stroke-width:2px
