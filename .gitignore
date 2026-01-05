@@ -1,0 +1,16 @@
+# .gitignore
+__pycache__/
+*.py[cod]
+.env
+.venv
+env/
+venv/
+.idea/
+.vscode/
+dist/
+build/
+*.egg-info/
+.DS_Store
+# Base de datos local
+postgres_data/
+chroma_db/
