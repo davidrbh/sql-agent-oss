@@ -1,11 +1,11 @@
 import os
-import yaml
+import ast
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.messages import AIMessage
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_core.messages import HumanMessage, AIMessage
 from sqlalchemy import text
 
-# Importaciones internas
+# Importaciones de Arquitectura
+from sql_agent.llm.factory import LLMFactory
 from sql_agent.core.state import AgentState
 from sql_agent.config.loader import ConfigLoader
 from sql_agent.database.connection import DatabaseManager
@@ -16,88 +16,124 @@ DICTIONARY_PATH = os.path.join(BASE_DIR, 'data', 'dictionary.yaml')
 
 class AgentNodes:
     """
-    Contiene las funciones (nodos) que ejecutará el grafo.
+    Nodos del grafo con capacidad de Memoria (Contexto Conversacional),
+    Arquitectura Hexagonal y Limpieza Robusta.
     """
     
     def __init__(self):
-        # Cargamos configuración
         self.settings = ConfigLoader.load_settings()
         
-        # Inicializamos el LLM (Gemini 3 Flash Preview)
-        self.llm = ChatGoogleGenerativeAI(
-            model="gemini-3-flash-preview",
-            temperature=0
-        )
+        # 1. Fábrica de LLM
+        self.llm = LLMFactory.create(temperature=0)
         
-        # Cargamos el Diccionario de Datos en memoria
+        # 2. Carga del Contexto Semántico
         try:
             with open(DICTIONARY_PATH, 'r', encoding='utf-8') as f:
                 self.data_dictionary = f.read()
         except FileNotFoundError:
             self.data_dictionary = "No data dictionary found."
 
+    def _clean_content(self, content) -> str:
+        """Helper para limpiar respuestas complejas de Gemini."""
+        if isinstance(content, list):
+            content = "".join([str(item) for item in content])
+        
+        content_str = str(content)
+        
+        if content_str.strip().startswith("{") and "'text':" in content_str:
+            try:
+                data = ast.literal_eval(content_str)
+                if isinstance(data, dict) and 'text' in data:
+                    return str(data['text'])
+            except:
+                pass 
+                
+        return content_str
+
     async def write_query(self, state: AgentState):
         """
-        NODO 1: Generador de SQL
-        Toma la pregunta del usuario + Diccionario -> Genera SQL.
+        NODO 1: Generador de SQL con MEMORIA.
+        Inyecta el historial del chat para resolver referencias (ej: "su correo").
         """
         print("🤖 [Node: Write Query] Pensando SQL...")
         
+        # --- 🧠 GESTIÓN DE MEMORIA ---
+        # Recuperamos los últimos 6 mensajes para dar contexto
+        recent_messages = state.get("messages", [])[-6:]
+        chat_history = []
+        
+        for msg in recent_messages:
+            if isinstance(msg, HumanMessage):
+                chat_history.append(f"Usuario: {msg.content}")
+            elif isinstance(msg, AIMessage):
+                # Limpiamos contenido técnico antes de meterlo al prompt
+                clean_ai = self._clean_content(msg.content)
+                chat_history.append(f"Asistente: {clean_ai}")
+        
+        history_str = "\n".join(chat_history) if chat_history else "No hay historial previo."
+        # -----------------------------
+
         prompt = ChatPromptTemplate.from_template(
             """
-            Eres un experto en SQL y MySQL. Tienes acceso al siguiente esquema de base de datos (Diccionario de Datos):
-            
+            <role>
+            Eres un Arquitecto de Base de Datos experto en MySQL.
+            Tu misión es traducir preguntas de negocio a código SQL ejecutable.
+            </role>
+
+            <context>
+            Esquema de la base de datos:
             {dictionary}
-            
-            PREGUNTA DEL USUARIO: "{question}"
-            
-            TU OBJETIVO:
-            Generar una consulta SQL válida (MySQL) para responder la pregunta.
-            
-            REGLAS:
-            1. Responde SOLO con el código SQL puro. No uses Markdown (```sql), ni explicaciones.
-            2. Usa CURDATE() si preguntan por "hoy".
-            3. Si la pregunta no se puede responder con el esquema, devuelve "NO_SQL".
+            </context>
+
+            <conversation_history>
+            Usa esto para entender referencias como "él", "ella", "el anterior", "su correo", etc.:
+            {chat_history}
+            </conversation_history>
+
+            <user_request>
+            "{question}"
+            </user_request>
+
+            <constraints>
+            1. Genera ÚNICAMENTE el código SQL.
+            2. NO uses markdown (```sql).
+            3. Si el usuario hace una pregunta de seguimiento (ej: "¿y su teléfono?"), usa el ID o contexto del historial para filtrar correctamente.
+            4. Si no puedes generar SQL válido, responde: NO_SQL
+            </constraints>
             """
         )
         
         chain = prompt | self.llm
-        
         response = await chain.ainvoke({
             "dictionary": self.data_dictionary,
+            "chat_history": history_str, # <--- Inyectamos la memoria aquí
             "question": state["question"]
         })
         
-        # Limpieza básica por si el modelo pone markdown
-        sql = response.content.replace("```sql", "").replace("```", "").strip()
+        content_str = self._clean_content(response.content)
+        sql = content_str.replace("```sql", "").replace("```", "").strip()
         
         return {"sql_query": sql}
 
     async def execute_query(self, state: AgentState):
-        """
-        NODO 2: Ejecutor de SQL
-        Toma el SQL -> Ejecuta en DB -> Devuelve filas o error.
-        """
+        """NODO 2: Ejecutor en Base de Datos"""
         print("⚡ [Node: Execute Query] Ejecutando en MySQL...")
         
         query_str = state["sql_query"]
         
-        if query_str == "NO_SQL":
-            return {"sql_result": "Error: No pude generar una consulta válida para tu pregunta."}
+        if query_str == "NO_SQL" or not query_str or "{" in query_str:
+            return {"sql_result": "Error: No se pudo generar una consulta válida."}
             
         engine = DatabaseManager.get_engine()
         
         try:
             async with engine.connect() as conn:
-                # Usamos text() para seguridad
                 result = await conn.execute(text(query_str))
                 rows = result.fetchall()
                 keys = result.keys()
                 
-                # Convertimos a lista de dicts
                 data = [{key: str(val) for key, val in zip(keys, row)} for row in rows]
                 
-                # Limitamos resultados para no saturar el contexto (Safety)
                 if len(data) > 20:
                     data = data[:20]
                     data.append({"warning": "Resultados truncados a 20 filas."})
@@ -105,30 +141,32 @@ class AgentNodes:
                 result_str = str(data)
                 
         except Exception as e:
-            result_str = f"Error SQL: {str(e)}"
+            result_str = f"Error de Ejecución SQL: {str(e)}"
+            print(f"   ❌ Falló SQL: {query_str}")
             
         return {"sql_result": result_str}
 
     async def generate_answer(self, state: AgentState):
-        """
-        NODO 3: Respuesta Final
-        Toma Pregunta + SQL + Resultados -> Responde en lenguaje natural.
-        """
+        """NODO 3: Respuesta en Lenguaje Natural"""
         print("🗣️ [Node: Answer] Generando respuesta final...")
         
         prompt = ChatPromptTemplate.from_template(
             """
-            Actúa como un analista de datos amable.
-            
-            PREGUNTA ORIGINAL: "{question}"
-            QUERY SQL EJECUTADO: "{sql_query}"
-            RESULTADO DE LA BASE DE DATOS: "{sql_result}"
-            
-            INSTRUCCIONES:
-            1. Responde la pregunta basándote en los datos.
-            2. Si hubo un error, explícalo de forma sencilla.
-            3. No menciones IDs numéricos a menos que sea necesario.
-            4. Sé breve y directo.
+            <role>
+            Eres un Analista de Datos senior y amable.
+            </role>
+
+            <data_context>
+            - Pregunta: "{question}"
+            - SQL: "{sql_query}"
+            - Resultados: "{sql_result}"
+            </data_context>
+
+            <instructions>
+            1. Responde basándote EXCLUSIVAMENTE en los resultados.
+            2. Si no hay datos, dilo claramente.
+            3. Sé conciso y profesional.
+            </instructions>
             """
         )
         
@@ -140,5 +178,7 @@ class AgentNodes:
             "sql_result": state["sql_result"]
         })
         
-        # Devolvemos el mensaje final como un AIMessage para LangGraph
+        final_content = self._clean_content(response.content)
+        response.content = final_content
+        
         return {"messages": [response]}

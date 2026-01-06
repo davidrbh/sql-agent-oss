@@ -1,8 +1,11 @@
 app:
-  name: "sql-agent-oss"
+  name: "SQL Agent OSS"
+  version: "0.1.0"
   debug: true
-  log_level: "INFO"
+
+llm:
+  provider: "google" # Opciones: google, openai
+  model: "gemini-2.0-flash" # Opciones: gemini-2.0-flash, gpt-4o, etc.
 
 database:
-  pool_size: 5
   timeout: 30
