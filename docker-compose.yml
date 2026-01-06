@@ -1,0 +1,23 @@
+
+services:
+  mysql_db:
+    image: mysql:8.0-debian
+    container_name: sql_agent_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: production_copy
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: adminpassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      # Mapeo vital: Tu archivo SQL local -> Contenedor
+      - ./mysql_dump:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      interval: 5s
+      retries: 5
+
+volumes:
+  mysql_data:

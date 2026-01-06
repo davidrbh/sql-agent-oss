@@ -1,0 +1,53 @@
+[tool.poetry]
+name = "sql-agent-oss"
+version = "0.1.0"
+description = "Agente Text-to-SQL Open Source con arquitectura semántica y autofix"
+authors = ["David R. <dev.drbh@gmail.com>"]
+readme = "README.md"
+packages = [{include = "sql_agent", from = "src"}]
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.13"
+
+# --- Núcleo IA y Agentes ---
+langchain = "^0.1.0"
+langchain-openai = "^0.0.5"
+langgraph = "^0.0.10"
+
+# --- Base de Datos (Async) ---
+sqlalchemy = "^2.0.25"
+# Driver para MySQL Async (Vital para tu copia de producción)
+aiomysql = "^0.2.0"
+cryptography = "^42.0.0" # Necesario para autenticación en MySQL 8
+
+# Driver Postgres (Lo dejamos por si acaso, no estorba)
+asyncpg = "^0.29.0"
+
+# --- Manejo de Datos y Fuzzy Search ---
+pandas = "^2.2.0"           
+thefuzz = "^0.22.0"         
+python-Levenshtein = "^0.25.0" 
+
+# --- Base de Datos Vectorial ---
+chromadb = "^0.4.22"
+
+# --- Seguridad ---
+sqlglot = "^20.8.0"
+
+# --- UI ---
+chainlit = "^1.0.0"
+
+# --- Utilidades ---
+python-dotenv = "^1.0.0"
+pydantic = "^2.6.0"
+pyyaml = "^6.0.1"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.1.14"
+pytest = "^8.0.0"
+pytest-asyncio = "^0.23.0"
+testcontainers = "^3.7.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
