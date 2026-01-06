@@ -1,0 +1,8 @@
+app:
+  name: "sql-agent-oss"
+  debug: true
+  log_level: "INFO"
+
+database:
+  pool_size: 5
+  timeout: 30

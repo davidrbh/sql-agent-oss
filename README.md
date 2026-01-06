@@ -1,49 +1,138 @@
 # SQL Agent OSS
 
-**Agente SQL open source con arquitectura de capa semántica para analistas de negocio**  
-_Un sistema compuesto de IA para conversión segura y semántica de lenguaje natural a SQL_
+**Agente SQL Open Source con Arquitectura Semántica y Aislamiento de Contexto** _Un sistema agéntico modular para convertir lenguaje natural a SQL de forma segura y precisa._
 
-[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
-[![LangGraph](https://img.shields.io/badge/LangGraph-0.0.+-orange.svg)](https://langchain-ai.github.io/langgraph/)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
+[![Poetry](https://img.shields.io/badge/poetry-package_manager-blueviolet)](https://python-poetry.org/)
+[![LangGraph](https://img.shields.io/badge/LangGraph-0.0.x-orange.svg)](https://langchain-ai.github.io/langgraph/)
+[![Docker](https://img.shields.io/badge/Docker-Enabled-2496ED)](https://www.docker.com/)
 [![Licencia: MIT](https://img.shields.io/badge/Licencia-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![PRs Bienvenidas](https://img.shields.io/badge/PRs-bienvenidas-brightgreen.svg)](https://github.com/tuusuario/sql-agent-oss/pulls)
 
 ## 🎯 El Problema
 
-Las herramientas tradicionales de "chat con tu base de datos" fallan en entornos empresariales porque:
+Las herramientas tradicionales de "Text-to-SQL" fallan en entornos reales porque:
 
-- **No entienden la semántica del negocio** (¿Qué significa "ingresos netos" aquí?)
-- **Crean riesgos de seguridad** (Conexiones directas LLM-a-DB son peligrosas)
-- **Carecen de robustez** (Enfoques one-shot fallan en consultas complejas)
-- **Ignoran la brecha semántica** entre nombres de columnas y conceptos de negocio
+- **Alucinan nombres de columnas:** Adivinan nombres que no existen.
+- **Ignoran el contexto del negocio:** No saben distinguir entre un "Ingreso Bruto" y "Neto".
+- **Son inseguras:** Exponen credenciales o permiten inyecciones SQL.
+- **Difíciles de mantener:** El código se mezcla con reglas de negocio específicas.
 
-## ✨ La Solución
+## ✨ La Solución: Arquitectura Desacoplada
 
-SQL Agent OSS implementa una arquitectura de **Sistema de IA Compuesto** con:
+Este proyecto implementa una arquitectura de **Sistema de IA Compuesto** que separa estrictamente:
 
-- **Capa Semántica**: Definiciones de negocio y mapeos de KPIs (no solo DDL crudo)
-- **Seguridad por Diseño**: Validación basada en AST con SQLGlot, solo lectura
-- **Auto-Corrección**: Bucles de recuperación de errores con LangGraph
-- **Multi-Base de Datos**: Soporte para PostgreSQL & MySQL desde el inicio
-- **Arquitectura Asíncrona**: Alta concurrencia con asyncpg y FastAPI
+1.  **Código Agnóstico (`src/`):** La lógica del agente, reutilizable para cualquier empresa.
+2.  **Configuración de Negocio (`config/`):** Donde viven las reglas, el contexto y los prompts específicos.
+3.  **Memoria de Datos (`data/`):** Donde persiste el conocimiento semántico.
 
-## 🏗️ Arquitectura
+### Características Clave
 
-```mermaid
-graph TD
-    Usuario[👤 Pregunta del Usuario] --> Semantica[📚 Capa Semántica]
-    Semantica -->|Contexto Enriquecido| Grafo[🔄 LangGraph StateGraph]
+- **Capa Semántica Hidratada:** Generación automática de un `dictionary.yaml` enriquecido por IA.
+- **Validación AST:** Uso de `sqlglot` para garantizar que el SQL generado es sintácticamente seguro.
+- **Auto-Corrección:** Bucle agéntico (LangGraph) que corrige sus propios errores SQL.
+- **Soporte Híbrido:** Funciona con Docker o con bases de datos locales (MySQL/PostgreSQL).
 
-    subgraph "Bucle de Razonamiento"
-        Grafo --> Generar[✍️ Generación SQL]
-        Generar --> Validar[🛡️ Validación AST]
-        Validar -->|❌ Inseguro| Generar
-        Validar -->|✅ Seguro| Ejecutar[⚡ Ejecución Consulta]
-        Ejecutar -->|❌ Error DB| Corregir[🔧 Auto-Corrección]
-        Corregir --> Generar
-    end
+## 🏗️ Estructura del Proyecto
 
-    Ejecutar -->|✅ Resultados| Sintetizar[💬 Respuesta en Lenguaje Natural]
-    Sintetizar --> Usuario[👤 Respuesta]
+El proyecto sigue una estructura profesional para facilitar la escalabilidad:
+
+```text
+.
+├── config/                  # 🧠 CEREBRO: Configuración y Reglas de Negocio (YAML)
+│   ├── business_context.yaml  # Contexto específico de la empresa (No subir a Git)
+│   └── settings.yaml          # Configuración técnica
+├── data/                    # 💾 MEMORIA: Persistencia de datos
+│   ├── dumps/               # Archivos .sql para inicialización
+│   └── dictionary.yaml      # Diccionario Semántico generado
+├── src/                     # ⚙️ MOTOR: Código Fuente Puro
+│   └── sql_agent/
+│       ├── core/            # Lógica del Grafo (LangGraph)
+│       ├── database/        # Drivers y Conexión Asíncrona
+│       ├── semantic/        # Hidratación del Diccionario
+│       └── config/          # Cargadores de Configuración
+├── logs/                    # 📝 AUDITORÍA: Logs de ejecución
+└── scripts/                 # 🚀 LANZADORES: Entrypoints
+
+```
+
+## 🚀 Guía de Inicio Rápido
+
+### 1. Prerrequisitos
+
+- Python 3.11+
+- [Poetry](https://www.google.com/search?q=https://python-poetry.org/docs/%23installation) (Gestor de paquetes)
+- Docker (Opcional, si no tienes DB local)
+
+### 2. Instalación
+
+```bash
+# Clonar el repositorio
+git clone [https://github.com/tuusuario/sql-agent-oss.git](https://github.com/tuusuario/sql-agent-oss.git)
+cd sql-agent-oss
+
+# Instalar dependencias
+poetry install
+
+# Activar entorno virtual
+poetry shell
+
+```
+
+### 3. Configuración
+
+Crea tu archivo de variables de entorno:
+
+```bash
+cp .env.example .env
+# Edita el .env con tus credenciales de OpenAI y Base de Datos
+
+```
+
+Define tu negocio en `config/business_context.yaml`:
+
+```yaml
+project_name: "Mi Empresa S.A."
+business_context: |
+  Somos una empresa de logística.
+  Tabla crítica: 't_envios'.
+  Estado 1 = Pendiente, Estado 2 = Entregado.
+```
+
+### 4. Hidratación Semántica (Primer Paso)
+
+Antes de preguntar, el agente debe "aprender" tu base de datos:
+
+```bash
+poetry run python scripts/generate_dictionary.py
+
+```
+
+Esto generará el archivo `data/dictionary.yaml`.
+
+### 5. Ejecutar Pruebas
+
+Verifica que todo está conectado:
+
+```bash
+poetry run python scripts/test_schema.py
+
+```
+
+## 🗺️ Roadmap
+
+- [x] Conexión Asíncrona a BD
+- [x] Extracción de Esquema
+- [x] Hidratación Semántica con IA
+- [ ] Bucle de Razonamiento (LangGraph)
+- [ ] Búsqueda Difusa de Entidades (Fuzzy Search)
+- [ ] Interfaz de Chat (Chainlit)
+
+## 🤝 Contribución
+
+Las PRs son bienvenidas. Por favor, asegúrate de no subir archivos de la carpeta `config/` o `data/` que contengan información sensible.
+
+```
+
+***
+
 ```

@@ -1,0 +1,4762 @@
+{
+  "admin": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "name",
+      "type": "VARCHAR(50)",
+      "nullable": true
+    },
+    {
+      "name": "lastname",
+      "type": "VARCHAR(50)",
+      "nullable": true
+    },
+    {
+      "name": "email",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "password",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "role",
+      "type": "VARCHAR(3)",
+      "nullable": true
+    },
+    {
+      "name": "status",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "contact_info",
+      "type": "TEXT",
+      "nullable": true
+    },
+    {
+      "name": "thumbnail",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "INTEGER",
+      "nullable": true
+    }
+  ],
+  "api_client_auth": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": false
+    },
+    {
+      "name": "client",
+      "type": "VARCHAR(255)",
+      "nullable": false
+    },
+    {
+      "name": "password",
+      "type": "VARCHAR(255)",
+      "nullable": false
+    },
+    {
+      "name": "status",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "created_at",
+      "type": "TIMESTAMP",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "TIMESTAMP",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "DATETIME",
+      "nullable": true
+    },
+    {
+      "name": "last_login_at",
+      "type": "TIMESTAMP",
+      "nullable": true
+    }
+  ],
+  "api_clients": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": false
+    },
+    {
+      "name": "client_name",
+      "type": "VARCHAR(255)",
+      "nullable": false
+    },
+    {
+      "name": "api_key",
+      "type": "VARCHAR(64)",
+      "nullable": false
+    },
+    {
+      "name": "api_secret_hash",
+      "type": "VARCHAR(255)",
+      "nullable": false
+    },
+    {
+      "name": "is_active",
+      "type": "TINYINT",
+      "nullable": false
+    },
+    {
+      "name": "created_at",
+      "type": "DATETIME",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "DATETIME",
+      "nullable": true
+    }
+  ],
+  "auth_state": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "users_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "token",
+      "type": "TEXT",
+      "nullable": true
+    },
+    {
+      "name": "refresh",
+      "type": "TEXT",
+      "nullable": true
+    },
+    {
+      "name": "is_alive",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "token_valid_until",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "refresh_valid_until",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "INTEGER",
+      "nullable": true
+    }
+  ],
+  "bcv_rate_history": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "rate",
+      "type": "FLOAT",
+      "nullable": true
+    },
+    {
+      "name": "date",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    }
+  ],
+  "campaigns": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "image",
+      "type": "VARCHAR(500)",
+      "nullable": true
+    },
+    {
+      "name": "status",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "valid_until",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "link",
+      "type": "VARCHAR(500)",
+      "nullable": false
+    },
+    {
+      "name": "link_type",
+      "type": "VARCHAR(10)",
+      "nullable": false
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    }
+  ],
+  "category": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "author_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "name",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "microname",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "description",
+      "type": "VARCHAR(500)",
+      "nullable": true
+    },
+    {
+      "name": "thumbnail",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "url",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "status",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "is_b2b",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "INTEGER",
+      "nullable": true
+    }
+  ],
+  "chat_msg": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "chat_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "author_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "origin",
+      "type": "VARCHAR(10)",
+      "nullable": true
+    },
+    {
+      "name": "message",
+      "type": "TEXT",
+      "nullable": true
+    },
+    {
+      "name": "status",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "INTEGER",
+      "nullable": true
+    }
+  ],
+  "company_branch": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "author_id",
+      "type": "VARCHAR(36)",
+      "nullable": false
+    },
+    {
+      "name": "name",
+      "type": "VARCHAR(500)",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "INTEGER",
+      "nullable": true
+    }
+  ],
+  "contact_info": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "author_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "name",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "description",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "status",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "INTEGER",
+      "nullable": true
+    }
+  ],
+  "coupons": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "author_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "code",
+      "type": "VARCHAR(50)",
+      "nullable": true
+    },
+    {
+      "name": "amount",
+      "type": "FLOAT",
+      "nullable": true
+    },
+    {
+      "name": "type",
+      "type": "VARCHAR(10)",
+      "nullable": true
+    },
+    {
+      "name": "description",
+      "type": "TEXT",
+      "nullable": true
+    },
+    {
+      "name": "belongs_to_user",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "user_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "will_expire",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "valid_until",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "status",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "from",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "merchant_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "INTEGER",
+      "nullable": true
+    }
+  ],
+  "custom_box_initial_fees": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "merchant_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "allowed_fee",
+      "type": "VARCHAR(10)",
+      "nullable": true
+    },
+    {
+      "name": "fee_value",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "is_vip",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    }
+  ],
+  "department_merchant": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "merchant_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "note",
+      "type": "VARCHAR(1000)",
+      "nullable": true
+    },
+    {
+      "name": "author",
+      "type": "VARCHAR(3)",
+      "nullable": true
+    },
+    {
+      "name": "author_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "type",
+      "type": "VARCHAR(20)",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    }
+  ],
+  "division": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "author_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "category_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "subcategory_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "name",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "microname",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "description",
+      "type": "VARCHAR(500)",
+      "nullable": true
+    },
+    {
+      "name": "thumbnail",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "url",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "status",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "INTEGER",
+      "nullable": true
+    }
+  ],
+  "ext_chat_msg": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "ext_room_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "message",
+      "type": "TEXT",
+      "nullable": true
+    },
+    {
+      "name": "origin",
+      "type": "VARCHAR(20)",
+      "nullable": true
+    },
+    {
+      "name": "status",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "sended_time",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "readed_time",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "type",
+      "type": "VARCHAR(20)",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    }
+  ],
+  "ext_chat_room": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "ticket",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "ext_user_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "admin_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "started_on",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "finished_on",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "status",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "qualification",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "comments",
+      "type": "TEXT",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    }
+  ],
+  "ext_chat_user": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "name",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "email",
+      "type": "VARCHAR(500)",
+      "nullable": false
+    },
+    {
+      "name": "phone",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    }
+  ],
+  "faq": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "author_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "title",
+      "type": "VARCHAR(500)",
+      "nullable": true
+    },
+    {
+      "name": "slug",
+      "type": "VARCHAR(255)",
+      "nullable": false
+    },
+    {
+      "name": "directed_to",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "status",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "INTEGER",
+      "nullable": true
+    }
+  ],
+  "faq_article": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "author_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "faq_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "title",
+      "type": "VARCHAR(500)",
+      "nullable": true
+    },
+    {
+      "name": "slug",
+      "type": "VARCHAR(255)",
+      "nullable": false
+    },
+    {
+      "name": "content",
+      "type": "TEXT",
+      "nullable": true
+    },
+    {
+      "name": "status",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "INTEGER",
+      "nullable": true
+    }
+  ],
+  "files": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": false
+    },
+    {
+      "name": "merchant_id",
+      "type": "VARCHAR(36)",
+      "nullable": false
+    },
+    {
+      "name": "name",
+      "type": "VARCHAR(255)",
+      "nullable": false
+    },
+    {
+      "name": "url",
+      "type": "VARCHAR(255)",
+      "nullable": false
+    },
+    {
+      "name": "format",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "DATETIME",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "DATETIME",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "DATETIME",
+      "nullable": true
+    }
+  ],
+  "inventory": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "uid",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "status",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "merchant_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "merchant_status",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "category_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "subcategory_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "division_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "name",
+      "type": "VARCHAR(500)",
+      "nullable": true
+    },
+    {
+      "name": "description",
+      "type": "TEXT",
+      "nullable": true
+    },
+    {
+      "name": "stock",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "stock_unit",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "is_infinite_stock",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "subtotal",
+      "type": "FLOAT",
+      "nullable": true
+    },
+    {
+      "name": "thumbnail",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "plans",
+      "type": "TEXT",
+      "nullable": true
+    },
+    {
+      "name": "code",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "is_discount",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "discount",
+      "type": "FLOAT",
+      "nullable": true
+    },
+    {
+      "name": "discount_type",
+      "type": "VARCHAR(10)",
+      "nullable": true
+    },
+    {
+      "name": "discount_until",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "promote",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "is_b2b",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "created_by",
+      "type": "VARCHAR(36)",
+      "nullable": false
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "INTEGER",
+      "nullable": true
+    }
+  ],
+  "job_queue": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "queue_name",
+      "type": "VARCHAR(100)",
+      "nullable": false
+    },
+    {
+      "name": "job_name",
+      "type": "VARCHAR(191)",
+      "nullable": false
+    },
+    {
+      "name": "payload",
+      "type": "TEXT",
+      "nullable": false
+    },
+    {
+      "name": "status",
+      "type": "VARCHAR(20)",
+      "nullable": false
+    },
+    {
+      "name": "attempts",
+      "type": "TINYINT",
+      "nullable": false
+    },
+    {
+      "name": "available_at",
+      "type": "DATETIME",
+      "nullable": true
+    },
+    {
+      "name": "error_message",
+      "type": "TEXT",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "DATETIME",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "DATETIME",
+      "nullable": true
+    }
+  ],
+  "legal_documents": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "ver",
+      "type": "VARCHAR(10)",
+      "nullable": true
+    },
+    {
+      "name": "content",
+      "type": "TEXT",
+      "nullable": true
+    },
+    {
+      "name": "ver_date",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "type",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    }
+  ],
+  "levels": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": false
+    },
+    {
+      "name": "author_id",
+      "type": "VARCHAR(36)",
+      "nullable": false
+    },
+    {
+      "name": "title",
+      "type": "VARCHAR(300)",
+      "nullable": true
+    },
+    {
+      "name": "from_pts",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "to_pts",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "initial_fee",
+      "type": "FLOAT",
+      "nullable": true
+    },
+    {
+      "name": "anticipated_payment_pts",
+      "type": "FLOAT",
+      "nullable": true
+    },
+    {
+      "name": "payments_pts",
+      "type": "FLOAT",
+      "nullable": true
+    },
+    {
+      "name": "limit_increment",
+      "type": "FLOAT",
+      "nullable": true
+    },
+    {
+      "name": "is_b2b",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    }
+  ],
+  "main_settings": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "author_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "working_key",
+      "type": "VARCHAR(255)",
+      "nullable": false
+    },
+    {
+      "name": "iva",
+      "type": "FLOAT",
+      "nullable": true
+    },
+    {
+      "name": "ref_pts",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "ref_top",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "ref_active",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "ref_msg",
+      "type": "VARCHAR(500)",
+      "nullable": false
+    },
+    {
+      "name": "ref_url",
+      "type": "VARCHAR(500)",
+      "nullable": false
+    },
+    {
+      "name": "type_delay",
+      "type": "VARCHAR(15)",
+      "nullable": true
+    },
+    {
+      "name": "delay_amount",
+      "type": "FLOAT",
+      "nullable": true
+    },
+    {
+      "name": "bottom_policy",
+      "type": "TEXT",
+      "nullable": true
+    },
+    {
+      "name": "blog_url",
+      "type": "VARCHAR(500)",
+      "nullable": false
+    },
+    {
+      "name": "new_field",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "app_version",
+      "type": "VARCHAR(20)",
+      "nullable": false
+    },
+    {
+      "name": "ios_version",
+      "type": "VARCHAR(10)",
+      "nullable": false
+    },
+    {
+      "name": "android_version",
+      "type": "VARCHAR(20)",
+      "nullable": false
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "INTEGER",
+      "nullable": true
+    }
+  ],
+  "merchant": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "file_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "author_id",
+      "type": "VARCHAR(36)",
+      "nullable": false
+    },
+    {
+      "name": "listed",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "has_quotes",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "merchant_key",
+      "type": "VARCHAR(500)",
+      "nullable": false
+    },
+    {
+      "name": "status",
+      "type": "TINYINT",
+      "nullable": false
+    },
+    {
+      "name": "Date_activation",
+      "type": "TEXT",
+      "nullable": true
+    },
+    {
+      "name": "backing_status",
+      "type": "TINYINT",
+      "nullable": false
+    },
+    {
+      "name": "company_branch",
+      "type": "VARCHAR(36)",
+      "nullable": false
+    },
+    {
+      "name": "name",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "trade_name",
+      "type": "VARCHAR(191)",
+      "nullable": true
+    },
+    {
+      "name": "tags",
+      "type": "VARCHAR(500)",
+      "nullable": false
+    },
+    {
+      "name": "key_words",
+      "type": "TEXT",
+      "nullable": true
+    },
+    {
+      "name": "logo",
+      "type": "VARCHAR(500)",
+      "nullable": true
+    },
+    {
+      "name": "rif",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "nit",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "since",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "monthly_fee",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "online_fee",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "store_fee",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "whatsapp_fee",
+      "type": "FLOAT",
+      "nullable": false
+    },
+    {
+      "name": "custom_fee",
+      "type": "FLOAT",
+      "nullable": false
+    },
+    {
+      "name": "custom_whatsapp_fee",
+      "type": "FLOAT",
+      "nullable": false
+    },
+    {
+      "name": "b_pago_fee",
+      "type": "FLOAT",
+      "nullable": false
+    },
+    {
+      "name": "fixed_fee",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "marketplace_fee",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "online",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "store",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "modality",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "description",
+      "type": "VARCHAR(300)",
+      "nullable": false
+    },
+    {
+      "name": "policies",
+      "type": "VARCHAR(1000)",
+      "nullable": false
+    },
+    {
+      "name": "is_b2b",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "is_b2c",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "credit_limit",
+      "type": "FLOAT",
+      "nullable": false
+    },
+    {
+      "name": "balance",
+      "type": "FLOAT",
+      "nullable": false
+    },
+    {
+      "name": "level",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "contract",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "department",
+      "type": "VARCHAR(3)",
+      "nullable": false
+    },
+    {
+      "name": "sales",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "total_sales",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "allow_vip",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "allow_custom_box",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "quote_type",
+      "type": "VARCHAR(10)",
+      "nullable": false
+    },
+    {
+      "name": "password",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "password_status",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "enc_key",
+      "type": "VARCHAR(64)",
+      "nullable": true
+    },
+    {
+      "name": "is_special_taxpayer",
+      "type": "TINYINT",
+      "nullable": false
+    },
+    {
+      "name": "percentage_retention",
+      "type": "FLOAT",
+      "nullable": true
+    },
+    {
+      "name": "tabulated_quota",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "premium_term_version",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "INTEGER",
+      "nullable": true
+    }
+  ],
+  "merchant_box_quotes": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "merchant_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "quotes",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    }
+  ],
+  "merchant_branch": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "merchant_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "relevance",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "name",
+      "type": "TEXT",
+      "nullable": true
+    },
+    {
+      "name": "address_1",
+      "type": "TEXT",
+      "nullable": true
+    },
+    {
+      "name": "address_2",
+      "type": "TEXT",
+      "nullable": true
+    },
+    {
+      "name": "city",
+      "type": "TEXT",
+      "nullable": true
+    },
+    {
+      "name": "state",
+      "type": "TEXT",
+      "nullable": true
+    },
+    {
+      "name": "county",
+      "type": "VARCHAR(255)",
+      "nullable": false
+    },
+    {
+      "name": "zip",
+      "type": "VARCHAR(10)",
+      "nullable": true
+    },
+    {
+      "name": "status",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "INTEGER",
+      "nullable": true
+    }
+  ],
+  "merchant_contact": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "merchant_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "label",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "value",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "type",
+      "type": "VARCHAR(200)",
+      "nullable": false
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "INTEGER",
+      "nullable": true
+    }
+  ],
+  "merchant_contract": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": false
+    },
+    {
+      "name": "merchant_user_id",
+      "type": "VARCHAR(36)",
+      "nullable": false
+    },
+    {
+      "name": "ip_address",
+      "type": "VARCHAR(255)",
+      "nullable": false
+    },
+    {
+      "name": "user_agent",
+      "type": "VARCHAR(655)",
+      "nullable": false
+    },
+    {
+      "name": "signatures",
+      "type": "LONGTEXT",
+      "nullable": true
+    },
+    {
+      "name": "contract_name",
+      "type": "VARCHAR(255)",
+      "nullable": false
+    },
+    {
+      "name": "version",
+      "type": "TEXT",
+      "nullable": true
+    },
+    {
+      "name": "status",
+      "type": "CHAR(15)",
+      "nullable": false
+    },
+    {
+      "name": "date",
+      "type": "DATE",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "DATETIME",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "DATETIME",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "DATETIME",
+      "nullable": true
+    }
+  ],
+  "merchant_delivery": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "merchant_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "name",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "description",
+      "type": "TEXT",
+      "nullable": true
+    },
+    {
+      "name": "status",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "INTEGER",
+      "nullable": true
+    }
+  ],
+  "merchant_legal_doc_aceptance": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "merchant_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "accepted_on_date",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "legal_documents_uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "ver",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "type",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    }
+  ],
+  "merchant_payment_methods": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "merchant_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "merchant_title",
+      "type": "VARCHAR(500)",
+      "nullable": false
+    },
+    {
+      "name": "type_name",
+      "type": "VARCHAR(50)",
+      "nullable": false
+    },
+    {
+      "name": "type",
+      "type": "VARCHAR(3)",
+      "nullable": true
+    },
+    {
+      "name": "account_number",
+      "type": "VARCHAR(21)",
+      "nullable": true
+    },
+    {
+      "name": "account_type",
+      "type": "VARCHAR(25)",
+      "nullable": false
+    },
+    {
+      "name": "bank_code",
+      "type": "VARCHAR(4)",
+      "nullable": true
+    },
+    {
+      "name": "bank_name",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "phone_code",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "phone",
+      "type": "VARCHAR(20)",
+      "nullable": true
+    },
+    {
+      "name": "identity_doc",
+      "type": "VARCHAR(20)",
+      "nullable": true
+    },
+    {
+      "name": "integration",
+      "type": "VARCHAR(3000)",
+      "nullable": true
+    },
+    {
+      "name": "status",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "currency",
+      "type": "VARCHAR(3)",
+      "nullable": true
+    },
+    {
+      "name": "currency_name",
+      "type": "VARCHAR(50)",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    }
+  ],
+  "merchant_premium_policies": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "merchant_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "content",
+      "type": "TEXT",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    }
+  ],
+  "merchant_profile": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": false
+    },
+    {
+      "name": "merchant_id",
+      "type": "VARCHAR(36)",
+      "nullable": false
+    },
+    {
+      "name": "profile",
+      "type": "TEXT",
+      "nullable": true
+    },
+    {
+      "name": "cedulas",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "rif",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "acta",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "cedula_apoderado",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "instrumento_apoderado",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "asamblea",
+      "type": "VARCHAR(500)",
+      "nullable": true
+    },
+    {
+      "name": "signatories",
+      "type": "LONGTEXT",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    }
+  ],
+  "merchant_users": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "merchant_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "nickname",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "password",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "name",
+      "type": "VARCHAR(50)",
+      "nullable": true
+    },
+    {
+      "name": "lastname",
+      "type": "VARCHAR(50)",
+      "nullable": true
+    },
+    {
+      "name": "role",
+      "type": "VARCHAR(3)",
+      "nullable": true
+    },
+    {
+      "name": "permit",
+      "type": "VARCHAR(500)",
+      "nullable": false
+    },
+    {
+      "name": "phone",
+      "type": "VARCHAR(20)",
+      "nullable": true
+    },
+    {
+      "name": "alt_phone",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "status",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "INTEGER",
+      "nullable": true
+    }
+  ],
+  "merchant_visit_calendar": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "merchant_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "date",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "time",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    }
+  ],
+  "migrations": [
+    {
+      "name": "id",
+      "type": "BIGINT",
+      "nullable": false
+    },
+    {
+      "name": "version",
+      "type": "VARCHAR(255)",
+      "nullable": false
+    },
+    {
+      "name": "class",
+      "type": "VARCHAR(255)",
+      "nullable": false
+    },
+    {
+      "name": "group",
+      "type": "VARCHAR(255)",
+      "nullable": false
+    },
+    {
+      "name": "namespace",
+      "type": "VARCHAR(255)",
+      "nullable": false
+    },
+    {
+      "name": "time",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "batch",
+      "type": "INTEGER",
+      "nullable": false
+    }
+  ],
+  "notification": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": false
+    },
+    {
+      "name": "users_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "title",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "content",
+      "type": "VARCHAR(500)",
+      "nullable": true
+    },
+    {
+      "name": "link",
+      "type": "VARCHAR(500)",
+      "nullable": true
+    },
+    {
+      "name": "link_type",
+      "type": "VARCHAR(30)",
+      "nullable": false
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "status",
+      "type": "INTEGER",
+      "nullable": false
+    }
+  ],
+  "notification_jobs": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "channel",
+      "type": "VARCHAR(100)",
+      "nullable": false
+    },
+    {
+      "name": "endpoint",
+      "type": "TEXT",
+      "nullable": false
+    },
+    {
+      "name": "content",
+      "type": "LONGTEXT",
+      "nullable": false
+    },
+    {
+      "name": "status",
+      "type": "VARCHAR(50)",
+      "nullable": false
+    },
+    {
+      "name": "enqueued_at",
+      "type": "DATETIME",
+      "nullable": false
+    },
+    {
+      "name": "processed_at",
+      "type": "DATETIME",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "DATETIME",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "DATETIME",
+      "nullable": true
+    },
+    {
+      "name": "users_id",
+      "type": "INTEGER",
+      "nullable": true
+    }
+  ],
+  "notifications": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "content",
+      "type": "TEXT",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    }
+  ],
+  "onboarding_incidents": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "onboarding_tracking_id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "user_id",
+      "type": "VARCHAR(36)",
+      "nullable": false
+    },
+    {
+      "name": "start",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "end",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "description",
+      "type": "TEXT",
+      "nullable": false
+    },
+    {
+      "name": "level",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "resolved",
+      "type": "TINYINT",
+      "nullable": false
+    },
+    {
+      "name": "created_at",
+      "type": "DATETIME",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "DATETIME",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "DATETIME",
+      "nullable": true
+    }
+  ],
+  "onboarding_trackings": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "merchant_id",
+      "type": "VARCHAR(36)",
+      "nullable": false
+    },
+    {
+      "name": "user_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "status",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "observation",
+      "type": "LONGTEXT",
+      "nullable": false
+    },
+    {
+      "name": "created_at",
+      "type": "DATETIME",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "DATETIME",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "DATETIME",
+      "nullable": true
+    }
+  ],
+  "otp": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "merchant_users_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "admin_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "users_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "code",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "expire",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "status",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "type",
+      "type": "VARCHAR(10)",
+      "nullable": false
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    }
+  ],
+  "pay_intent": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": false
+    },
+    {
+      "name": "users_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "merchant_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "details",
+      "type": "TEXT",
+      "nullable": true
+    },
+    {
+      "name": "status",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "valid_until",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    }
+  ],
+  "payment_checked": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "purchase_id",
+      "type": "VARCHAR(36)",
+      "nullable": false
+    },
+    {
+      "name": "merchant_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "users_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "payment_id",
+      "type": "LONGTEXT",
+      "nullable": true
+    },
+    {
+      "name": "fees_covered_by_payment_id",
+      "type": "LONGTEXT",
+      "nullable": true
+    },
+    {
+      "name": "admin_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "sanctioned_payment_received_by_merchant",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "reference",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "phone",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "doc",
+      "type": "VARCHAR(20)",
+      "nullable": true
+    },
+    {
+      "name": "bank_code",
+      "type": "VARCHAR(4)",
+      "nullable": true
+    },
+    {
+      "name": "date",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "type",
+      "type": "VARCHAR(10)",
+      "nullable": false
+    },
+    {
+      "name": "amount",
+      "type": "FLOAT",
+      "nullable": false
+    },
+    {
+      "name": "convertion_rate",
+      "type": "FLOAT",
+      "nullable": false
+    },
+    {
+      "name": "api_response",
+      "type": "LONGTEXT",
+      "nullable": false
+    },
+    {
+      "name": "receipt",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    }
+  ],
+  "payment_methods": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "author_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "name",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "description",
+      "type": "VARCHAR(500)",
+      "nullable": true
+    },
+    {
+      "name": "status",
+      "type": "TINYINT",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "INTEGER",
+      "nullable": true
+    }
+  ],
+  "pc_auth": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": false
+    },
+    {
+      "name": "user",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "password",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "status",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    }
+  ],
+  "penalty": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "users_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "purchase_payment_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "purchase_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "type",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "INTEGER",
+      "nullable": true
+    }
+  ],
+  "pkce": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "challenge",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "auth_code",
+      "type": "TEXT",
+      "nullable": true
+    },
+    {
+      "name": "prov_token",
+      "type": "TEXT",
+      "nullable": true
+    },
+    {
+      "name": "valid_until",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "INTEGER",
+      "nullable": true
+    }
+  ],
+  "plan": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "admin_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "title",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "quotes",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "type",
+      "type": "VARCHAR(20)",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "INTEGER",
+      "nullable": true
+    }
+  ],
+  "purchase": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "users_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "merchant_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "merchant_user_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "intent_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "merchant_seller_id",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "status",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "special_purchase",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "coupons",
+      "type": "TEXT",
+      "nullable": true
+    },
+    {
+      "name": "subtotal",
+      "type": "FLOAT",
+      "nullable": false
+    },
+    {
+      "name": "total",
+      "type": "FLOAT",
+      "nullable": true
+    },
+    {
+      "name": "invoice",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "invoice_num",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "number",
+      "type": "VARCHAR(100)",
+      "nullable": true
+    },
+    {
+      "name": "iva",
+      "type": "FLOAT",
+      "nullable": true
+    },
+    {
+      "name": "is_b2b",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "int_status",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "modality",
+      "type": "VARCHAR(255)",
+      "nullable": false
+    },
+    {
+      "name": "exonerated",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "cause",
+      "type": "VARCHAR(256)",
+      "nullable": true
+    },
+    {
+      "name": "observation",
+      "type": "VARCHAR(1000)",
+      "nullable": false
+    },
+    {
+      "name": "custom_initial",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "initial_fee",
+      "type": "FLOAT",
+      "nullable": false
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "delete_cause",
+      "type": "VARCHAR(256)",
+      "nullable": true
+    },
+    {
+      "name": "woocommerce_id",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "canceled_at",
+      "type": "DATETIME",
+      "nullable": true
+    },
+    {
+      "name": "canceled_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    }
+  ],
+  "purchase_deleted": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "merchant_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "users_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "merchant_users_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_by",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "info",
+      "type": "LONGTEXT",
+      "nullable": true
+    },
+    {
+      "name": "payments",
+      "type": "LONGTEXT",
+      "nullable": true
+    },
+    {
+      "name": "reason",
+      "type": "VARCHAR(255)",
+      "nullable": false
+    },
+    {
+      "name": "checked",
+      "type": "LONGTEXT",
+      "nullable": true
+    },
+    {
+      "name": "inventory",
+      "type": "LONGTEXT",
+      "nullable": true
+    },
+    {
+      "name": "modality",
+      "type": "VARCHAR(50)",
+      "nullable": false
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    }
+  ],
+  "purchase_intent": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "merchant_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "merchant_users_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "users_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "merchant_seller_id",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "plan",
+      "type": "TEXT",
+      "nullable": true
+    },
+    {
+      "name": "status",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "total",
+      "type": "FLOAT",
+      "nullable": true
+    },
+    {
+      "name": "delete_reason",
+      "type": "VARCHAR(300)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_by",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "modality",
+      "type": "VARCHAR(50)",
+      "nullable": true
+    },
+    {
+      "name": "cart",
+      "type": "LONGTEXT",
+      "nullable": true
+    },
+    {
+      "name": "rate",
+      "type": "FLOAT",
+      "nullable": false
+    },
+    {
+      "name": "expire",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    }
+  ],
+  "purchase_items": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "purchase_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "inventory_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "qty",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "price",
+      "type": "FLOAT",
+      "nullable": true
+    },
+    {
+      "name": "subtotal",
+      "type": "FLOAT",
+      "nullable": false
+    },
+    {
+      "name": "total",
+      "type": "FLOAT",
+      "nullable": true
+    },
+    {
+      "name": "is_discount",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "discount_type",
+      "type": "FLOAT",
+      "nullable": true
+    },
+    {
+      "name": "discount",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "INTEGER",
+      "nullable": true
+    }
+  ],
+  "purchase_payment": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "purchase_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "status",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "amount",
+      "type": "FLOAT",
+      "nullable": true
+    },
+    {
+      "name": "amount_payed",
+      "type": "FLOAT",
+      "nullable": false
+    },
+    {
+      "name": "valid_until",
+      "type": "VARCHAR(12)",
+      "nullable": true
+    },
+    {
+      "name": "valid_until_time",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "payment_method",
+      "type": "VARCHAR(500)",
+      "nullable": true
+    },
+    {
+      "name": "details",
+      "type": "TEXT",
+      "nullable": true
+    },
+    {
+      "name": "paid_on",
+      "type": "VARCHAR(12)",
+      "nullable": true
+    },
+    {
+      "name": "type",
+      "type": "VARCHAR(50)",
+      "nullable": true
+    },
+    {
+      "name": "difference",
+      "type": "FLOAT",
+      "nullable": false
+    },
+    {
+      "name": "diff_type",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "merchant_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "users_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "sanctioned",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "merchant_user_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "last_sms",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "last_mail",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "sanctioned_with_partial_payment",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "partial_payment_sanctioned",
+      "type": "FLOAT",
+      "nullable": false
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "INTEGER",
+      "nullable": true
+    }
+  ],
+  "purchase_payment_info": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "purchase_payment_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "info",
+      "type": "TEXT",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    }
+  ],
+  "score_history": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "users_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "score",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "type",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "is_b2b",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "INTEGER",
+      "nullable": true
+    }
+  ],
+  "stats_acquired_quotas": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "users_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "purchase_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "purchase_payment_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "merchant_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "penalty_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "expired_on",
+      "type": "BIGINT",
+      "nullable": true
+    },
+    {
+      "name": "amount",
+      "type": "FLOAT",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    }
+  ],
+  "stats_defaulters": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "users_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "purchase_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "merchant_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "amount",
+      "type": "FLOAT",
+      "nullable": true
+    },
+    {
+      "name": "expired_on",
+      "type": "BIGINT",
+      "nullable": true
+    },
+    {
+      "name": "paid_on",
+      "type": "BIGINT",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    }
+  ],
+  "subcategory": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "author_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "category_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "name",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "microname",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "description",
+      "type": "VARCHAR(500)",
+      "nullable": true
+    },
+    {
+      "name": "thumbnail",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "url",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "status",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "INTEGER",
+      "nullable": true
+    }
+  ],
+  "support_chat": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "ticket",
+      "type": "VARCHAR(7)",
+      "nullable": false
+    },
+    {
+      "name": "users_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "admin_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "status",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "close_time",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "open_time",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "user_type",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "INTEGER",
+      "nullable": true
+    }
+  ],
+  "tab_fee_standard": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "min_amount",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "max_amount",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "min_quote",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    }
+  ],
+  "users": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "doc",
+      "type": "VARCHAR(36)",
+      "nullable": false
+    },
+    {
+      "name": "nationality",
+      "type": "VARCHAR(1)",
+      "nullable": false
+    },
+    {
+      "name": "password",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "email",
+      "type": "VARCHAR(500)",
+      "nullable": true
+    },
+    {
+      "name": "name",
+      "type": "VARCHAR(255)",
+      "nullable": false
+    },
+    {
+      "name": "lastname",
+      "type": "VARCHAR(255)",
+      "nullable": false
+    },
+    {
+      "name": "fullname",
+      "type": "VARCHAR(255)",
+      "nullable": false
+    },
+    {
+      "name": "comentario",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "status",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "manual_registration",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "level",
+      "type": "VARCHAR(36)",
+      "nullable": false
+    },
+    {
+      "name": "merchant_level",
+      "type": "VARCHAR(36)",
+      "nullable": false
+    },
+    {
+      "name": "credit_limit",
+      "type": "FLOAT",
+      "nullable": false
+    },
+    {
+      "name": "origin_credit_limit",
+      "type": "FLOAT",
+      "nullable": false
+    },
+    {
+      "name": "Credit_Auth",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "balance",
+      "type": "FLOAT",
+      "nullable": false
+    },
+    {
+      "name": "amount_favor_usd",
+      "type": "FLOAT",
+      "nullable": false
+    },
+    {
+      "name": "amount_favor_bs",
+      "type": "FLOAT",
+      "nullable": false
+    },
+    {
+      "name": "is_mail_confirmed",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "is_phone_confirmed",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "tab",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "subscription_complete",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "ref_id",
+      "type": "VARCHAR(50)",
+      "nullable": true
+    },
+    {
+      "name": "ref_by",
+      "type": "VARCHAR(50)",
+      "nullable": true
+    },
+    {
+      "name": "created_on_time",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "sms",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "ref_made",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "mail",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "push",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "push_token",
+      "type": "VARCHAR(1000)",
+      "nullable": true
+    },
+    {
+      "name": "is_merchant_related",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "merchant_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "doc_photo",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "selfie_photo",
+      "type": "VARCHAR(255)",
+      "nullable": false
+    },
+    {
+      "name": "birth",
+      "type": "VARCHAR(50)",
+      "nullable": true
+    },
+    {
+      "name": "sex",
+      "type": "VARCHAR(50)",
+      "nullable": true
+    },
+    {
+      "name": "ref_links",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "INTEGER",
+      "nullable": true
+    }
+  ],
+  "users_bookmark": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "users_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "inventory_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "is_b2b",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "INTEGER",
+      "nullable": true
+    }
+  ],
+  "users_category": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "users_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "category_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "is_b2b",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    }
+  ],
+  "users_coupons": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "users_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "code",
+      "type": "VARCHAR(50)",
+      "nullable": true
+    },
+    {
+      "name": "description",
+      "type": "TEXT",
+      "nullable": true
+    },
+    {
+      "name": "status",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "INTEGER",
+      "nullable": true
+    }
+  ],
+  "users_credit_limit_history": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "users_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "credit_limit",
+      "type": "FLOAT",
+      "nullable": true
+    },
+    {
+      "name": "on_time",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    }
+  ],
+  "users_device": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "users_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "device_id",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "manufacturer",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "model",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "name",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "operative_system",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "real_disk_free",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "real_disk_total",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "push_token",
+      "type": "VARCHAR(1000)",
+      "nullable": false
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    }
+  ],
+  "users_motive": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "admin_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "users_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "motive_1",
+      "type": "VARCHAR(1000)",
+      "nullable": true
+    },
+    {
+      "name": "motive_2",
+      "type": "VARCHAR(1000)",
+      "nullable": true
+    },
+    {
+      "name": "agreed_payment_date",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "contact_method",
+      "type": "ENUM",
+      "nullable": true
+    },
+    {
+      "name": "time",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "observation",
+      "type": "VARCHAR(1000)",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    }
+  ],
+  "users_parallel_credit": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "users_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "purchase_id",
+      "type": "VARCHAR(46)",
+      "nullable": true
+    },
+    {
+      "name": "balance",
+      "type": "FLOAT",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    }
+  ],
+  "users_profile": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "users_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "name",
+      "type": "VARCHAR(50)",
+      "nullable": true
+    },
+    {
+      "name": "lastname",
+      "type": "VARCHAR(50)",
+      "nullable": true
+    },
+    {
+      "name": "phone",
+      "type": "VARCHAR(50)",
+      "nullable": true
+    },
+    {
+      "name": "document",
+      "type": "VARCHAR(50)",
+      "nullable": true
+    },
+    {
+      "name": "address_1",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "address_2",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "zip",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "city",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "state",
+      "type": "VARCHAR(10)",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "INTEGER",
+      "nullable": true
+    }
+  ],
+  "users_score": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "uuid",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "users_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "score",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "status",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "is_b2b",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "INTEGER",
+      "nullable": true
+    }
+  ],
+  "users_score_history": [
+    {
+      "name": "id",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "users_id",
+      "type": "VARCHAR(36)",
+      "nullable": false
+    },
+    {
+      "name": "score",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "purchase_id",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "reason",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "on_time",
+      "type": "INTEGER",
+      "nullable": true
+    },
+    {
+      "name": "created_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "updated_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "deleted_at",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    }
+  ],
+  "\u2060merchant_visit_calendar\u202f\u2060": [
+    {
+      "name": "\u2060\u202fid\u202f\u2060",
+      "type": "INTEGER",
+      "nullable": false
+    },
+    {
+      "name": "\u2060\u202fuuid\u202f\u2060",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "\u2060\u202fmerchant_id\u202f\u2060",
+      "type": "VARCHAR(36)",
+      "nullable": true
+    },
+    {
+      "name": "\u2060\u202fdate\u202f\u2060",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "\u2060\u202ftime\u202f\u2060",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "\u2060\u202fcreated_at\u202f\u2060",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "\u2060\u202fupdated_at\u202f\u2060",
+      "type": "VARCHAR(255)",
+      "nullable": true
+    },
+    {
+      "name": "\u2060\u202fdeleted_at\u202f\u2060",
+      "type": "INTEGER",
+      "nullable": true
+    }
+  ]
+}

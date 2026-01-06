@@ -1,0 +1,7 @@
+project_name: "Lysto BNPL"
+version: "1.0"
+
+business_context: |
+  La empresa se llama 'Lysto'. Es una Fintech en Venezuela.
+  Modelos: BNPL, Pasarela de Pagos.
+  Monedas: VES, USD.

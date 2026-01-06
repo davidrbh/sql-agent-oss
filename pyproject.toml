@@ -7,7 +7,7 @@ readme = "README.md"
 packages = [{include = "sql_agent", from = "src"}]
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.13"
+python = ">=3.11,<3.13"
 
 # --- Núcleo IA y Agentes ---
 langchain = "^0.1.0"
