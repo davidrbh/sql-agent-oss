@@ -1,11 +1,13 @@
 import os
 import yaml
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Definimos la raíz del proyecto basándonos en la ubicación de este archivo
 # src/sql_agent/config/loader.py -> ... -> root
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 CONFIG_DIR = BASE_DIR / "config"
+load_dotenv(BASE_DIR / ".env")
 
 class ConfigLoader:
     """

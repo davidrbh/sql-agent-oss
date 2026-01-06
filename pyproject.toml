@@ -10,9 +10,8 @@ packages = [{include = "sql_agent", from = "src"}]
 python = ">=3.11,<3.13"
 
 # --- Núcleo IA y Agentes ---
-langchain = "^0.1.0"
-langchain-openai = "^0.0.5"
-langgraph = "^0.0.10"
+langchain = "^1.2.0"
+langgraph = "^1.0.5"
 
 # --- Base de Datos (Async) ---
 sqlalchemy = "^2.0.25"
@@ -41,6 +40,8 @@ chainlit = "^1.0.0"
 python-dotenv = "^1.0.0"
 pydantic = "^2.6.0"
 pyyaml = "^6.0.1"
+langchain-google-genai = "^4.1.3"
+google-generativeai = "^0.8.6"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.1.14"

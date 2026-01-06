@@ -1,0 +1,198 @@
+tables:
+- name: admin
+  friendly_name: Administradores del Sistema
+  description: Almacena la información de los usuarios internos de Lysto que poseen
+    privilegios administrativos para gestionar las operaciones de la pasarela de pagos
+    y el modelo BNPL.
+  columns:
+  - name: id
+    description: Identificador único incremental de la tabla.
+    is_active: false
+  - name: uuid
+    description: Identificador único universal utilizado para referencias externas
+      y seguridad.
+    is_active: false
+  - name: name
+    description: Nombre de pila del usuario administrativo.
+    is_active: true
+  - name: lastname
+    description: Apellido del usuario administrativo.
+    is_active: true
+  - name: email
+    description: Dirección de correo electrónico institucional y credencial de acceso.
+    is_active: true
+  - name: password
+    description: Hash de la contraseña para la autenticación en el sistema.
+    is_active: false
+  - name: role
+    description: Código que identifica el nivel de acceso o rol asignado dentro de
+      la organización (ej. a1, a3).
+    is_active: true
+  - name: status
+    description: Estado operativo de la cuenta administrativa (ej. 1 para activo,
+      0 para inactivo).
+    is_active: true
+  - name: contact_info
+    description: Información de contacto adicional, generalmente el número telefónico
+      del administrador.
+    is_active: true
+  - name: thumbnail
+    description: Ruta o referencia a la imagen de perfil del usuario.
+    is_active: true
+  - name: created_at
+    description: Fecha y hora de creación del usuario en el sistema.
+    is_active: false
+  - name: updated_at
+    description: Fecha y hora de la última modificación de los datos del usuario.
+    is_active: false
+  - name: deleted_at
+    description: Marca de tiempo utilizada para el borrado lógico de la cuenta.
+    is_active: false
+- name: api_client_auth
+  friendly_name: Autenticación de Clientes API
+  description: Almacena las credenciales de acceso y el estado de autenticación para
+    las aplicaciones y clientes externos que interactúan con la API de Lysto, permitiendo
+    el uso de la pasarela de pagos y servicios BNPL.
+  columns:
+  - name: id
+    description: Identificador único incremental de la tabla
+    is_active: false
+  - name: uuid
+    description: Identificador único universal utilizado para referencias externas
+      y seguridad
+    is_active: true
+  - name: client
+    description: Nombre o identificador del cliente o aplicación autorizada para consumir
+      la API
+    is_active: true
+  - name: password
+    description: Hash de la contraseña o secreto de API utilizado para la autenticación
+    is_active: true
+  - name: status
+    description: Estado operativo del cliente (ej. 1 para activo, 0 para inactivo)
+    is_active: true
+  - name: created_at
+    description: Fecha y hora de creación del registro de acceso
+    is_active: false
+  - name: updated_at
+    description: Fecha y hora de la última modificación de las credenciales o estado
+    is_active: false
+  - name: deleted_at
+    description: Fecha y hora de eliminación lógica del cliente
+    is_active: false
+  - name: last_login_at
+    description: Registro de la última vez que el cliente se autenticó exitosamente
+      en la plataforma
+    is_active: true
+- name: api_clients
+  friendly_name: Clientes de API
+  description: Almacena la información de registro y credenciales de acceso para las
+    aplicaciones o servicios que interactúan con la pasarela de pagos y el sistema
+    BNPL de Lysto.
+  columns:
+  - name: id
+    description: Identificador único interno de la tabla en formato numérico.
+    is_active: false
+  - name: uuid
+    description: Identificador universal único utilizado para referenciar al cliente
+      de API de forma segura en integraciones externas.
+    is_active: true
+  - name: client_name
+    description: Nombre de la aplicación o entidad autorizada para consumir los servicios
+      de la API.
+    is_active: true
+  - name: api_key
+    description: Clave pública de identificación para el acceso a la interfaz de programación
+      de aplicaciones.
+    is_active: true
+  - name: api_secret_hash
+    description: Hash de seguridad de la clave secreta utilizada para autenticar las
+      peticiones del cliente.
+    is_active: true
+  - name: is_active
+    description: Estado de habilitación del cliente; determina si puede realizar transacciones
+      o consultas.
+    is_active: true
+  - name: created_at
+    description: Fecha y hora en la que se generaron las credenciales del cliente.
+    is_active: false
+  - name: updated_at
+    description: Fecha y hora de la última modificación en los datos o estado del
+      cliente de API.
+    is_active: false
+- name: auth_state
+  friendly_name: Estado de Autenticación y Sesiones
+  description: Gestiona el ciclo de vida de las sesiones de usuario en la plataforma
+    Lysto. Almacena tokens de acceso y refresco (JWT) para garantizar la seguridad
+    en las operaciones de la pasarela de pagos y el servicio BNPL, controlando la
+    vigencia y el estado activo de cada conexión.
+  columns:
+  - name: id
+    description: Identificador primario interno del registro de autenticación.
+    is_active: false
+  - name: uuid
+    description: Identificador único universal de la sesión de usuario.
+    is_active: false
+  - name: users_id
+    description: Referencia al identificador único del usuario propietario de la sesión.
+    is_active: true
+  - name: token
+    description: Token de acceso JWT utilizado para autorizar transacciones y peticiones
+      a la API.
+    is_active: true
+  - name: refresh
+    description: Token de refresco utilizado para renovar la sesión sin requerir credenciales
+      nuevamente.
+    is_active: true
+  - name: is_alive
+    description: Estado lógico de la sesión; indica si el acceso sigue siendo válido
+      para el sistema.
+    is_active: true
+  - name: token_valid_until
+    description: Timestamp que define el límite de expiración del token de acceso
+      actual.
+    is_active: true
+  - name: refresh_valid_until
+    description: Timestamp que define el límite de expiración del token de refresco.
+    is_active: true
+  - name: created_at
+    description: Fecha y hora de inicio de la sesión o creación del registro.
+    is_active: false
+  - name: updated_at
+    description: Fecha y hora de la última actualización de los tokens o estado de
+      la sesión.
+    is_active: false
+  - name: deleted_at
+    description: Fecha y hora de cierre o eliminación lógica de la sesión.
+    is_active: false
+- name: bcv_rate_history
+  friendly_name: Historial de Tasas BCV
+  description: Almacena el registro histórico de las tasas de cambio oficiales publicadas
+    por el Banco Central de Venezuela (BCV). Esta tabla es crítica para la Fintech
+    Lysto, ya que permite realizar conversiones precisas entre Bolívares (VES) y Dólares
+    (USD) en sus modelos de BNPL y pasarela de pagos, garantizando el cumplimiento
+    legal y la estabilidad financiera de las transacciones.
+  columns:
+  - name: id
+    description: Identificador único incremental de cada registro de tasa en la base
+      de datos.
+    is_active: false
+  - name: rate
+    description: Valor numérico de la tasa de cambio oficial (VES/USD) vigente para
+      una fecha específica.
+    is_active: true
+  - name: date
+    description: Fecha calendario a la cual corresponde la tasa de cambio reportada
+      por el ente regulador.
+    is_active: true
+  - name: created_at
+    description: Marca de tiempo que indica cuándo se insertó el registro de la tasa
+      en el sistema.
+    is_active: false
+  - name: updated_at
+    description: Marca de tiempo de la última modificación realizada al registro.
+    is_active: false
+  - name: deleted_at
+    description: Marca de tiempo utilizada para el borrado lógico de registros, indicando
+      si una tasa ya no debe ser considerada.
+    is_active: false
