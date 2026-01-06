@@ -14,7 +14,7 @@ if __name__ == "__main__":
     # Instanciamos el hidratador
     # table_limit=5 es para probar rápido y no gastar tokens. 
     # Sube este número (ej: 100) cuando quieras documentar TODA la base de datos.
-    hydrator = SemanticHydrator(table_limit=5) 
+    hydrator = SemanticHydrator(table_limit=None) 
     
     # Corremos el proceso asíncrono
     asyncio.run(hydrator.run())

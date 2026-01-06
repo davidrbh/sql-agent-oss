@@ -1,42 +1,51 @@
 import os
 from langchain_core.language_models.chat_models import BaseChatModel
-
-# Importamos las implementaciones concretas (pero solo las usamos aquí)
 from langchain_google_genai import ChatGoogleGenerativeAI
-# from langchain_openai import ChatOpenAI  <-- Si en el futuro lo instalas, lo descomentas
+from langchain_openai import ChatOpenAI
 
 from sql_agent.config.loader import ConfigLoader
 
 class LLMFactory:
     """
-    Patrón Factory: Centraliza la creación de modelos de lenguaje (LLMs).
-    Permite cambiar de proveedor (Google, OpenAI, Anthropic) tocando solo este archivo.
+    Fábrica actualizada con soporte nativo para DeepSeek V3/R1
+    según la documentación oficial.
     """
     
     @staticmethod
-    def create(temperature: float = 0, structured: bool = False) -> BaseChatModel:
+    def create(temperature: float = None) -> BaseChatModel:
         settings = ConfigLoader.load_settings()
         
-        # Leemos el proveedor desde la configuración (o default a google)
         provider = settings.get('llm', {}).get('provider', 'google').lower()
         model_name = settings.get('llm', {}).get('model', 'gemini-2.0-flash')
+        
+        # Si no pasan temperatura, usamos la del settings, o 0 por defecto
+        if temperature is None:
+            temperature = settings.get('llm', {}).get('temperature', 0)
 
-        print(f"🏭 LLM Factory: Creando instancia de {provider.upper()} ({model_name})...")
+        print(f"🏭 LLM Factory: Conectando con {provider.upper()} ({model_name}) | Temp: {temperature}...")
 
         if provider == "google":
-            llm = ChatGoogleGenerativeAI(
+            return ChatGoogleGenerativeAI(
                 model=model_name,
                 temperature=temperature,
                 max_retries=2
             )
         
-        elif provider == "openai":
-            # Nota: Esto fallará si no tienes langchain-openai instalado, 
-            # pero así es como se vería la arquitectura.
-            # return ChatOpenAI(model=model_name, temperature=temperature)
-            raise NotImplementedError("OpenAI driver no está instalado actualmente.")
+        elif provider == "deepseek":
+            api_key = os.environ.get("DEEPSEEK_API_KEY")
+            if not api_key:
+                raise ValueError("Falta DEEPSEEK_API_KEY en el archivo .env")
+            
+            # Configuración específica según Docs de DeepSeek
+            return ChatOpenAI(
+                model=model_name,
+                temperature=temperature,
+                api_key=api_key,
+                base_url="https://api.deepseek.com", # 👈 URL Oficial
+                max_retries=2,
+                # DeepSeek soporta hasta 64k tokens de salida en algunos casos, 
+                # pero por seguridad para SQL dejamos default o ajustamos si cortara.
+            )
             
         else:
-            raise ValueError(f"Proveedor de IA no soportado: {provider}")
-
-        return llm
+            raise ValueError(f"Proveedor no soportado: {provider}")

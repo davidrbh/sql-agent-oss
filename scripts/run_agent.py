@@ -5,14 +5,19 @@ import os
 # Ajuste de path para encontrar 'src'
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
+# ✅ NUEVO: Importamos HumanMessage para guardar lo que dice el usuario
+from langchain_core.messages import HumanMessage
 from sql_agent.graph import build_graph
 
 async def main():
-    print("--- 🤖 SQL AGENT OSS (Gemini Powered) ---")
+    print("--- 🤖 SQL AGENT OSS (DeepSeek Powered) ---")
     print("Iniciando sistemas...")
     
     # Construimos el cerebro
     agent = build_graph()
+    
+    # ✅ MEMORIA A LARGO PLAZO (Mientras dure el script)
+    chat_history = [] 
     
     print("✅ Agente listo. Escribe 'salir' para terminar.\n")
     
@@ -25,16 +30,24 @@ async def main():
             
             print("⏳ Pensando...")
             
-            # Ejecutamos el grafo con la pregunta del usuario
-            # ainvoke es la forma asíncrona de llamar a LangGraph
-            inputs = {"question": user_input, "messages": []}
+            # 1. Guardamos tu pregunta en la historia
+            chat_history.append(HumanMessage(content=user_input))
             
-            # Streaming de eventos (opcional, para ver qué hace)
-            # Aquí usamos invoke simple para obtener el resultado final
+            # 2. Le pasamos TODA la historia al agente
+            inputs = {
+                "question": user_input, 
+                "messages": chat_history 
+            }
+            
+            # Ejecutamos el grafo
             result = await agent.ainvoke(inputs)
             
-            # Extraemos el último mensaje de la IA
-            final_response = result["messages"][-1].content
+            # 3. Actualizamos la historia con la respuesta del Agente
+            # result["messages"] contiene la lista actualizada (Tu pregunta + Respuesta IA)
+            chat_history = result["messages"]
+            
+            # Extraemos el último mensaje para mostrarlo
+            final_response = chat_history[-1].content
             
             print(f"\n🤖 AI > {final_response}\n")
             print("-" * 50)

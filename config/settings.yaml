@@ -4,8 +4,12 @@ app:
   debug: true
 
 llm:
-  provider: "google" # Opciones: google, openai
-  model: "gemini-2.0-flash" # Opciones: gemini-2.0-flash, gpt-4o, etc.
+  #provider: "google" # Opciones: google, openai
+  #model: "gemini-2.0-flash" # Opciones: gemini-2.0-flash, gpt-4o, etc.
+
+  provider: "deepseek"
+  model: "deepseek-chat"
+  temperature: 0.0 # 👈 CRÍTICO: La doc recomienda 0.0 para Coding
 
 database:
   timeout: 30
