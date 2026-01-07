@@ -1,7 +1,599 @@
-project_name: "Lysto BNPL"
-version: "1.0"
+version: "2.5"
+project: "credivibes_ai_context"
 
-business_context: |
-  La empresa se llama 'Lysto'. Es una Fintech en Venezuela.
-  Modelos: BNPL, Pasarela de Pagos.
-  Monedas: VES, USD.
+meta:
+  currency_format: "USD"
+  time_zone: "America/Caracas"
+  description: >
+    Capa semántica MAESTRA para la plataforma BNPL Credivibes.
+
+    *** REGLAS DE ORO GLOBALES (MUST READ) ***:
+
+    1. PREFERENCIA POR COLUMNAS TOTALIZADORAS: Si existe 'balance' o 'total', ÚSALA.
+       NO calcules sumas manuales (SUM) sobre transacciones a menos que sea un reporte de desglose.
+       Confía ciegamente en el dato almacenado en la tabla padre.
+
+    2. MONEDA BASE (USD):
+       - Todos los montos financieros (deuda, límites, precios) están almacenados en USD.
+       - Montos en VES solo existen en logs bancarios y pagos reportados ('amount_ves').
+       - Conversión: siempre usa la tasa almacenada en el registro (amount / rate).
+
+    3. JOINS HÍBRIDOS (UUID vs ID):
+       - La regla general es JOIN por UUID (users.uuid = purchases.users_id).
+       - EXCEPCIONES IMPORTANTES: 'credit_evaluations' usa ID numérico (users.id) y 'merchant_branches' usa ID numérico de merchant (merchant.id).
+       - Verifica siempre la sección 'relationships' antes de generar SQL.
+
+entities:
+  # Actores
+  - name: user
+    type: primary
+    primary_key: uuid
+    synonyms:
+      [
+        "cliente",
+        "comprador",
+        "deudor",
+        "solicitante",
+        "usuario",
+        "persona",
+        "persona natural",
+        "persona jurídica",
+      ]
+  - name: merchant
+    type: primary
+    primary_key: uuid
+    synonyms:
+      [
+        "comercio",
+        "tienda",
+        "aliado",
+        "proveedor",
+        "negocio",
+        "empresa",
+        "negocio",
+      ]
+  - name: merchant_branch
+    type: primary
+    primary_key: uuid
+    synonyms: ["sucursal", "sede", "filial"]
+  - name: merchant_user
+    type: primary
+    primary_key: uuid
+    synonyms:
+      [
+        "vendedor",
+        "cajero",
+        "empleado",
+        "funcionario",
+        "personal",
+        "trabajador",
+      ]
+
+  # Transacciones
+  - name: purchase
+    type: primary
+    primary_key: uuid
+    synonyms:
+      [
+        "crédito",
+        "orden",
+        "financiamiento",
+        "compra",
+        "venta",
+        "pago",
+        "cobro",
+        "factura",
+        "factura de venta",
+        "factura de crédito",
+      ]
+  - name: purchase_intent
+    type: primary
+    primary_key: id
+    synonyms: ["intento", "solicitud", "pre-aprobación"]
+  - name: purchase_payment
+    type: primary
+    primary_key: uuid
+    synonyms: ["cuota", "letra", "installment", "pago", "cobro"]
+
+  # Dinero & Auditoría
+  - name: verified_payment
+    type: primary
+    primary_key: uuid
+    synonyms:
+      [
+        "pago verificado",
+        "pago reportado",
+        "auditoría",
+        "pago",
+        "cobro",
+        "factura",
+        "factura de venta",
+        "factura de crédito",
+      ]
+  - name: bank_notification
+    type: primary
+    primary_key: id
+    synonyms: ["log bancario", "notificación de banco", "pago crudo", "webhook"]
+
+models:
+  # -----------------------------------------------------------------
+  # MODULE: USERS & RISK
+  # -----------------------------------------------------------------
+  - name: users
+    source: "bnplsite_credivibes.users"
+    entities:
+      - name: user
+        type: primary
+        col: uuid
+    dimensions:
+      - name: email
+        type: string
+        col: email
+        pii: true
+      - name: status
+        type: categorical
+        col: status
+        try_cast_to: integer
+        description: "1: Activo, 0: Inactivo"
+        allowed_values: ["1", "0"]
+      - name: created_at
+        type: time
+        col: created_at
+    measures:
+      - name: current_debt
+        type: custom
+        col: balance
+        description: >
+          Deuda total pendiente. FUENTE DE VERDAD.
+          NOTA: Un valor positivo significa que el usuario DEBE dinero.
+          NO intentar calcular esto sumando compras; usa siempre este valor.
+      - name: credit_limit
+        type: custom
+        col: credit_limit
+
+  - name: users_profile
+    source: "bnplsite_credivibes.users_profile"
+    entities:
+      - name: user
+        type: foreign
+        col: users_id
+    dimensions:
+      - name: name
+        type: string
+        col: name
+      - name: lastname
+        type: string
+        col: lastname
+      - name: phone
+        type: string
+        col: phone
+        pii: true
+      - name: document
+        type: string
+        col: document
+        pii: true
+
+  - name: users_score
+    source: "bnplsite_credivibes.users_score"
+    entities:
+      - name: user
+        type: foreign
+        col: users_id # Relación por UUID
+    dimensions:
+      - name: score
+        type: number
+        col: score
+        description: "Puntaje de crédito interno (Score)."
+
+  - name: credit_evaluations
+    source: "bnplsite_credivibes.credit_evaluations"
+    entities:
+      - name: user
+        type: foreign
+        col: user_id # WARNING: Uses Numeric ID
+    dimensions:
+      - name: final_credit_limit
+        type: number
+        col: final_credit_limit
+      - name: evaluation_result
+        type: string
+        col: evaluation_result
+    measures:
+      - name: limit_granted
+        type: max
+        col: final_credit_limit
+
+  # -----------------------------------------------------------------
+  # MODULE: MERCHANT
+  # -----------------------------------------------------------------
+  - name: merchant
+    source: "bnplsite_credivibes.merchant"
+    entities:
+      - name: merchant
+        type: primary
+        col: uuid
+    dimensions:
+      - name: name
+        type: string
+        col: name
+      - name: trade_name
+        type: string
+        col: trade_name
+      - name: montoMinimo
+        type: number
+        col: montoMinimo
+        description: "Monto mínimo de venta para financiar."
+      - name: porcentajesInicial
+        type: string
+        col: porcentajesInicial
+        description: "JSON con % de inicial permitidos."
+      - name: cuotasPermitidas
+        type: string
+        col: cuotasPermitidas
+        description: "JSON con plazos permitidos."
+    measures:
+      - name: monthly_fee
+        type: sum
+        col: monthly_fee
+
+  - name: merchant_branches
+    source: "bnplsite_credivibes.merchant_branches"
+    entities:
+      - name: merchant_branch
+        type: primary
+        col: uuid
+      - name: merchant
+        type: foreign
+        col: merchant_id # WARNING: Uses Numeric ID
+    dimensions:
+      - name: name
+        type: string
+        col: name
+      - name: state
+        type: string
+        col: estado
+
+  - name: merchant_users
+    source: "bnplsite_credivibes.merchant_users"
+    entities:
+      - name: merchant_user
+        type: primary
+        col: uuid
+      - name: merchant
+        type: foreign
+        col: merchant_id
+    dimensions:
+      - name: role
+        type: categorical
+        col: role
+      - name: username
+        type: string
+        col: nickname
+
+  - name: merchant_user_branches
+    source: "bnplsite_credivibes.merchant_user_branches"
+    entities:
+      - name: merchant_user
+        type: foreign
+        col: merchant_user_id # ID numérico
+      - name: merchant_branch
+        type: foreign
+        col: branch_id # ID numérico
+
+  # -----------------------------------------------------------------
+  # MODULE: PURCHASES (Action)
+  # -----------------------------------------------------------------
+  - name: purchases
+    source: "bnplsite_credivibes.purchase"
+    entities:
+      - name: purchase
+        type: primary
+        col: uuid
+      - name: user
+        type: foreign
+        col: users_id
+      - name: merchant
+        type: foreign
+        col: merchant_id
+      - name: merchant_branch
+        type: foreign
+        col: merchant_branches_id
+    dimensions:
+      - name: status
+        type: categorical
+        col: status
+        try_cast_to: integer
+        description: "0: Progreso, 1: Completado, 2: Anulado"
+        allowed_values: ["0", "1", "2"]
+      - name: transaction_id
+        type: string
+        col: transaction_id
+      - name: created_at
+        type: time
+        col: created_at
+      - name: is_overdue
+        type: boolean
+        sql: "EXISTS (SELECT 1 FROM purchase_payment pp WHERE pp.purchase_id = purchase.uuid AND pp.type = 'quote' AND pp.status != 1 AND pp.valid_until_time < UNIX_TIMESTAMP(NOW()))"
+    measures:
+      - name: total_billed
+        type: sum
+        col: total
+        description: "Monto Venta Total (Principal + Intereses + Inicial)."
+      - name: financed_amount
+        type: sum
+        sql: "purchase.total - purchase.initial_fee"
+        description: "Monto Financiado (Deuda neta inicial)."
+
+  - name: purchase_intents
+    source: "bnplsite_credivibes.purchase_intent"
+    entities:
+      - name: purchase_intent
+        type: primary
+        col: id
+        col_uuid: uuid
+    dimensions:
+      - name: status
+        type: categorical
+        col: status
+        try_cast_to: integer
+        description: "0: Pendiente, 1: Aprobado, 2: Rechazado"
+        allowed_values: ["0", "1", "2"]
+      - name: created_at
+        type: time
+        col: created_at
+    measures:
+      - name: amount_requested
+        type: sum
+        col: total
+
+  - name: purchase_payments
+    source: "bnplsite_credivibes.purchase_payment"
+    entities:
+      - name: purchase_payment
+        type: primary
+        col: uuid
+      - name: purchase
+        type: foreign
+        col: purchase_id
+    dimensions:
+      - name: type
+        type: categorical
+        col: type
+        allowed_values: ["quote", "initial_fee"]
+      - name: status
+        type: categorical
+        col: status
+        try_cast_to: integer
+        description: "0: Pendiente, 1: Pagado, 2: Anulado, 5: Parcial"
+        allowed_values: ["0", "1", "2", "5"]
+      - name: due_date
+        type: time
+        sql: "FROM_UNIXTIME(valid_until_time)"
+    measures:
+      - name: amount_due
+        type: sum
+        col: amount
+      - name: amount_paid
+        type: sum
+        col: amount_payed
+
+  # -----------------------------------------------------------------
+  # MODULE: PAYMENTS & BANKING
+  # -----------------------------------------------------------------
+  - name: verified_payments
+    source: "bnplsite_credivibes.payment_checked"
+    entities:
+      - name: verified_payment
+        type: primary
+        col: uuid
+      - name: purchase
+        type: foreign
+        col: purchase_id
+      - name: user
+        type: foreign
+        col: users_id
+    dimensions:
+      - name: method
+        type: categorical
+        col: type
+        allowed_values: ["mobile", "transfer", "c2p", "cash"]
+      - name: reference
+        type: string
+        col: reference
+      - name: bank_code
+        type: string
+        col: bank_code
+      - name: created_at
+        type: time
+        col: created_at
+    measures:
+      - name: amount_ves
+        type: sum
+        col: amount
+        description: "Monto en Moneda Local (VES)."
+      - name: exchange_rate
+        type: avg
+        col: convertion_rate
+      - name: amount_usd
+        type: sum
+        sql: "payment_checked.amount / payment_checked.convertion_rate"
+        description: "Monto calculado en USD."
+
+  - name: bank_notifications
+    source: "bnplsite_credivibes.bank_payment_notifications"
+    entities:
+      - name: bank_notification
+        type: primary
+        col: id
+    dimensions:
+      - name: bank_ref
+        type: string
+        col: originating_bank_reference
+        description: "Referencia bancaria (CRUDA)."
+      - name: sender_phone
+        type: string
+        col: payer_phone
+      - name: status
+        type: string
+        col: status
+        allowed_values: ["received", "processed"]
+      - name: created_at
+        type: time
+        col: created_at
+    measures:
+      - name: amount_ves
+        type: sum
+        col: amount_ves
+        description: "Monto reportado por el banco (Siempre VES)."
+
+relationships:
+  # Users Relationships
+  - from_model: users_profile
+    to_model: users
+    join_type: one_to_one
+    on: "users_profile.users_id = users.uuid"
+  - from_model: users_score
+    to_model: users
+    join_type: one_to_one
+    on: "users_score.users_id = users.uuid"
+  - from_model: credit_evaluations
+    to_model: users
+    join_type: many_to_one
+    on: "credit_evaluations.user_id = users.id" # Numeric JOIN
+
+  # Purchase Core
+  - from_model: purchases
+    to_model: users
+    join_type: many_to_one
+    on: "purchases.users_id = users.uuid"
+  - from_model: purchases
+    to_model: merchant
+    join_type: many_to_one
+    on: "purchases.merchant_id = merchant.uuid"
+  - from_model: purchases
+    to_model: merchant_branches
+    join_type: many_to_one
+    on: "purchases.merchant_branches_id = merchant_branches.uuid"
+
+  # Purchase Details
+  - from_model: purchase_payments
+    to_model: purchases
+    join_type: many_to_one
+    on: "purchase_payments.purchase_id = purchases.uuid"
+
+  # Payments Audit
+  - from_model: verified_payments
+    to_model: purchases
+    join_type: many_to_one
+    on: "verified_payments.purchase_id = purchases.uuid"
+  - from_model: verified_payments
+    to_model: users
+    join_type: many_to_one
+    on: "verified_payments.users_id = users.uuid"
+
+  # Merchant Internal
+  - from_model: merchant_branches
+    to_model: merchant
+    join_type: many_to_one
+    on: "merchant_branches.merchant_id = merchant.id" # Numeric JOIN
+
+metrics:
+  - name: average_order_value
+    type: ratio
+    numerator: purchases.total_billed
+    denominator: purchases.count
+
+  - name: delinquency_rate
+    description: "Tasa de Morosidad (Pagos vencidos vs Total)."
+    type: ratio
+    numerator:
+      type: count
+      model: purchase_payments
+      filter: "type = 'quote' AND status != 1 AND valid_until_time < UNIX_TIMESTAMP(NOW())"
+    denominator:
+      type: count
+      model: purchase_payments
+      filter: "type = 'quote' AND status != 1"
+
+  - name: intent_approval_rate
+    description: "Tasa de Aprobación: % de intentos de compra que resultan exitosos."
+    type: ratio
+    numerator:
+      type: count
+      model: purchase_intents
+      filter: "status = 1"
+    denominator:
+      type: count
+      model: purchase_intents
+
+  - name: average_financed_amount
+    description: "Ticket Promedio Financiado: Promedio de deuda real originada (Excluye inicial)."
+    type: ratio
+    numerator:
+      type: sum
+      sql: "total - initial_fee" # Explicit SQL to avoid dependency resolution issues
+    denominator: purchases.count
+
+  - name: active_debtors_ratio
+    description: "% de Usuarios con Deuda Activa vs Total Usuarios."
+    type: ratio
+    numerator:
+      type: count
+      model: users
+      filter: "balance > 0"
+    denominator:
+      type: count
+      model: users
+      filter: "status = '1'"
+
+  - name: loan_completion_rate
+    description: "Tasa de Finalización: % de créditos pagados totalmente."
+    type: ratio
+    numerator:
+      type: count
+      model: purchases
+      filter: "status = 1"
+    denominator:
+      type: count
+      model: purchases
+
+business_rules:
+  - name: "Regla de Fechas Quincenales"
+    description: "Vencimientos: Compras días 1-11 -> Vence 15; 12-26 -> Vence FinMes; 27-31 -> Vence 15 Próximo."
+
+  - name: "Conversión de Moneda"
+    description: "Para verificar montos en USD de pagos reportados: verified_payments.amount (VES) / verified_payments.convertion_rate."
+
+  - name: "Conciliación Bancaria"
+    description: "bank_notifications es el LOG crudo. verified_payments es el pago PROCESADO. Un join entre ellos es posible via referencia, pero no siempre es 1:1."
+
+  - name: "Anulación"
+    description: "Compras con status=2 (Anulado) deben ser excluidas de reportes de venta y deuda real."
+
+  - name: "Política de Riesgo Cero (Bloqueo por Mora)"
+    description: "Un usuario NO puede solicitar nuevos créditos si tiene CUALQUIER cuota vencida (is_overdue = TRUE) en créditos anteriores. El sistema bloquea automáticamente nuevos intentos."
+
+  - name: "Pagos en Cascada (Waterfall)"
+    description: "Distribución automática de dinero: Los pagos cubren primero la deuda más antigua. Si un pago excede el monto de la cuota actual, el excedente ('surplus') se aplica inmediatamente a la siguiente cuota, generando pagos parciales si es necesario."
+
+  - name: "Configuración Financiera por Comercio"
+    description: "Las condiciones de crédito (Recargo, % Inicial, Plazos) NO son universales. Cada 'merchant' define sus reglas en 'cuotasPermitidas' y 'porcentajesInicial'. No asumir condiciones estándar para todos."
+
+usage_examples:
+  - question: "¿Qué pagos móviles llegaron hoy?"
+    sql: "SELECT reference, amount / convertion_rate as amount_usd FROM payment_checked WHERE type = 'mobile' AND created_at >= CURDATE()"
+
+  - question: "¿Cuántos usuarios tengo con Score > 500?"
+    sql: "SELECT COUNT(*) FROM users_score WHERE score > 500"
+
+  - question: "¿Cuáles son las cuotas que vencen en los próximos 7 días? (Cobranza)"
+    sql: "SELECT u.email, pp.amount, FROM_UNIXTIME(pp.valid_until_time) as due_date FROM purchase_payment pp JOIN purchases p ON pp.purchase_id = p.uuid JOIN users u ON p.users_id = u.uuid WHERE pp.status = 0 AND pp.type = 'quote' AND pp.valid_until_time BETWEEN UNIX_TIMESTAMP(NOW()) AND UNIX_TIMESTAMP(DATE_ADD(NOW(), INTERVAL 7 DAY))"
+
+  - question: "¿Qué comercios tienen más ventas (en USD) este mes?"
+    sql: "SELECT m.trade_name, SUM(p.total) as sales FROM purchase p JOIN merchant m ON p.merchant_id = m.uuid WHERE p.status = 1 AND p.created_at >= DATE_FORMAT(NOW(), '%Y-%m-01') GROUP BY m.trade_name ORDER BY sales DESC LIMIT 5"
+
+  - question: "¿Existen pagos en el banco que no hemos registrado en el sistema? (Huérfanos)"
+    sql: "SELECT b.originating_bank_reference, b.amount_ves, b.payer_phone FROM bank_payment_notifications b LEFT JOIN payment_checked v ON b.originating_bank_reference = v.reference WHERE v.uuid IS NULL AND b.created_at >= CURDATE()"
+
+  - question: "Calcular la tasa de aprobación de solicitudes de crédito de la última semana."
+    sql: "SELECT COUNT(CASE WHEN status = 1 THEN 1 END) * 100.0 / COUNT(*) as approval_rate FROM purchase_intent WHERE created_at >= DATE_SUB(NOW(), INTERVAL 1 WEEK)"

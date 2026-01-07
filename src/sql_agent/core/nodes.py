@@ -52,43 +52,71 @@ class AgentNodes:
 
     async def write_query(self, state: AgentState):
         """
-        NODO 1: Generador de SQL con MEMORIA.
-        Inyecta el historial del chat para resolver referencias (ej: "su correo").
+        NODO 1: Generador de SQL con Auto-Corrección Agresiva.
         """
         print("🤖 [Node: Write Query] Pensando SQL...")
         
-        # --- 🧠 GESTIÓN DE MEMORIA ---
-        # Recuperamos los últimos 6 mensajes para dar contexto
+        # Recuperamos iteración actual (si no existe, es 0)
+        current_iter = state.get("iterations") or 0
+        
+        # --- DETECCIÓN DE ERRORES ---
+        previous_error = state.get("sql_result", "")
+        previous_query = state.get("sql_query", "")
+        error_section = ""
+        
+        # Si venimos de un fallo, activamos el MODO CORRECCIÓN
+        if previous_error and str(previous_error).startswith("Error") and current_iter > 0:
+            print(f"   ⚠️ CORRIGIENDO ERROR (Iteración {current_iter})...")
+            error_section = f"""
+            #######################################################
+            🛑 ALERTA DE ERROR CRÍTICO - MODO DE CORRECCIÓN
+            #######################################################
+            
+            TU INTENTO ANTERIOR FALLÓ.
+            
+            QUERY GENERADO: 
+            {previous_query}
+            
+            ERROR REPORTADO POR LA BASE DE DATOS: 
+            {previous_error}
+            
+            INSTRUCCIONES OBLIGATORIAS PARA CORREGIR:
+            1. Lee el error. Si dice "Unknown column", ESA COLUMNA NO EXISTE en esa tabla. ¡Bórrala o busca en otra tabla!
+            2. Revisa el <context> (Diccionario) abajo para ver los nombres REALES de las columnas.
+            3. NO vuelvas a generar el mismo código SQL. Cámbialo.
+            4. Si usaste un alias (ej: u.phone) y falló, quítalo.
+            #######################################################
+            """
+        # ---------------------------
+
+        # Historial de Chat
         recent_messages = state.get("messages", [])[-6:]
         chat_history = []
-        
         for msg in recent_messages:
             if isinstance(msg, HumanMessage):
                 chat_history.append(f"Usuario: {msg.content}")
             elif isinstance(msg, AIMessage):
-                # Limpiamos contenido técnico antes de meterlo al prompt
                 clean_ai = self._clean_content(msg.content)
                 chat_history.append(f"Asistente: {clean_ai}")
-        
         history_str = "\n".join(chat_history) if chat_history else "No hay historial previo."
-        # -----------------------------
 
         prompt = ChatPromptTemplate.from_template(
             """
             <role>
-            Eres un Arquitecto de Base de Datos experto en MySQL.
-            Tu misión es traducir preguntas de negocio a código SQL ejecutable.
+            Eres un Arquitecto de Base de Datos experto en MySQL y DeepSeek SQL.
+            Tu misión es generar consultas SQL precisas y corregirlas si fallan.
             </role>
 
             <context>
-            Esquema de la base de datos:
+            Esquema de la base de datos (VERDAD ABSOLUTA):
             {dictionary}
             </context>
 
             <conversation_history>
-            Usa esto para entender referencias como "él", "ella", "el anterior", "su correo", etc.:
             {chat_history}
             </conversation_history>
+            
+            {error_section}
 
             <user_request>
             "{question}"
@@ -96,9 +124,9 @@ class AgentNodes:
 
             <constraints>
             1. Genera ÚNICAMENTE el código SQL.
-            2. NO uses markdown (```sql).
-            3. Si el usuario hace una pregunta de seguimiento (ej: "¿y su teléfono?"), usa el ID o contexto del historial para filtrar correctamente.
-            4. Si no puedes generar SQL válido, responde: NO_SQL
+            2. NO uses markdown.
+            3. Si el usuario pide un dato que NO está en las tablas del esquema (como 'phone' en 'users'), NO LO INVENTES. Usa solo columnas existentes.
+            4. Si no es posible responder, di: NO_SQL
             </constraints>
             """
         )
@@ -106,14 +134,16 @@ class AgentNodes:
         chain = prompt | self.llm
         response = await chain.ainvoke({
             "dictionary": self.data_dictionary,
-            "chat_history": history_str, # <--- Inyectamos la memoria aquí
+            "chat_history": history_str,
+            "error_section": error_section, # <--- Inyección agresiva
             "question": state["question"]
         })
         
         content_str = self._clean_content(response.content)
         sql = content_str.replace("```sql", "").replace("```", "").strip()
         
-        return {"sql_query": sql}
+        # IMPORTANTE: Retornamos iterations + 1 para que el grafo avance
+        return {"sql_query": sql, "iterations": current_iter + 1}
 
     async def execute_query(self, state: AgentState):
         """NODO 2: Ejecutor en Base de Datos"""
