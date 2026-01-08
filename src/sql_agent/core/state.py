@@ -23,3 +23,5 @@ class AgentState(TypedDict):
     
     # (Opcional) Conteo de reintentos por si el SQL falla
     iterations: int
+    
+    intent: str

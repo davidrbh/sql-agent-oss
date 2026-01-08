@@ -1,0 +1,1653 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/health": {
+      "get": {
+        "operationId": "HealthController_check",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "The Health Check is successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "ok"
+                    },
+                    "info": {
+                      "type": "object",
+                      "example": {
+                        "database": {
+                          "status": "up"
+                        }
+                      },
+                      "additionalProperties": {
+                        "type": "object",
+                        "required": ["status"],
+                        "properties": {
+                          "status": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": true
+                      },
+                      "nullable": true
+                    },
+                    "error": {
+                      "type": "object",
+                      "example": {},
+                      "additionalProperties": {
+                        "type": "object",
+                        "required": ["status"],
+                        "properties": {
+                          "status": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": true
+                      },
+                      "nullable": true
+                    },
+                    "details": {
+                      "type": "object",
+                      "example": {
+                        "database": {
+                          "status": "up"
+                        }
+                      },
+                      "additionalProperties": {
+                        "type": "object",
+                        "required": ["status"],
+                        "properties": {
+                          "status": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The Health Check is not successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "error"
+                    },
+                    "info": {
+                      "type": "object",
+                      "example": {
+                        "database": {
+                          "status": "up"
+                        }
+                      },
+                      "additionalProperties": {
+                        "type": "object",
+                        "required": ["status"],
+                        "properties": {
+                          "status": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": true
+                      },
+                      "nullable": true
+                    },
+                    "error": {
+                      "type": "object",
+                      "example": {
+                        "redis": {
+                          "status": "down",
+                          "message": "Could not connect"
+                        }
+                      },
+                      "additionalProperties": {
+                        "type": "object",
+                        "required": ["status"],
+                        "properties": {
+                          "status": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": true
+                      },
+                      "nullable": true
+                    },
+                    "details": {
+                      "type": "object",
+                      "example": {
+                        "database": {
+                          "status": "up"
+                        },
+                        "redis": {
+                          "status": "down",
+                          "message": "Could not connect"
+                        }
+                      },
+                      "additionalProperties": {
+                        "type": "object",
+                        "required": ["status"],
+                        "properties": {
+                          "status": {
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Verifica el estado de la API, base de datos y servicios externos",
+        "tags": ["health"]
+      }
+    },
+    "/admin/merchants/{merchantId}": {
+      "get": {
+        "operationId": "AdminController_getMerchantDetail",
+        "parameters": [
+          {
+            "name": "merchantId",
+            "required": true,
+            "in": "path",
+            "description": "El UUID del comercio",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalles del comercio obtenidos exitosamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "message": "Detalles del comercio obtenidos exitosamente.",
+                    "data": {
+                      "uuid": "84d9e98e-5d22-4534-8447-c98560e59b7a",
+                      "name": "RORI TEST",
+                      "trade_name": "RORI",
+                      "rif": "J-304373007",
+                      "logo": "https://bnpl.site/api/dev/adm/public/uploads/logos/logo_68fa909053306.png",
+                      "monthly_fee": "3.00",
+                      "description": "Expresa la imagen que quieres proyectar.",
+                      "policies": "Ninguna",
+                      "status": "1",
+                      "listed": "1",
+                      "sale_minimum_amount": "20",
+                      "initialFees": ["20", "30", "50"],
+                      "cuotasPermitidas": ["3", "6"],
+                      "master": null,
+                      "branches": [
+                        {
+                          "uuid": "cc722dff-fdf4-46c1-8633-69f2e7d3d943",
+                          "name": "RORI SAMBIL CHACAO",
+                          "nickname": "rori@rori.com",
+                          "phone": "04142639587",
+                          "status": 1,
+                          "is_main": true,
+                          "can_configure_quotes": 1,
+                          "address": {
+                            "address_1": "Calle los ángeles, Nivel autopista, Sambil Chacao",
+                            "estado": "Miranda",
+                            "municipio": "Chacao",
+                            "parroquia": "Chacao",
+                            "whatsapp": "04142639587",
+                            "phone": "04142639587"
+                          },
+                          "users": [
+                            {
+                              "userId": "5956a773-16fb-4f54-9959-57b8e0a8a7d6",
+                              "name": "Juan",
+                              "lastname": "Gonzalez",
+                              "phone": "04123200044",
+                              "nickname": "minijag95@me.com",
+                              "status": 1,
+                              "role": "Admin de establecimientos"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autorizado."
+          },
+          "404": {
+            "description": "Comercio no encontrado."
+          }
+        },
+        "summary": "Obtiene una vista detallada y completa de un comercio específico, incluyendo sucursales y sus usuarios",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/users": {
+      "get": {
+        "operationId": "AdminController_getUsers",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "El número de página a obtener.",
+            "schema": {
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "El número de items a obtener por página.",
+            "schema": {
+              "default": 15,
+              "type": "number"
+            }
+          },
+          {
+            "name": "doc",
+            "required": false,
+            "in": "query",
+            "description": "Filtrar por documento de identidad (cédula).",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de usuarios obtenida exitosamente."
+          },
+          "401": {
+            "description": "No autorizado."
+          }
+        },
+        "summary": "Obtiene una lista paginada de todos los usuarios",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/users/{userId}": {
+      "get": {
+        "operationId": "AdminController_getUserByUuid",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "description": "El UUID del usuario",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalles del usuario obtenidos exitosamente."
+          },
+          "401": {
+            "description": "No autorizado."
+          },
+          "404": {
+            "description": "Usuario no encontrado."
+          }
+        },
+        "summary": "Obtiene la información detallada de un usuario específico",
+        "tags": ["Admin"]
+      },
+      "delete": {
+        "operationId": "AdminController_deleteUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "description": "El UUID del usuario a eliminar",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usuario eliminado exitosamente."
+          },
+          "401": {
+            "description": "No autorizado."
+          },
+          "404": {
+            "description": "Usuario no encontrado."
+          }
+        },
+        "summary": "Elimina (soft delete) un usuario por su ID",
+        "tags": ["Admin"]
+      },
+      "patch": {
+        "operationId": "AdminController_updateUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "description": "El UUID del usuario a actualizar",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Cuerpo de la actualización. Todos los campos son opcionales (PATCH). fullname se ignora y se recalcula desde name y lastname.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "example": {
+                  "doc": "24.723.320",
+                  "nationality": "V",
+                  "email": "dev.test@gmail.com",
+                  "name": "PEDRO JOSE",
+                  "lastname": "HERRERA HERNANDEZ",
+                  "fullname": "PEDRO JOSE HERRERA HERNANDEZ",
+                  "status": 1,
+                  "phone": "04242029845"
+                },
+                "$ref": "#/components/schemas/UpdateAdminUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Usuario actualizado exitosamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "message": "Usuario actualizado exitosamente.",
+                    "data": {
+                      "userId": "d1b4d8c0-1234-5678-90ab-cdef12345678",
+                      "doc": "24723320",
+                      "nationality": "V",
+                      "email": "test.doe@vibes.com",
+                      "name": "PEDRO JOSE",
+                      "lastname": "RAMOS HERNANDEZ",
+                      "fullname": "PEDRO JOSE RAMOS HERNANDEZ",
+                      "status": 1,
+                      "creditLimit": 500,
+                      "balance": 120,
+                      "phone": "04242029845"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autorizado."
+          },
+          "404": {
+            "description": "Usuario no encontrado."
+          },
+          "409": {
+            "description": "Conflicto por teléfono o documento ya asociado a otro usuario."
+          }
+        },
+        "summary": "Actualiza parcialmente un usuario por su ID",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/payments/{purchaseId}/{userId}/report": {
+      "post": {
+        "operationId": "AdminController_reportUserPaymentAsAdmin",
+        "parameters": [
+          {
+            "name": "purchaseId",
+            "required": true,
+            "in": "path",
+            "description": "UUID de la compra",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "description": "UUID del usuario",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportUnifiedPaymentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Pago reportado y aplicado."
+          },
+          "400": {
+            "description": "Datos inválidos o IDs incorrectos"
+          }
+        },
+        "summary": "Permite al admin consultar el resultado de reportar un pago unificado para una compra de un usuario",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/users/{userId}/purchases": {
+      "get": {
+        "operationId": "AdminController_getUserPurchases",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "description": "El UUID del usuario",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "El número de página a obtener.",
+            "schema": {
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "El número de items a obtener por página.",
+            "schema": {
+              "default": 15,
+              "type": "number"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Filtrar compras por estado (por defecto: 'all'). Valores: 'inProgress', 'completed', 'delayed', 'annulled' o 'all' para todos.",
+            "schema": {
+              "default": "all",
+              "enum": ["completed", "delayed", "inProgress", "annulled", "all"],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Compras del usuario obtenidas exitosamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "message": "Compras del usuario obtenidas correctamente.",
+                    "data": {
+                      "purchases": [
+                        {
+                          "purchaseId": "9d27cd84-6458-4867-9509-acf1c55d9335",
+                          "merchantName": "Lorems",
+                          "branchName": "farmacia san juan",
+                          "branchUuid": "42a3f54c-f975-44b4-bcf1-856e98fdaaf8",
+                          "merchantUuid": "84d9e98e-5d22-4534-8447-c98560e59b7a",
+                          "total": {
+                            "usd": 10,
+                            "ves": 2239.6
+                          },
+                          "purchaseDate": "02-10-2025",
+                          "paymentStatus": "delayed",
+                          "paymentProgress": {
+                            "typeQuotes": {
+                              "paid": 1,
+                              "partial": 0,
+                              "pending": 2
+                            },
+                            "totalQuotes": 3
+                          },
+                          "nextPaymentDate": "15-11-2025",
+                          "nextPaymentAmount": {
+                            "usd": 2,
+                            "ves": 447.92
+                          },
+                          "totalPendingAmount": {
+                            "usd": 4,
+                            "ves": 895.84
+                          }
+                        }
+                      ],
+                      "pagination": {
+                        "currentPage": 1,
+                        "itemsPerPage": 30,
+                        "totalPages": 1,
+                        "totalItems": 1
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autorizado."
+          },
+          "404": {
+            "description": "Usuario no encontrado."
+          }
+        },
+        "summary": "Obtiene el historial de compras de un usuario específico",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/users/{userId}/purchases/{purchaseId}": {
+      "get": {
+        "operationId": "AdminController_getPurchaseDetailsForUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "description": "El UUID del usuario",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "purchaseId",
+            "required": true,
+            "in": "path",
+            "description": "El UUID de la compra",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalles de la compra obtenidos exitosamente."
+          },
+          "401": {
+            "description": "No autorizado."
+          },
+          "404": {
+            "description": "Compra o usuario no encontrado."
+          }
+        },
+        "summary": "Obtiene el detalle de una compra específica para un usuario",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/purchases/intent": {
+      "post": {
+        "operationId": "AdminController_createPurchaseIntent",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Datos para crear la intención. \"initialFee\" y \"quotes\" son opcionales; si se envían, deben coincidir con la configuración de la sucursal.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePurchaseIntentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Intento de compra creado exitosamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "message": "Intento de compra creado exitosamente.",
+                    "data": {
+                      "intentId": "db214a34-45cc-42d6-8fc2-a8423e17e341",
+                      "plan": {
+                        "initial_fee": "40.00",
+                        "initial": "6.40",
+                        "financing": "9.60",
+                        "quotes": "3",
+                        "quote_value": "3.20",
+                        "description": [
+                          {
+                            "quote": "3.20",
+                            "date": "15 dic",
+                            "timestamp": 1765857600
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Datos inválidos o regla de negocio no cumplida."
+          },
+          "401": {
+            "description": "No autorizado."
+          },
+          "404": {
+            "description": "Usuario, comercio o sucursal no encontrados."
+          },
+          "409": {
+            "description": "Conflicto (Usuario sancionado o con mora)."
+          }
+        },
+        "summary": "Crea un intento de compra (orden online) en nombre de un comercio para un usuario específico",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/purchases/intents": {
+      "get": {
+        "operationId": "AdminController_findAllAdminIntents",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "El número de página a obtener.",
+            "schema": {
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "El número de items a obtener por página.",
+            "schema": {
+              "default": 15,
+              "type": "number"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Estado del intento de compra: pending (0), accepted (1), canceled (2)",
+            "schema": {
+              "type": "string",
+              "enum": ["pending", "accepted", "canceled"]
+            }
+          },
+          {
+            "name": "merchantBranchId",
+            "required": false,
+            "in": "query",
+            "description": "UUID de la sucursal para filtrar",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "doc",
+            "required": false,
+            "in": "query",
+            "description": "Documento del usuario para filtrar",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista obtenida exitosamente."
+          }
+        },
+        "summary": "Obtiene lista de intentos de compra generados por administración.",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/purchases/intents/{intentId}": {
+      "get": {
+        "operationId": "AdminController_getAdminIntentDetail",
+        "parameters": [
+          {
+            "name": "intentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalle de la intención de compra."
+          }
+        },
+        "summary": "Obtiene detalle de un intento de compra.",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/purchases/intents/{intentId}/activate": {
+      "post": {
+        "operationId": "AdminController_activateAdminIntent",
+        "parameters": [
+          {
+            "name": "intentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Datos del pago inicial. La moneda (`currency`) es opcional, pero si se envía debe ser estrictamente \"USD\" o \"VES\". Cualquier otro valor generará un error de validación.",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActivatePurchaseIntentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Compra generada exitosamente."
+          }
+        },
+        "summary": "Activa un intento de compra reportando el pago de la inicial.",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/purchases/intents/{intentId}/cancel": {
+      "post": {
+        "operationId": "AdminController_cancelAdminIntent",
+        "parameters": [
+          {
+            "name": "intentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Intento cancelado exitosamente."
+          }
+        },
+        "summary": "Cancela un intento de compra por administración.",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/quotes": {
+      "get": {
+        "operationId": "AdminController_getAllQuotes",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "description": "El número de página a obtener.",
+            "schema": {
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "description": "El número de items a obtener por página.",
+            "schema": {
+              "default": 15,
+              "type": "number"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Filtrar cuotas por estado lógico: 'completed', 'delayed', 'inProgress', 'partial', 'annulled' o 'all'.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "merchantId",
+            "required": false,
+            "in": "query",
+            "description": "Filtrar cuotas por el UUID de un comercio específico.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "userId",
+            "required": false,
+            "in": "query",
+            "description": "Filtrar cuotas por el UUID de un usuario específico.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchId",
+            "required": false,
+            "in": "query",
+            "description": "Filtrar cuotas por el UUID de una sucursal específica.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "merchantName",
+            "required": false,
+            "in": "query",
+            "description": "Filtrar por nombre del comercio (búsqueda parcial).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "branchName",
+            "required": false,
+            "in": "query",
+            "description": "Filtrar por nombre de la sucursal (búsqueda parcial).",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "doc",
+            "required": false,
+            "in": "query",
+            "description": "Filtrar por cédula del usuario (doc). Puede ir con o sin puntos.",
+            "schema": {
+              "example": "24723325",
+              "type": "string"
+            }
+          },
+          {
+            "name": "dueDateFrom",
+            "required": false,
+            "in": "query",
+            "description": "Fecha de vencimiento DESDE (inclusive) en formato DD-MM-YYYY.",
+            "schema": {
+              "example": "15-01-2026",
+              "type": "string"
+            }
+          },
+          {
+            "name": "dueDateTo",
+            "required": false,
+            "in": "query",
+            "description": "Fecha de vencimiento HASTA (inclusive) en formato DD-MM-YYYY.",
+            "schema": {
+              "example": "31-01-2026",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de cuotas obtenida exitosamente."
+          },
+          "401": {
+            "description": "No autorizado."
+          }
+        },
+        "summary": "Obtiene una lista paginada y filtrada de todas las cuotas",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/quotes/{paymentId}": {
+      "get": {
+        "operationId": "AdminController_getQuoteByUuid",
+        "parameters": [
+          {
+            "name": "paymentId",
+            "required": true,
+            "in": "path",
+            "description": "El UUID de la cuota (pago)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalles de la cuota obtenidos exitosamente."
+          },
+          "401": {
+            "description": "No autorizado."
+          },
+          "404": {
+            "description": "Cuota no encontrada."
+          }
+        },
+        "summary": "Obtiene la información detallada de una cuota específica",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/users/{userId}/credit-limit": {
+      "patch": {
+        "operationId": "AdminController_updateUserCreditLimit",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "description": "El UUID del usuario.",
+            "schema": {
+              "example": "a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserCreditLimitDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Límite de crédito actualizado exitosamente."
+          },
+          "400": {
+            "description": "Datos de entrada inválidos."
+          },
+          "401": {
+            "description": "No autorizado."
+          },
+          "404": {
+            "description": "Usuario no encontrado."
+          }
+        },
+        "summary": "Actualizar el límite de crédito de un usuario por su ID",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/purchases/{purchaseId}/annul": {
+      "delete": {
+        "operationId": "AdminController_annulPurchase",
+        "parameters": [
+          {
+            "name": "purchaseId",
+            "required": true,
+            "in": "path",
+            "description": "El UUID de la compra",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Motivo opcional de la anulación",
+          "content": {
+            "application/json": {
+              "schema": {
+                "example": {
+                  "reason": "Solicitud del comercio por orden duplicada"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Compra anulada exitosamente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "example": {
+                    "success": true,
+                    "message": "Compra anulada exitosamente.",
+                    "data": {
+                      "purchaseId": "9d27cd84-6458-4867-9509-acf1c55d9335",
+                      "userId": "d1b4d8c0-1234-5678-90ab-cdef12345678"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "No autorizado."
+          },
+          "404": {
+            "description": "Compra o usuario no encontrado."
+          },
+          "409": {
+            "description": "La compra ya fue anulada."
+          }
+        },
+        "summary": "Anula una compra por su UUID",
+        "tags": ["Admin"]
+      }
+    },
+    "/admin/reports/purchases": {
+      "get": {
+        "operationId": "AdminController_getMerchantPurchasesReport",
+        "parameters": [
+          {
+            "name": "branch",
+            "required": true,
+            "in": "query",
+            "description": "UUID de la sucursal del comercio, o \"All\" para todas.",
+            "schema": {
+              "example": "42a3f54c-f975-44b4-bcf1-856e98fdaaf8",
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": true,
+            "in": "query",
+            "description": "Fecha de inicio del reporte (DD-MM-YYYY).",
+            "schema": {
+              "example": "01-12-2025",
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": true,
+            "in": "query",
+            "description": "Fecha de fin del reporte (DD-MM-YYYY).",
+            "schema": {
+              "example": "31-12-2025",
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": true,
+            "in": "query",
+            "description": "Estado de las compras: 'completed', 'delayed', 'inProgress', 'partial', 'annulled', o 'all'",
+            "schema": {
+              "example": "all",
+              "type": "string",
+              "enum": [
+                "completed",
+                "delayed",
+                "inProgress",
+                "partial",
+                "annulled",
+                "all"
+              ]
+            }
+          },
+          {
+            "name": "modality",
+            "required": true,
+            "in": "query",
+            "description": "Modalidad de la compra: 'store', 'admin', o 'all'",
+            "schema": {
+              "example": "all",
+              "type": "string",
+              "enum": ["store", "admin", "all"]
+            }
+          },
+          {
+            "name": "merchantId",
+            "required": true,
+            "in": "query",
+            "description": "UUID del comercio a consultar.",
+            "schema": {
+              "example": "84d9e98e-5d22-4534-8447-c98560e59b7a",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reporte generado exitosamente."
+          }
+        },
+        "summary": "Genera un reporte detallado de compras de un comercio (formato JSON) para administración",
+        "tags": ["Admin"]
+      }
+    }
+  },
+  "info": {
+    "title": "API Credivibes",
+    "description": "\n## ¿Qué es el Motor CrediVibes?\n\nEl Motor CrediVibes es el sistema backend diseñado para gestionar de principio a fin el ciclo de vida de las compras financiadas. Su objetivo es integrar de manera fluida y segura la funcionalidad de **Compra Ahora, Paga Después (BNPL)** directamente en el ecosistema de Vibes.\n\nA través de su API, el Motor CrediVibes orquesta:\n- La creación de créditos\n- La validación de pagos\n- La generación de cuotas\n- La gestión de la relación financiera con el cliente\n\n\u003E **Moneda de cuenta:** Dólares (USD)\n\u003E **Moneda transaccional:** Bolívares (VES)\n\n---\n\n## Flujo de Compra por QR: Una Experiencia en 4 Fases\n\nEl sistema sigue un flujo lógico y seguro para garantizar una experiencia de usuario rápida en la tienda, mientras protege la integridad de la transacción.\n\n### FASE 1: Iniciación por el Comercio\nEl proceso comienza cuando un cliente en una tienda quiere pagar con CrediVibes. El cajero, a través de la plataforma central vibes-web, selecciona punto de venta QR y completa el formulario de venta. Esta acción solicita al Motor CrediVibes la creación de una intención de compra, que queda en estado **pendiente de autorización**.\n\n### FASE 2: Visualización y Autorización del Usuario\nEl comercio le pide al cliente que escaneé el código QR de la tienda. Al escanearlo con la app de Vibes, la aplicación solicita al Motor CrediVibes los detalles de la intención pendiente. En este momento, el motor:\n- Calcula la cuota inicial personalizada del usuario\n- Genera una simulación del calendario de pago completo, mostrando la fecha y el monto exacto de cada cuota\n- Devuelve esta vista previa detallada a la app del usuario\n\nEl cliente ve en su pantalla toda la información, por ejemplo:\n\u003E \"Pagarás una inicial de $60 hoy, y luego 3 cuotas de $30 los días 15 de agosto, 30 de agosto y 15 de septiembre.\"\n\nCon esta información completa, el usuario decide si presiona **Aceptar**.\n\n### FASE 3: Pago y Confirmación del Comercio\nUna vez el usuario acepta el plan en su app, el Motor CrediVibes notifica al comercio que el crédito está aprobado y que puede proceder a cobrar la cuota inicial. El comercio cobra directamente al cliente y, una vez recibido el dinero, confirma el monto exacto en la plataforma.\n\n### FASE 4: Activación Inmediata y Solicitud de Factura\nInmediatamente después de la confirmación del comercio, el Motor CrediVibes activa el crédito formalmente, actualiza el balance del usuario (en USD) y notifica a ambas partes que la compra fue un éxito. Simultáneamente, el usuario recibe una solicitud en su app para que, posteriormente, tome una foto de la factura fiscal y la suba para los registros del sistema.\n\n---\n    ",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "x-api-key": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key"
+      }
+    },
+    "schemas": {
+      "IntentPurchaseLookupDataDto": {
+        "type": "object",
+        "properties": {
+          "intentId": {
+            "type": "string",
+            "description": "UUID de la intención de compra",
+            "example": "5c313fed-de51-4952-9a60-848ebd4ce371"
+          },
+          "purchaseId": {
+            "type": "object",
+            "description": "UUID de la compra asociada (null si aún no existe)",
+            "nullable": true,
+            "example": "9b216d77-179d-4a0a-b2d7-9cbffb3c25e6"
+          },
+          "ready": {
+            "type": "boolean",
+            "description": "Indica si ya existe una compra asociada",
+            "example": true
+          }
+        },
+        "required": ["intentId", "purchaseId", "ready"]
+      },
+      "IntentPurchaseLookupResponseDto": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "description": "Indica si la operación fue exitosa",
+            "example": true
+          },
+          "message": {
+            "type": "string",
+            "description": "Mensaje descriptivo del resultado",
+            "example": "purchaseId encontrado exitosamente"
+          },
+          "data": {
+            "$ref": "#/components/schemas/IntentPurchaseLookupDataDto"
+          }
+        },
+        "required": ["success", "message", "data"]
+      },
+      "SendPromotionDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "LoginDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "user@email.com"
+          },
+          "password": {
+            "type": "string",
+            "example": "Password@123"
+          }
+        },
+        "required": ["email", "password"]
+      },
+      "RefreshTokenDto": {
+        "type": "object",
+        "properties": {
+          "refreshToken": {
+            "type": "string",
+            "example": "refresh_token_string"
+          }
+        },
+        "required": ["refreshToken"]
+      },
+      "ReportMobilePaymentDto": {
+        "type": "object",
+        "properties": {
+          "reference": {
+            "type": "string",
+            "example": "123112313",
+            "description": "Payment reference"
+          },
+          "amount": {
+            "type": "string",
+            "example": "120.00",
+            "description": "Payment amount"
+          },
+          "date": {
+            "type": "string",
+            "example": "23/07/2025",
+            "description": "Payment date (DD/MM/YYYY)"
+          },
+          "bank": {
+            "type": "string",
+            "example": "0102",
+            "description": "Origin bank code"
+          },
+          "doc": {
+            "type": "string",
+            "example": "27037606",
+            "description": "Payer document number"
+          },
+          "nationality": {
+            "type": "string",
+            "example": "V",
+            "description": "Payer nationality (V/E)"
+          },
+          "phone": {
+            "type": "string",
+            "example": "04127141363",
+            "description": "Payer phone number"
+          },
+          "paymentIds": {
+            "example": ["ed14a94d-fbae-4c26-987f-cdd7c33c76d6"],
+            "description": "Un array con los IDs de las cuotas específicas que se están pagando.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "reference",
+          "amount",
+          "date",
+          "bank",
+          "doc",
+          "nationality",
+          "phone",
+          "paymentIds"
+        ]
+      },
+      "ReportTransferPaymentDto": {
+        "type": "object",
+        "properties": {
+          "reference": {
+            "type": "string",
+            "example": "0303327931140",
+            "description": "Referencia de la transacción"
+          },
+          "date": {
+            "type": "string",
+            "example": "23/07/2025",
+            "description": "Payment date (DD/MM/YYYY)"
+          },
+          "amount": {
+            "type": "string",
+            "example": "2.0",
+            "description": "Importe del pago"
+          },
+          "doc": {
+            "type": "string",
+            "example": "27037606",
+            "description": "Payer document number"
+          },
+          "nationality": {
+            "type": "string",
+            "example": "V",
+            "description": "Payer nationality (V/E)"
+          },
+          "bank": {
+            "type": "string",
+            "example": "0102",
+            "description": "Origin bank code"
+          },
+          "paymentIds": {
+            "example": ["ed14a94d-fbae-4c26-987f-cdd7c33c76d6"],
+            "description": "Un array con los IDs de las cuotas específicas que se están pagando.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "reference",
+          "date",
+          "amount",
+          "doc",
+          "nationality",
+          "bank",
+          "paymentIds"
+        ]
+      },
+      "ReportC2PPaymentDto": {
+        "type": "object",
+        "properties": {
+          "doc": {
+            "type": "string",
+            "example": "15404774",
+            "description": "Documento de identidad del pagador"
+          },
+          "nationality": {
+            "type": "string",
+            "example": "V",
+            "description": "Nacionalidad del pagador (V/E)"
+          },
+          "phone": {
+            "type": "string",
+            "example": "04123456789",
+            "description": "Número de teléfono asociado al pago C2P"
+          },
+          "amount": {
+            "type": "string",
+            "example": "1.0",
+            "description": "Importe del pago"
+          },
+          "bank": {
+            "type": "string",
+            "example": "0102",
+            "description": "Código del banco origen"
+          },
+          "otp": {
+            "type": "number",
+            "example": 23442418,
+            "description": "Clave de un solo uso (OTP) para confirmar el pago"
+          },
+          "paymentIds": {
+            "example": ["ed14a94d-fbae-4c26-987f-cdd7c33c76d6"],
+            "description": "Un array con los IDs de las cuotas específicas que se están pagando.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "date": {
+            "type": "string",
+            "example": "14/10/2025",
+            "description": "Fecha del pago (DD/MM/YYYY). Opcional en C2P; requerido cuando se usa como 'DebitOTP' en el endpoint unificado."
+          }
+        },
+        "required": [
+          "doc",
+          "nationality",
+          "phone",
+          "amount",
+          "bank",
+          "otp",
+          "paymentIds"
+        ]
+      },
+      "CreateBankNotificationDto": {
+        "type": "object",
+        "properties": {
+          "bancoOrdenante": {
+            "type": "string",
+            "example": "0105",
+            "description": "Originating bank's code"
+          },
+          "referenciaBancoOrdenante": {
+            "type": "string",
+            "example": "REF123456789",
+            "description": "Originating bank's reference number"
+          },
+          "idCliente": {
+            "type": "string",
+            "example": "V503045019",
+            "description": "Payer's ID (Cédula/RIF)"
+          },
+          "numeroCliente": {
+            "type": "string",
+            "example": "04121234567",
+            "description": "Payer's phone number"
+          },
+          "idComercio": {
+            "type": "string",
+            "example": "J503045019",
+            "description": "Merchant's ID (RIF)"
+          },
+          "numeroComercio": {
+            "type": "string",
+            "example": "04141234567",
+            "description": "Beneficiary's phone number"
+          },
+          "fecha": {
+            "type": "string",
+            "example": "20250218",
+            "description": "Payment date in YYYYMMDD format"
+          },
+          "hora": {
+            "type": "string",
+            "example": "1009",
+            "description": "Payment time in HHMM format"
+          },
+          "monto": {
+            "type": "string",
+            "example": "30.00",
+            "description": "Amount in VES, received as a string"
+          }
+        },
+        "required": [
+          "bancoOrdenante",
+          "referenciaBancoOrdenante",
+          "idCliente",
+          "numeroCliente",
+          "idComercio",
+          "numeroComercio",
+          "fecha",
+          "hora",
+          "monto"
+        ]
+      },
+      "ReportUnifiedPaymentDto": {
+        "type": "object",
+        "properties": {
+          "typeMethod": {
+            "type": "string",
+            "description": "Tipo de método de pago",
+            "enum": ["P2P", "TRF", "C2P", "DebitOTP", "DebitDomiciliation"],
+            "example": "P2P"
+          },
+          "reference": {
+            "type": "string",
+            "example": "5685684",
+            "description": "Referencia de la transacción. Requerido para 'P2P', 'TRF' y 'DebitDomiciliation'."
+          },
+          "amount": {
+            "type": "string",
+            "example": "454.91",
+            "description": "Monto del pago"
+          },
+          "bank": {
+            "type": "string",
+            "example": "0102",
+            "description": "Código del banco de origen"
+          },
+          "doc": {
+            "type": "string",
+            "example": "24723320",
+            "description": "Documento de identidad del pagador"
+          },
+          "nationality": {
+            "type": "string",
+            "example": "V",
+            "description": "Nacionalidad del pagador (V/E)"
+          },
+          "phone": {
+            "type": "string",
+            "example": "04242029811",
+            "description": "Teléfono asociado. Requerido para 'P2P', 'C2P' y 'DebitOTP'."
+          },
+          "date": {
+            "type": "string",
+            "example": "13/10/2025",
+            "description": "Fecha del pago (DD/MM/YYYY). Requerido para 'P2P', 'TRF', 'DebitOTP' y 'DebitDomiciliation'."
+          },
+          "paymentIds": {
+            "example": ["ac779bc2-d711-495b-b64e-542de6e28d40"],
+            "description": "Un arreglo con los UUIDs de las cuotas que se están pagando.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "otp": {
+            "type": "string",
+            "description": "Clave Única (OTP) para pagos 'C2P' y 'DebitOTP'.",
+            "example": "123456"
+          }
+        },
+        "required": [
+          "typeMethod",
+          "amount",
+          "bank",
+          "doc",
+          "nationality",
+          "paymentIds"
+        ]
+      },
+      "CreatePurchaseIntentDto": {
+        "type": "object",
+        "properties": {
+          "doc": {
+            "type": "string",
+            "description": "El documento de identidad del usuario (cliente)",
+            "example": "25684225"
+          },
+          "amount": {
+            "type": "number",
+            "description": "El monto total de la compra",
+            "example": 120.5
+          },
+          "initialFee": {
+            "type": "number",
+            "description": "Porcentaje de la inicial (ej. 30, 50). Opcional. En caso de enviarse, debe corresponder a uno de los valores permitidos por la sucursal.",
+            "example": 30
+          },
+          "quotes": {
+            "type": "number",
+            "description": "Cantidad de cuotas (ej. 3, 6). Opcional. En caso de enviarse, debe corresponder a uno de los valores permitidos por la sucursal.",
+            "example": 3
+          },
+          "merchantBranchId": {
+            "type": "string",
+            "description": "UUID de la sucursal del comercio",
+            "example": "cc722dff-fdf4-46c1-8633-69f2e7d3d943"
+          }
+        },
+        "required": ["doc", "amount", "merchantBranchId"]
+      },
+      "ActivatePurchaseIntentDto": {
+        "type": "object",
+        "properties": {
+          "reference": {
+            "type": "string",
+            "description": "Referencia del pago",
+            "example": "REF-123456"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "description": "Método de pago utilizado para la inicial",
+            "enum": ["c2p", "mobile", "transfer"],
+            "example": "mobile"
+          },
+          "currency": {
+            "type": "string",
+            "description": "Moneda del monto (USD o VES). Si es VES, se convierte a USD. Opcional, defecto USD.",
+            "enum": ["USD", "VES"],
+            "example": "VES"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Monto pagado. Si currency es VES, es en Bolívares; si es USD, es en Dólares. Debe coincidir con la inicial del plan (convertido a USD si aplica).",
+            "example": 30
+          }
+        },
+        "required": ["reference", "paymentMethod", "amount"]
+      },
+      "UpdateAdminUserDto": {
+        "type": "object",
+        "properties": {
+          "doc": {
+            "type": "string",
+            "description": "Documento de identidad (solo dígitos). Se normaliza removiendo puntos/guiones/espacios.",
+            "example": "24723320"
+          },
+          "nationality": {
+            "type": "string",
+            "description": "Nacionalidad del usuario. Valores permitidos: 'V' | 'E' | 'P'",
+            "example": "V"
+          },
+          "email": {
+            "type": "object",
+            "description": "Correo electrónico del usuario. Se normaliza a minúsculas.",
+            "example": "user@example.com",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "description": "Nombre del usuario",
+            "example": "Juan"
+          },
+          "lastname": {
+            "type": "string",
+            "description": "Apellido del usuario",
+            "example": "Pérez"
+          },
+          "fullname": {
+            "type": "string",
+            "description": "Nombre completo (ignorado si viene; se recalcula a partir de name + lastname).",
+            "example": "Juan Pérez"
+          },
+          "status": {
+            "type": "number",
+            "description": "Estado del usuario: 0 (inactivo) o 1 (activo).",
+            "example": 1
+          },
+          "phone": {
+            "type": "object",
+            "description": "Teléfono del usuario. Se normaliza removiendo espacios/guiones. Debe ser único.",
+            "example": "04242029845",
+            "nullable": true
+          }
+        }
+      },
+      "UpdateUserCreditLimitDto": {
+        "type": "object",
+        "properties": {
+          "creditLimit": {
+            "type": "number",
+            "description": "El nuevo monto del límite de crédito. Debe estar entre 1 y 10000.",
+            "example": 500.5,
+            "minimum": 1,
+            "maximum": 10000
+          }
+        },
+        "required": ["creditLimit"]
+      }
+    }
+  }
+}
