@@ -1,7 +1,7 @@
 import os
 import ast
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.messages import HumanMessage, AIMessage
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from sqlalchemy import text
 
 # Importaciones de Arquitectura
@@ -10,36 +10,39 @@ from sql_agent.core.state import AgentState
 from sql_agent.config.loader import ConfigLoader
 from sql_agent.database.connection import DatabaseManager
 
+# --- IMPORTACIÓN DE LA API (NUEVA UBICACIÓN) ---
+try:
+    from sql_agent.api.loader import load_api_tools
+    API_AVAILABLE = True
+except ImportError as e:
+    API_AVAILABLE = False
+    print(f"⚠️ [Warning] No se pudo cargar el módulo API: {e}")
+
 # Rutas
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 DICTIONARY_PATH = os.path.join(BASE_DIR, 'data', 'dictionary.yaml')
 
 class AgentNodes:
-    """
-    Nodos del grafo con capacidad de Memoria (Contexto Conversacional),
-    Arquitectura Hexagonal y Limpieza Robusta.
-    """
     
     def __init__(self):
         self.settings = ConfigLoader.load_settings()
-        
-        # 1. Fábrica de LLM
         self.llm = LLMFactory.create(temperature=0)
         
-        # 2. Carga del Contexto Semántico
+        # Carga Diccionario SQL
         try:
             with open(DICTIONARY_PATH, 'r', encoding='utf-8') as f:
                 self.data_dictionary = f.read()
         except FileNotFoundError:
             self.data_dictionary = "No data dictionary found."
 
+        # Carga Herramientas API
+        self.api_tools = load_api_tools() if API_AVAILABLE else []
+
     def _clean_content(self, content) -> str:
-        """Helper para limpiar respuestas complejas de Gemini."""
+        """Helper para limpiar respuestas."""
         if isinstance(content, list):
             content = "".join([str(item) for item in content])
-        
         content_str = str(content)
-        
         if content_str.strip().startswith("{") and "'text':" in content_str:
             try:
                 data = ast.literal_eval(content_str)
@@ -47,168 +50,158 @@ class AgentNodes:
                     return str(data['text'])
             except:
                 pass 
-                
         return content_str
 
-    async def write_query(self, state: AgentState):
-        """
-        NODO 1: Generador de SQL con Auto-Corrección Agresiva.
-        """
-        print("🤖 [Node: Write Query] Pensando SQL...")
+    # --- NODO 0: ROUTER (CLASIFICADOR) ---
+    async def classify_intent(self, state: AgentState):
+        print("🚦 [Node: Router] Analizando intención del usuario...")
         
-        # Recuperamos iteración actual (si no existe, es 0)
-        current_iter = state.get("iterations") or 0
-        
-        # --- DETECCIÓN DE ERRORES ---
-        previous_error = state.get("sql_result", "")
-        previous_query = state.get("sql_query", "")
-        error_section = ""
-        
-        # Si venimos de un fallo, activamos el MODO CORRECCIÓN
-        if previous_error and str(previous_error).startswith("Error") and current_iter > 0:
-            print(f"   ⚠️ CORRIGIENDO ERROR (Iteración {current_iter})...")
-            error_section = f"""
-            #######################################################
-            🛑 ALERTA DE ERROR CRÍTICO - MODO DE CORRECCIÓN
-            #######################################################
-            
-            TU INTENTO ANTERIOR FALLÓ.
-            
-            QUERY GENERADO: 
-            {previous_query}
-            
-            ERROR REPORTADO POR LA BASE DE DATOS: 
-            {previous_error}
-            
-            INSTRUCCIONES OBLIGATORIAS PARA CORREGIR:
-            1. Lee el error. Si dice "Unknown column", ESA COLUMNA NO EXISTE en esa tabla. ¡Bórrala o busca en otra tabla!
-            2. Revisa el <context> (Diccionario) abajo para ver los nombres REALES de las columnas.
-            3. NO vuelvas a generar el mismo código SQL. Cámbialo.
-            4. Si usaste un alias (ej: u.phone) y falló, quítalo.
-            #######################################################
+        prompt = ChatPromptTemplate.from_template(
             """
-        # ---------------------------
+            Eres el Router Inteligente de Credivibes AI.
+            Clasifica la siguiente pregunta en una categoría.
 
-        # Historial de Chat
-        recent_messages = state.get("messages", [])[-6:]
-        chat_history = []
-        for msg in recent_messages:
-            if isinstance(msg, HumanMessage):
-                chat_history.append(f"Usuario: {msg.content}")
-            elif isinstance(msg, AIMessage):
-                clean_ai = self._clean_content(msg.content)
-                chat_history.append(f"Asistente: {clean_ai}")
-        history_str = "\n".join(chat_history) if chat_history else "No hay historial previo."
+            CATEGORÍAS:
+            1. DATABASE: Para análisis, reportes históricos, conteos, estadísticas de usuarios/ventas. (Lo que está en SQL).
+            2. API: Para consultas de estado en tiempo real, validar un ID específico, o información técnica de endpoints.
+            3. GENERAL: Saludos o preguntas fuera de contexto.
+
+            Pregunta: "{question}"
+
+            Responde SOLO una palabra: DATABASE, API, o GENERAL.
+            """
+        )
+        chain = prompt | self.llm
+        response = await chain.ainvoke({"question": state["question"]})
+        intent = self._clean_content(response.content).strip().upper()
+        
+        # Limpieza extra por si el LLM dice "Es DATABASE"
+        if "DATABASE" in intent: intent = "DATABASE"
+        elif "API" in intent: intent = "API"
+        else: intent = "GENERAL"
+            
+        print(f"   👉 Decisión: {intent}")
+        return {"intent": intent}
+
+    # --- NODO 1: SQL GENERATOR ---
+    async def write_query(self, state: AgentState):
+        print("🤖 [Node: SQL] Generando consulta...")
+        current_iter = state.get("iterations") or 0
+        previous_error = state.get("sql_result", "")
+        
+        error_context = ""
+        if previous_error and "Error" in str(previous_error) and current_iter > 0:
+            print(f"   ⚠️ Reintentando corrección SQL ({current_iter})...")
+            error_context = f"ERROR PREVIO: {previous_error}. CORRIGE LA CONSULTA."
 
         prompt = ChatPromptTemplate.from_template(
             """
-            <role>
-            Eres un Arquitecto de Base de Datos experto en MySQL y DeepSeek SQL.
-            Tu misión es generar consultas SQL precisas y corregirlas si fallan.
-            </role>
-
-            <context>
-            Esquema de la base de datos (VERDAD ABSOLUTA):
-            {dictionary}
-            </context>
-
-            <conversation_history>
-            {chat_history}
-            </conversation_history>
+            Eres un experto SQL. Genera una consulta MySQL compatible.
             
-            {error_section}
-
-            <user_request>
-            "{question}"
-            </user_request>
-
-            <constraints>
-            1. Genera ÚNICAMENTE el código SQL.
-            2. NO uses markdown.
-            3. Si el usuario pide un dato que NO está en las tablas del esquema (como 'phone' en 'users'), NO LO INVENTES. Usa solo columnas existentes.
-            4. Si no es posible responder, di: NO_SQL
-            </constraints>
+            ESQUEMA:
+            {dictionary}
+            
+            ERRORES PREVIOS:
+            {error_context}
+            
+            PREGUNTA: "{question}"
+            
+            Responde SOLO el código SQL. Sin markdown.
             """
         )
-        
         chain = prompt | self.llm
         response = await chain.ainvoke({
             "dictionary": self.data_dictionary,
-            "chat_history": history_str,
-            "error_section": error_section, # <--- Inyección agresiva
+            "error_context": error_context,
             "question": state["question"]
         })
-        
-        content_str = self._clean_content(response.content)
-        sql = content_str.replace("```sql", "").replace("```", "").strip()
-        
-        # IMPORTANTE: Retornamos iterations + 1 para que el grafo avance
+        sql = self._clean_content(response.content).replace("```sql", "").replace("```", "").strip()
         return {"sql_query": sql, "iterations": current_iter + 1}
 
+    # --- NODO 2: SQL EXECUTOR ---
     async def execute_query(self, state: AgentState):
-        """NODO 2: Ejecutor en Base de Datos"""
-        print("⚡ [Node: Execute Query] Ejecutando en MySQL...")
-        
-        query_str = state["sql_query"]
-        
-        if query_str == "NO_SQL" or not query_str or "{" in query_str:
-            return {"sql_result": "Error: No se pudo generar una consulta válida."}
-            
-        engine = DatabaseManager.get_engine()
-        
+        print("⚡ [Node: Exec] Ejecutando SQL...")
         try:
+            engine = DatabaseManager.get_engine()
             async with engine.connect() as conn:
-                result = await conn.execute(text(query_str))
-                rows = result.fetchall()
-                keys = result.keys()
-                
-                data = [{key: str(val) for key, val in zip(keys, row)} for row in rows]
-                
-                if len(data) > 20:
-                    data = data[:20]
-                    data.append({"warning": "Resultados truncados a 20 filas."})
-                
-                result_str = str(data)
-                
+                result = await conn.execute(text(state["sql_query"]))
+                rows = [dict(row._mapping) for row in result.fetchall()] # Mapeo seguro
+                # Truncar si es muy largo
+                if len(rows) > 15: rows = rows[:15] + [{"note": "...más resultados..."}]
+                return {"sql_result": str(rows)}
         except Exception as e:
-            result_str = f"Error de Ejecución SQL: {str(e)}"
-            print(f"   ❌ Falló SQL: {query_str}")
-            
-        return {"sql_result": result_str}
+            print(f"   ❌ Error SQL: {e}")
+            return {"sql_result": f"Error SQL: {e}"}
 
-    async def generate_answer(self, state: AgentState):
-        """NODO 3: Respuesta en Lenguaje Natural"""
-        print("🗣️ [Node: Answer] Generando respuesta final...")
+    # --- NODO 3: API EXECUTOR (NUEVO) ---
+    async def run_api_tool(self, state: AgentState):
+        """
+        Ejecuta API con MEMORIA DE CONTEXTO y Protección Anti-Alucinaciones.
+        """
+        print("🌐 [Node: API] Ejecutando llamada a herramienta...")
         
+        if not self.api_tools:
+            return {"sql_result": "Error: Las herramientas de API no están configuradas."}
+
+        from langgraph.prebuilt import create_react_agent
+
+        # 1. Reglas (System Message)
+        instructions = """
+        Eres un operador de APIs preciso.
+        REGLAS:
+        1. Usa las herramientas para obtener datos REALES.
+        2. Si falla, reporta el error exacto.
+        3. NO inventes datos.
+        4. USA EL CONTEXTO: Si el usuario dice "ese endpoint", refiérete al último mencionado en la charla.
+        """
+        
+        api_agent = create_react_agent(self.llm, self.api_tools)
+        
+        # 2. PREPARAR MEMORIA (CRÍTICO) 🧠
+        # Obtenemos el historial previo del estado global
+        # Filtramos para no duplicar la pregunta actual si ya está en la lista
+        history = state.get("messages", [])
+        
+        # Si el historial tiene mensajes, los usamos. Si no, lista vacía.
+        # Truco: Tomamos los últimos 5 mensajes para dar contexto sin saturar
+        recent_history = history[-5:] if history else []
+
+        # 3. Construir la entrada completa para el sub-agente
+        # Orden: [Instrucciones Sistema] -> [Historial Chat] -> [Pregunta Actual]
+        input_messages = [SystemMessage(content=instructions)] + recent_history
+        
+        # Verificamos si el último mensaje del historial es la pregunta actual.
+        # Si NO lo es, agregamos la pregunta manualmente.
+        if not recent_history or recent_history[-1].content != state["question"]:
+            input_messages.append(HumanMessage(content=state["question"]))
+
+        try:
+            # Ejecutamos con contexto
+            result = await api_agent.ainvoke({"messages": input_messages})
+            
+            last_message = result["messages"][-1].content
+            print(f"   🔙 [DEBUG API]: {str(last_message)[:300]}...") 
+            return {"sql_result": f"[Origen API] {last_message}"}
+            
+        except Exception as e:
+            print(f"   ❌ Error API: {e}")
+            return {"sql_result": f"Error ejecutando API: {str(e)}"}
+
+    # --- NODO 4: RESPUESTA FINAL ---
+    async def generate_answer(self, state: AgentState):
+        print("🗣️ [Node: Answer] Resumiendo...")
         prompt = ChatPromptTemplate.from_template(
             """
-            <role>
-            Eres un Analista de Datos senior y amable.
-            </role>
-
-            <data_context>
-            - Pregunta: "{question}"
-            - SQL: "{sql_query}"
-            - Resultados: "{sql_result}"
-            </data_context>
-
-            <instructions>
-            1. Responde basándote EXCLUSIVAMENTE en los resultados.
-            2. Si no hay datos, dilo claramente.
-            3. Sé conciso y profesional.
-            </instructions>
+            Responde al usuario basándote en los datos obtenidos.
+            Fuente de datos: {intent}
+            Datos: {result}
+            Pregunta: {question}
             """
         )
-        
         chain = prompt | self.llm
-        
-        response = await chain.ainvoke({
-            "question": state["question"],
-            "sql_query": state["sql_query"],
-            "sql_result": state["sql_result"]
+        res = await chain.ainvoke({
+            "intent": state.get("intent", "GENERAL"),
+            "result": state.get("sql_result", "Sin datos"),
+            "question": state["question"]
         })
-        
-        final_content = self._clean_content(response.content)
-        response.content = final_content
-        
-        return {"messages": [response]}
+        return {"messages": [res]}
