@@ -159,8 +159,9 @@ services:
 
 volumes:
   mysql_data: null
-  evolution_pg_final: null
-  evolution_redis_final: null
+  evolution_postgres_data_v3:
+  evolution_redis_data_v3:
+  evolution_instances:
 
 networks:
   sql_agent_net:
