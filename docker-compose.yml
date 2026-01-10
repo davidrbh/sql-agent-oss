@@ -1,5 +1,30 @@
-
 services:
+  # 🖥️ Interfaz de Chat (Chainlit) + Agente
+  app:
+    container_name: sql_agent_ui
+    build: .
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      # Montar carpetas clave para desarrollo (Hot Reload)
+      - ./src:/app/src
+      - ./config:/app/config
+      - ./docs:/app/docs
+      - ./data:/app/data
+      - ./scripts:/app/scripts
+      - ./app.py:/app/app.py
+      # Persistencia de logs
+      - ./logs:/app/logs
+    command: chainlit run app.py -w --host 0.0.0.0 --port 8000
+    restart: unless-stopped
+    # Descomentar si usas la DB local
+    # depends_on:
+    #   mysql_db:
+    #     condition: service_healthy
+
+  # 🗄️ Base de Datos Local (Opcional, para desarrollo/pruebas)
   mysql_db:
     image: mysql:8.0-debian
     container_name: sql_agent_mysql
@@ -12,10 +37,9 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      # Mapeo vital: Tu archivo SQL local -> Contenedor
       - ./mysql_dump:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 5s
       retries: 5
 
