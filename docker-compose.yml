@@ -54,7 +54,7 @@ services:
 
   evolution_api:
     container_name: evolution_api
-    image: evoapicloud/evolution-api:v2.2.2
+    image: atendai/evolution-api:v2.1.1 # Usaremos una versión estable conocida
     restart: always
     ports:
       - "8080:8080"
@@ -62,18 +62,9 @@ services:
       - SERVER_PORT=8080
       - SERVER_URL=https://evolution-api.passport1996.qzz.io
       - AUTHENTICATION_API_KEY=${EVOLUTION_API_KEY}
-      - DATABASE_ENABLED=true
-      - DATABASE_PROVIDER=postgresql
-      - DATABASE_CONNECTION_URI=postgresql://evo:evo_password@evolution_postgres:5432/evolution
-      - DATABASE_CLIENT_NAME=evolution_v2
-      - CACHE_REDIS_ENABLED=true
-      - CACHE_REDIS_URI=redis://evolution_redis:6379/1
-      - CACHE_REDIS_PREFIX_KEY=evolution
-    depends_on:
-      evolution_postgres:
-        condition: service_healthy
-      evolution_redis:
-        condition: service_healthy
+    volumes:
+      - evolution_store:/evolution/store
+      - evolution_instances:/evolution/instances
     networks:
       - sql_agent_net
       - dokploy-network
@@ -90,39 +81,6 @@ services:
       - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-5-websecure.service=sqlagentoss-chatsqlagentoss-1bousy-5-websecure
       - traefik.routers.sqlagentoss-chatsqlagentoss-1bousy-5-websecure.tls.certresolver=letsencrypt
       - traefik.enable=true
-
-  evolution_postgres:
-    container_name: evolution_postgres
-    image: postgres:15-alpine
-    restart: always
-    environment:
-      - POSTGRES_USER=evo
-      - POSTGRES_PASSWORD=evo_password
-      - POSTGRES_DB=evolution
-    volumes:
-      - evolution_postgres_data_clean:/var/lib/postgresql/data
-    networks:
-      - sql_agent_net
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U evo -d evolution"]
-      interval: 5s
-      timeout: 2s
-      retries: 10
-
-  evolution_redis:
-    container_name: evolution_redis
-    image: redis:alpine
-    restart: always
-    command: redis-server --appendonly yes
-    volumes:
-      - evolution_redis_data_clean:/data
-    networks:
-      - sql_agent_net
-    healthcheck:
-      test: ["CMD-SHELL", "redis-cli ping || exit 1"]
-      interval: 5s
-      timeout: 2s
-      retries: 5
 
   mysql_db:
     image: mysql:8.0-debian
@@ -146,8 +104,8 @@ services:
 
 volumes:
   mysql_data: null
-  evolution_postgres_data_clean: null
-  evolution_redis_data_clean: null
+  evolution_store:
+  evolution_instances:
 
 networks:
   sql_agent_net:
