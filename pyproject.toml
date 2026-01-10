@@ -34,7 +34,7 @@ chromadb = "^0.4.22"
 sqlglot = "^20.8.0"
 
 # --- UI ---
-chainlit = "^1.0.0"
+chainlit = "^2.9.4"
 
 # --- Utilidades ---
 python-dotenv = "^1.0.0"
