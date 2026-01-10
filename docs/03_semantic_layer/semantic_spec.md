@@ -1,70 +1,56 @@
-# Especificación de la Capa Semántica e Hidratación de Datos
+# Especificación de la Capa Semántica e Hidratación de Datos V2.5
 
 ## 1. Introducción
-La Capa Semántica es el componente crítico que transforma el esquema técnico "crudo" de la base de datos (tablas, columnas, tipos de datos) en un **Contexto de Negocio** comprensible para el Agente de IA.
 
-Sin esta capa, el Agente intentará adivinar relaciones basándose solo en nombres de columnas (a menudo crípticos), lo que deriva en una baja precisión de ejecución.
+La Capa Semántica V2.5 evoluciona el concepto de "diccionario simple" a **"Modelos Lógicos de Negocio"**. En lugar de documentar tablas aisladas, definimos entidades de negocio que el agente debe entender, combinando la realidad técnica (esquema DB) con la realidad de negocio (reglas YAML).
 
-## 2. Objetivos Arquitectónicos
-1. **Abstracción:** Desacoplar el Agente de la estructura física de la DB.
-2. **Enriquecimiento:** Añadir descripciones de negocio, sinónimos y métricas calculadas que no existen en el SQL.
-3. **Resiliencia al Cambio (Schema Drift):** Permitir que la documentación se actualice automáticamente cuando la base de datos cambie.
-4. **Resolución de Entidades:** Capacidad de mapear términos vagos del usuario ("ventas de apple") a valores exactos en la base de datos ("Apple Computer, Inc.").
+## 2. Fuente de Verdad Híbrida
 
-## 3. El Artefacto Central: `dictionary.yaml`
-La "Fuente de Verdad" del sistema será un archivo YAML estructurado. Este archivo no se escribe 100% a mano; es generado inicialmente por scripts y refinado por humanos.
+El sistema de hidratación (`hydrator.py`) fusiona dos fuentes primarias:
 
-### Estructura del Esquema
+1.  **Esquema Físico (Automático):** Nombres de tablas, columnas, tipos de datos y claves foráneas extraídas mediante `SQLAlchemy Inspector`.
+2.  **Contexto de Negocio (Manual):** Reglas definidas por el humano en `config/business_context.yaml`.
+
+## 3. El Nuevo Artefacto: `business_context.yaml`
+
+A diferencia de versiones anteriores, ahora nos centramos en **Modelos**.
+
 ```yaml
-tables:
-  - name: t_orders  # Nombre real en DB
-    friendly_name: "Pedidos"
-    description: "Tabla transaccional que registra todas las compras finalizadas."
+# config/business_context.yaml
+
+business_context: "Empresa de logística internacional."
+
+models:
+  - name: "Pedidos"
+    tables: ["t_orders", "t_order_details"] # Tablas físicas que componen este modelo logic
+    description: "Registro central de transacciones de venta."
     columns:
-      - name: net_amt
-        description: "Monto total de la venta excluyendo impuestos."
-        synonyms: ["ingresos", "venta neta", "plata"]
-      - name: status_id
-        description: "Estado del pedido (1=Pendiente, 2=Pagado, 3=Cancelado)."
-        # Metadata crítica para que el LLM sepa qué filtrar
-        valid_values: 
-          - "1: Pendiente"
-          - "2: Pagado"
-          - "3: Cancelado"
-    
-    # Ejemplos Few-Shot específicos para esta tabla
-    examples:
-      - question: "¿Cuántos pedidos se cancelaron ayer?"
-        sql: "SELECT count(*) FROM t_orders WHERE status_id = 3 AND created_at >= CURDATE() - INTERVAL 1 DAY"
+      - name: "t_orders.net_amt"
+        description: "Ingreso neto reportable."
+        synonyms: ["venta neta", "revenue"]
+
+    filters:
+      - name: "Solo Validos"
+        sql_fragment: "status_id != 3" # Regla de negocio inyectable
 ```
 
-## 4. Flujo de Hidratación Automática (Pipeline)
-Para evitar mantener documentación obsoleta, implementamos un pipeline de hidratación.
+## 4. Pipeline de Hidratación Actualizado
 
-```mermaid
-graph TD
-    DB[(MySQL Producción)] -->|SQLAlchemy Inspector| Extractor[Script Extractor]
-    Extractor -->|Esquema Crudo (JSON)| Annotator[🤖 Agente Annotador (LLM)]
-    
-    Annotator -->|Prompt: 'Describe estas columnas'| LLM((OpenAI/Anthropic))
-    LLM -->|Descripciones + Sinónimos| Annotator
-    
-    Annotator -->|Genera/Actualiza| YAML[dictionary.yaml]
-    
-    Human[👤 Desarrollador] -->|Revisión/Ajuste Manual| YAML
-```
+El script `scripts/generate_dictionary.py` ejecuta el siguiente flujo:
 
-### Componentes del Pipeline
-- **Extractor (schema.py):** Lee metadatos técnicos (FKs, tipos).
-- **Annotador (hydrator.py):** Usa un LLM barato (ej. GPT-4o-mini) para generar descripciones iniciales de tablas desconocidas.
-- **Persistencia (manager.py):** Guarda el YAML respetando las ediciones manuales previas (no sobrescribe trabajo humano si ya existe).
+1.  **Carga:** Lee `config/business_context.yaml`.
+2.  **Introspección:** Conecta a la BD y verifica que las tablas mencionadas en el YAML existan.
+3.  **Enriquecimiento:**
+    - Si una tabla del modelo no tiene descripción, usa un LLM para generarla basada en sus columnas.
+    - Toma muestras de datos (3 filas) para entender el formato real.
+4.  **Generación:** Escribe el archivo final `data/dictionary.yaml` que consume el agente en tiempo de ejecución.
 
-## 5. Estrategia de Búsqueda de Valores (Fuzzy Search)
-Uno de los fallos más comunes en Text-to-SQL es la alucinación de valores literales (ej: buscar `WHERE client = 'CocaCola'` cuando en la DB es `'Coca-Cola FEMSA'`).
+## 5. Beneficios de la V2.5
 
-### Solución: Interceptor de Valores
-1. **Detección:** El Agente identifica que la pregunta filtra por una entidad nombrada (Cliente, Producto, Ciudad).
-2. **Búsqueda:** Se utiliza la librería `thefuzz` (Levenshtein Distance) o búsqueda vectorial (ChromaDB) contra una lista de valores únicos extraídos de la columna relevante.
-3. **Inyección:** Se inyecta el valor real encontrado en el prompt del sistema.
+- **Agnóstico al Esquema:** Si cambias el nombre físico de una columna, solo actualizas el mapeo en el YAML, el agente sigue entendiendo "Ingresos".
+- **Validación de Versión:** El hidratador detecta si estás usando formatos obsoletos y te alerta.
+- **Muestreo Real:** Inyecta ejemplos reales de datos en el prompt para evitar alucinaciones de formato (ej: fechas `YYYY-MM-DD` vs `DD/MM/YYYY`).
 
-**Nota:** Para tablas masivas (>1M filas), no se indexan todos los valores. Se utiliza una estrategia de "Top N valores frecuentes" o un índice vectorial externo.
+## 6. Búsqueda de Valores (Fuzzy Search)
+
+_Se mantiene la funcionalidad de intercepción de entidades utilizando `thefuzz` y bases de datos vectoriales para mapear términos vagos a valores exactos de base de datos._

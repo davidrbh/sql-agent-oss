@@ -17,6 +17,15 @@ class AgentState(TypedDict):
     
     # El SQL generado por el agente (si ya generó alguno)
     sql_query: str
+
+    # Resultado de la ejecución SQL (o mensaje de error)
+    sql_result: str
+    
+    # Intención clasificada (DATABASE / API / GENERAL)
+    intent: str
+    
+    # Contador de iteraciones para reintentos (Self-Healing)
+    iterations: int
     
     # El resultado de la consulta SQL (filas de la DB)
     sql_result: str

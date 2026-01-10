@@ -11,6 +11,12 @@ dist/
 build/
 *.egg-info/
 .DS_Store
+# Logs
+logs/
+*.log
+
 # Base de datos local
 postgres_data/
+mysql_data/
+data/chroma_db/
 chroma_db/
