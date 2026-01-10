@@ -64,14 +64,14 @@ services:
       - DATABASE_ENABLED=true
       - DATABASE_PROVIDER=postgresql
       - DATABASE_CONNECTION_URI=postgresql://evo:evo_password@evolution_postgres:5432/evolution
+      - MONGODB_ENABLED=false
+      - MONGO_ENABLED=false
       - REDIS_ENABLED=true
       - REDIS_URI=redis://evolution_redis:6379/1
     depends_on:
       evolution_postgres:
         condition: service_healthy
       evolution_redis:
-        condition: service_healthy
-      evolution_mongo:
         condition: service_healthy
     networks:
       - sql_agent_net
