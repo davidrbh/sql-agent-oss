@@ -27,11 +27,12 @@ Este proyecto implementa una arquitectura de **Sistema de IA Compuesto** que sep
 
 ### Características Clave
 
-- **Router de Intención:** Clasifica preguntas en `DATABASE`, `API` o `GENERAL` para usar la herramienta óptima.
-- **Capa Semántica Hidratada:** Generación automática de un `dictionary.yaml` combinando esquema DB con reglas de negocio.
-- **Consumo Universal de API:** Carga dinámicamente herramientas desde una especificación OpenAPI/Swagger.
-- **Auto-Corrección:** Bucle agéntico (LangGraph) que corrige sus propios errores SQL.
-- **Soporte Híbrido:** Funciona con Docker o con bases de datos locales (MySQL/PostgreSQL).
+- **🚀 Arquitectura "Fast Agent" (v2.1):** Inicio instantáneo (<0.1s) gracias al patrón Singleton y "Light Mode" para herramientas API (sin parseo pesado de Swagger).
+- **🛡️ Self-Healing SQL:** Bucle agéntico que atrapa errores de base de datos, analiza la sintaxis y reescribe la query automáticamente.
+- **🔌 API Smart Wrapper:** Habilidad única de reescribir URLs relativas y manejar autenticación agnóstica para cualquier Swagger/OpenAPI.
+- **🧠 Capa Semántica v2.5:** Define "Modelos Lógicos" en YAML que abstraen la complejidad física de las tablas para el negocio.
+- **🚦 Router de Intención:** Clasifica preguntas en `DATABASE`, `API` o `GENERAL` para usar la herramienta óptima.
+- **⚡ AsyncIO Nativo:** Núcleo 100% asíncrono para manejar alta concurrencia en I/O.
 
 ## 🏗️ Estructura del Proyecto
 
