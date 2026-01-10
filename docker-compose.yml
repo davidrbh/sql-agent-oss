@@ -74,6 +74,8 @@ services:
         condition: service_healthy
       evolution_redis:
         condition: service_healthy
+      evolution_mongo:
+        condition: service_healthy
     networks:
       - sql_agent_net
       - dokploy-network
