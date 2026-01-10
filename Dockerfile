@@ -19,6 +19,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN curl -sSL https://install.python-poetry.org | python3 -
 ENV PATH="/root/.local/bin:$PATH"
 
+# Instalar plugin de exportación explícitamente (Requerido en versiones nuevas de Poetry)
+RUN poetry self add poetry-plugin-export
+
 # Copiar archivos de dependencia
 COPY pyproject.toml poetry.lock ./
 
