@@ -1,79 +1,116 @@
-# Visión General de la Arquitectura & Filosofía de Diseño
+# Visión General de la Arquitectura & Filosofía de Diseño v2
 
 ## 1. Introducción
-**SQL Agent OSS** es un sistema de Inteligencia Artificial Compuesto (Compound AI System) diseñado para la generación y ejecución segura de SQL en entornos empresariales. A diferencia de los enfoques tradicionales de "Chat-con-tu-DB" que conectan un LLM directamente a la base de datos, este proyecto implementa una arquitectura de **Agentes Cognitivos** interpuesta por una **Capa Semántica**.
 
-El objetivo no es solo traducir texto a SQL, sino garantizar que la ejecución sea:
-1.  **Semánticamente Correcta:** Alineada con las definiciones de negocio (KPIs).
-2.  **Operativamente Segura:** Imposibilidad técnica de realizar operaciones destructivas.
-3.  **Escalable:** Basada en I/O asíncrono para alta concurrencia.
+**SQL Agent OSS** ha evolucionado hacia un **Sistema de Inteligencia Artificial Compuesto Híbrido**. Ya no se limita a traducir texto a SQL, sino que actúa como un orquestador inteligente capaz de decidir cuándo consultar la base de datos analítica y cuándo consumir APIs operacionales en tiempo real.
 
-## 2. El Problema: Por qué fallan los enfoques ingenuos
-La investigación preliminar ("La Ilusión de la Simplicidad") identificó tres puntos de fallo críticos en los prototipos estándar:
-* **Brecha Semántica:** Los LLMs no entienden que `t1_col5` significa "Ingresos Netos".
-* **Alucinaciones de Esquema:** Los modelos inventan tablas o columnas que no existen.
-* **Riesgos de Seguridad:** La inyección de prompts puede derivar en exfiltración o destrucción de datos.
+El objetivo es resolver la necesidad empresarial de tener una interfaz unificada para datos históricos (SQL) y datos en tiempo real (APIs).
 
-## 3. La Solución: Arquitectura de Sistema Compuesto
-Para mitigar estos riesgos, **SQL Agent OSS** no utiliza una cadena lineal, sino un **Grafo de Estado (StateGraph)** orquestado por LangGraph. El flujo de información pasa por múltiples etapas de validación antes de tocar la base de datos.
+## 2. El Problema Ampliado
 
-### Diagrama de Alto Nivel
-El sistema sigue el patrón "Planificar - Recuperar - Generar - Validar - Ejecutar".
+Los enfoques tradicionales de "Text-to-SQL" tienen un límite duro: la base de datos a menudo contiene datos "fríos" o históricos.
 
+- ¿Cuántas ventas hice ayer? -> SQL (Correcto)
+- ¿Cuál es el estado actual del envío #123? -> SQL (Posiblemente desactualizado) vs API (Tiempo real).
+- ¿Cómo cancelo el pedido #999? -> SQL (PELIGROSO/IMPOSIBLE) vs API (Correcto).
 
+## 3. La Solución: Arquitectura Híbrida con Router
 
-### Componentes Core
+Implementamos un **Grafo de Estado (StateGraph)** orquestado por LangGraph que introduce un "Córtex Prefrontal" (Router) antes de cualquier acción.
 
-#### A. Capa Semántica Viva (The Living Semantic Layer)
-En lugar de pasar el esquema crudo (DDL) al LLM, el sistema utiliza un **Diccionario de Datos Enriquecido**.
-* **Hidratación Automática:** Scripts (`scripts/generate_dictionary.py`) que utilizan un LLM para describir tablas y columnas automáticamente, detectando relaciones implícitas.
-* **Búsqueda Difusa de Valores:** Un sistema de recuperación (`thefuzz`) que intercepta entidades (ej: "pepsi") y las mapea a su valor real en base de datos ("PepsiCo Intl") antes de generar el SQL.
+### Diagrama de Flujo Lógico
 
-#### B. Orquestación Agéntica (LangGraph)
-El cerebro del sistema es un grafo cíclico que permite la **Autocorrección (Self-Correction)**.
-* Si el SQL generado falla (ej: error de sintaxis), el agente captura el error, razona sobre él y reintenta la generación hasta 3 veces.
-* Esto eleva la tasa de éxito (Execution Accuracy) drásticamente comparado con sistemas "one-shot".
-
-#### C. Seguridad en Profundidad (Zero Trust)
-La seguridad no es una característica opcional, es estructural.
-* **Validación AST (SQLGlot):** Cada consulta generada se analiza sintácticamente. Si el Árbol de Sintaxis Abstracta contiene nodos prohibidos (`DROP`, `DELETE`, `UPDATE`, `GRANT`), la ejecución se bloquea antes de llegar a la red.
-* **Infraestructura Read-Only:** La conexión a la base de datos se realiza estrictamente con credenciales de solo lectura.
-
-#### D. Motor Asíncrono
-Todo el pipeline, desde la API del LLM hasta la consulta a PostgreSQL, utiliza `asyncio`.
-* Drivers: `asyncpg` y `SQLAlchemy (AsyncEngine)`.
-* Beneficio: Permite manejar cientos de consultas concurrentes sin bloquear el hilo principal de Python.
-
-## 4. Stack Tecnológico (Filosofía FOSS)
-El proyecto se construye sobre tecnologías 100% Open Source, con la única excepción de la API de inferencia (OpenAI/Anthropic).
-
-* **Lenguaje:** Python 3.11+
-* **Orquestador:** LangChain / LangGraph
-* **Base de Datos:** PostgreSQL (Soporte para MySQL vía `aiomysql`)
-* **Motor de Búsqueda:** ChromaDB (Vectorial) + TheFuzz (Lexical)
-* **Interfaz:** Chainlit
-* **Gestión de Dependencias:** Poetry
-
-## 5. Estrategia de Evaluación
-La calidad se mide mediante **Precisión de Ejecución (Execution Accuracy)**. Mantenemos un "Golden Dataset" (pares de Pregunta/SQL Correcto) y utilizamos contenedores efímeros (`testcontainers`) para validar que el agente produce los mismos *datos* que la consulta de referencia, independientemente de cómo escriba el SQL.
-
+```mermaid
 graph TD
-    User[👤 Usuario] -->|Pregunta| Semantic[📚 Capa Semántica\n(Diccionario + Fuzzy Search)]
-    Semantic -->|Contexto Enriquecido| Planner[🧠 Agente Planificador]
-    
-    subgraph "Bucle de Razonamiento (LangGraph)"
+    User[👤 Usuario] -->|Pregunta| Router{🚦 Router de Intención}
+
+    Router -->|Intención: DATABASE| SqlBranch[📂 Rama SQL]
+    Router -->|Intención: API| ApiBranch[🔌 Rama API]
+    Router -->|Intención: GENERAL| ChatBranch[💬 Rama Conversacional]
+
+    subgraph "Rama SQL (Análisis)"
+        SqlBranch --> Planner[🧠 Planificador]
         Planner --> Generator[✍️ Generador SQL]
         Generator --> Validator[🛡️ Guardrails (SQLGlot)]
-        
-        Validator -->|❌ Inseguro| Generator
-        Validator -->|✅ Seguro| Executor[impar Database]
-        
-        Executor -->|❌ Error DB| Corrector[🔧 Corrector de Errores]
-        Corrector --> Generator
+        Validator --> Executor[impar Database]
+        Executor -->|Error| RetryLoop[🔄 Bucle de Auto-Corrección]
+        RetryLoop --> Generator
     end
-    
-    Executor -->|✅ Datos| Synthesizer[💬 Sintetizador de Respuesta]
-    Synthesizer --> User
 
-    style Validator fill:#f96,stroke:#333,stroke-width:2px
-    style Executor fill:#9f9,stroke:#333,stroke-width:2px
+    subgraph "Rama API (Operacional)"
+        ApiBranch --> ToolLoader[📦 Cargador OpenAPI]
+        ToolLoader --> ToolExec[🛠️ Ejecutor de Herramienta]
+    end
+
+    Executor --> Synthesizer[📝 Sintetizador de Respuesta]
+    ToolExec --> Synthesizer
+    ChatBranch --> Synthesizer
+
+    Synthesizer --> User
+```
+
+### Componentes Core Actualizados
+
+#### A. Router de Intención (El Cerebro)
+
+Es el primer nodo del grafo. Utiliza un LLM con few-shot prompting para clasificar la consulta en:
+
+- `DATABASE`: Preguntas analíticas, conteos, reportes.
+- `API`: Consultas de estado, acciones específicas, datos en vivo.
+- `GENERAL`: Saludos, dudas fuera de dominio.
+
+#### B. Capa Semántica V2.5 (Hydrator)
+
+Combina dos fuentes de verdad para crear el contexto:
+
+1.  **Esquema Físico:** Introspección directa de la BD (`Inspector`).
+2.  **Contexto de Negocio:** Archivo `config/business_context.yaml` donde se definen "Modelos Lógicos" que agrupan tablas físicas.
+
+#### C. Cargador Universal de API
+
+Módulo que convierte dinámicamente una especificación `swagger.json` en herramientas ejecutables para el agente.
+
+- **Autenticación Agnóstica:** Inyecta headers definidos en variables de entorno (`API_AUTH_HEADER`), permitiendo conectar cualquier API REST estándar sin cambiar el código fuente.
+
+#### D. Motor Asíncrono
+
+Se mantiene el uso de `asyncio` para todas las operaciones I/O (DB y HTTP Requests), garantizando alta concurrencia.
+
+## 4. Stack Tecnológico
+
+- **Orquestador:** LangGraph (State Machines)
+- **LLM:** DeepSeek / OpenAI (Configurable vía Factory)
+- **Integración API:** OpenAPIToolkit + RequestsWrapper
+- **Base de Datos:** SQLAlchemy Async + Drivers nativos
+- **Interfaz:** CLI (Script Python) actualmente, extensible a Web.
+
+## 5. Estrategia de Seguridad
+
+- **SQL:** Validación AST estricta (solo `SELECT`, bloqueo de DML).
+- **API:** Limitación de endpoints expuestos vía `swagger.json` (solo incluir endpoints seguros/lectura si se desea).
+- **Control:** El agente opera en modo "Read-Only" por defecto a menos que se configure explícitamente lo contrario.
+
+## 6. Optimizaciones y Robustez (v2.1)
+
+En la última iteración, se implementaron mejoras críticas para velocidad y resiliencia:
+
+### A. Patrón Singleton & "Light Mode" (Velocidad)
+
+- **Problema:** Inicializar las herramientas de API (langchain toolkit) tomaba 3-5 segundos por consulta debido al parseo masivo del Swagger.
+- **Solución:** Se implementó carga única al inicio (`__init__`) y un "Light Mode" que inyecta un resumen de texto en el Prompt del sistema ("Memory Cache") en lugar de cargar todas las herramientas como objetos pesados.
+- **Resultado:** Latencia de inicio reducida a < 0.1s.
+
+### B. Mecanismo Self-Healing SQL (Resiliencia)
+
+- **Problema:** Los LLMs a veces alucinan nombres de columnas (ej: `user_id` vs `users_id`) o sintaxis ambigua.
+- **Solución:** Si la ejecución SQL falla, el grafo captura la excepción, la analiza e inyecta el mensaje de error real de la base de datos de vuelta al LLM con un prompt de "Modo Corrección".
+- **Flujo:** `Generar -> Fallar -> Leer Error -> Reflexionar -> Re-Generar -> Éxito`.
+
+### C. Manejo Inteligente de API
+
+- **URL Rewriting:** Middleware que intercepta URLs relativas (ej: `/admin/users`) y les antepone el dominio base automáticamente, evitando errores comunes de los LLMs.
+- **Anti-Alucinación de Metadatos:** Reglas estrictas que prohíben ejecutar herramientas HTTP para preguntas de "descubrimiento" (ej: "¿Qué endpoints hay?"), forzando el uso de la memoria interna (Swagger Summary).
+
+## 7. Roadmap hacia MCP (Model Context Protocol)
+
+El siguiente paso evolutivo es migrar las herramientas "hardcodeadas" a servidores MCP estándar, desacoplando completamente la lógica del agente de los drivers de base de datos y clientes HTTP.
