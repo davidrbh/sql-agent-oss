@@ -95,7 +95,8 @@ services:
 
   evolution_mongo:
     container_name: evolution_mongo
-    image: mongo:6.0
+    # Use Mongo 4.4 to avoid AVX requirement on older CPUs/environments
+    image: mongo:4.4
     restart: always
     environment:
       - MONGO_INITDB_DATABASE=evolution-whatsapp-api
