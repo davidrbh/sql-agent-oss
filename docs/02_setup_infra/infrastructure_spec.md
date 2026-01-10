@@ -23,16 +23,28 @@ La aplicación Python no se conecta directamente mediante drivers bloqueantes.
 - **Gestión de Pool:** Se mantiene un pool de conexiones abiertas (min: 5, max: 20) para evitar la sobrecarga de handshake TCP en cada petición del Agente.
 - **Singleton:** Se garantiza que solo exista una instancia del motor de base de datos en toda la vida de la aplicación.
 
-## 3. Seguridad de Credenciales
+## 3. Seguridad de Credenciales y API
 
 - **Principio:** Ninguna credencial se almacena en el código fuente.
 - **Implementación:** Se utiliza `python-dotenv` para leer un archivo `.env` local.
-- **Variables Requeridas:**
+- **Variables Requeridas (Base de Datos):**
   - `DB_HOST`, `DB_PORT`: Ubicación del servicio.
   - `DB_USER`, `DB_PASSWORD`: Credenciales de acceso (Limitadas a lectura en producción).
   - `DB_NAME`: Nombre exacto de la base de datos a consultar.
+- **Variables Requeridas (API Externa):**
+  - `API_BASE_URL`: URL raíz de la API (ej: `https://api.example.com`).
+  - `API_AUTH_HEADER`: Nombre del header de autenticación (ej: `x-api-key`, `Authorization`).
+  - `API_AUTH_VALUE`: Valor secreto del token/key.
 
-## 4. Modalidad de Desarrollo "Local Nativa"
+## 4. Documentación de API (Swagger)
+
+Para que el agente pueda interactuar con la API Externa, se requiere:
+
+1. Una especificación **OpenAPI 3.0+** en formato JSON.
+2. El archivo debe ubicarse en `docs/swagger.json`.
+3. El sistema cargará automáticamente este archivo al inicio para generar el "Mapa Mental" de endpoints disponibles.
+
+## 5. Modalidad de Desarrollo "Local Nativa"
 
 Para desarrolladores que ya poseen una instancia de MySQL corriendo localmente:
 

@@ -12,16 +12,19 @@ Nuestra arquitectura actual hereda limitaciones de los diseños prototípicos de
 
 ## 🗺️ Fases de Optimización
 
-### Fase 1: Optimización de Código (Quick Wins) 🚀
+### Fase 1: Optimización de Código (Quick Wins) 🚀 - [COMPLETADO] ✅
 
 Objetivo: Reducir overhead de Python y latencia base sin cambiar infraestructura.
 
-- [ ] **Implementar Patrón Singleton en `AgentNodes`**:
-  - Mover la instanciación de `create_react_agent` y la carga de herramientas al método `__init__`.
-  - Compilar el grafo una sola vez al inicio del servidor.
-- [ ] **Eliminar Ingesta Dinámica LLM de Swagger**:
-  - Reemplazar `OpenAPIToolkit.from_llm` por una carga estática de herramientas.
-  - Evitar llamadas de red al LLM solo para "leer" la documentación de la API.
+- [x] **Implementar Patrón Singleton en `AgentNodes`**:
+  - Se movió la instanciación de `create_react_agent` y la carga de herramientas al método `__init__`.
+  - El grafo se compila una sola vez al inicio.
+- [x] **Eliminar Ingesta Dinámica LLM de Swagger**:
+  - Reemplazado `OpenAPIToolkit.from_llm` por una carga ligera ("Light Mode") con `requests_get`.
+  - Se inyecta un resumen de texto en el Prompt para evitar llamadas de red innecesarias.
+- [x] **Middleware de URL y Seguridad**:
+  - Implementado reescritura automática de URLs relativas.
+  - Bloqueo de métodos no-GET para seguridad.
 
 ### Fase 2: Arquitectura de Grafos Persistentes (Reliability) 🛡️
 
