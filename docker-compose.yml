@@ -54,16 +54,38 @@ services:
 
   evolution_api:
     container_name: evolution_api
-    image: atendai/evolution-api:v2.1.1
+    image: evoapicloud/evolution-api:v2.2.2
     restart: always
     ports:
       - "8080:8080"
-    env_file:
-      - .env
     environment:
+      - SERVER_PORT=8080
+      - SERVER_URL=https://evolution-api.passport1996.qzz.io
       - AUTHENTICATION_API_KEY=${EVOLUTION_API_KEY}
-    volumes:
-      - evolution_instances:/evolution/instances
+      # Configuración de Base de Datos (OBLIGATORIA EN V2)
+      - DATABASE_ENABLED=true
+      - DATABASE_PROVIDER=postgresql
+      - DATABASE_CONNECTION_URI=postgresql://evo:evo_password@evolution_postgres:5432/evolution
+      - DATABASE_CLIENT_NAME=evolution_v2
+      # Qué guardar
+      - DATABASE_SAVE_DATA_INSTANCE=true
+      - DATABASE_SAVE_DATA_NEW_MESSAGE=true
+      - DATABASE_SAVE_MESSAGE_UPDATE=true
+      - DATABASE_SAVE_DATA_CONTACTS=true
+      - DATABASE_SAVE_DATA_CHATS=true
+      - DATABASE_SAVE_DATA_LABELS=true
+      - DATABASE_SAVE_DATA_HISTORIC=true
+      # Configuración de Cache (Redis)
+      - CACHE_REDIS_ENABLED=true
+      - CACHE_REDIS_URI=redis://evolution_redis:6379/1
+      - CACHE_REDIS_PREFIX_KEY=evolution
+      - CACHE_REDIS_SAVE_INSTANCES=false
+      - CACHE_LOCAL_ENABLED=false
+    depends_on:
+      evolution_postgres:
+        condition: service_healthy
+      evolution_redis:
+        condition: service_healthy
     networks:
       - sql_agent_net
       - dokploy-network
@@ -81,8 +103,38 @@ services:
       - traefik.routers.sqlagentoss-chatsqlagentoss-1bousy-5-websecure.tls.certresolver=letsencrypt
       - traefik.enable=true
 
-  # evolution_postgres: ELIMINADO - Usando modo Standalone
-  # evolution_redis: ELIMINADO - Usando modo Standalone
+  evolution_postgres:
+    container_name: evolution_postgres
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=evo
+      - POSTGRES_PASSWORD=evo_password
+      - POSTGRES_DB=evolution
+    volumes:
+      - evolution_pg_final:/var/lib/postgresql/data
+    networks:
+      - sql_agent_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U evo -d evolution"]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+
+  evolution_redis:
+    container_name: evolution_redis
+    image: redis:alpine
+    restart: always
+    command: redis-server --appendonly yes
+    volumes:
+      - evolution_redis_final:/data
+    networks:
+      - sql_agent_net
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping || exit 1"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
 
   mysql_db:
     image: mysql:8.0-debian
@@ -106,7 +158,8 @@ services:
 
 volumes:
   mysql_data: null
-  evolution_instances:
+  evolution_pg_final: null
+  evolution_redis_final: null
 
 networks:
   sql_agent_net:
