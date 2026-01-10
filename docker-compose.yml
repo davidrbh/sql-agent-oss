@@ -54,7 +54,7 @@ services:
 
   evolution_api:
     container_name: evolution_api
-    image: atendai/evolution-api:v2.1.1
+    image: atendai/evolution-api:v2.2.2
     restart: always
     ports:
       - "8080:8080"
@@ -113,7 +113,7 @@ services:
       - POSTGRES_PASSWORD=evo_password
       - POSTGRES_DB=evolution
     volumes:
-      - evolution_postgres_data_v3:/var/lib/postgresql/data
+      - evolution_postgres_data_v4:/var/lib/postgresql/data
     networks:
       - sql_agent_net
     healthcheck:
@@ -128,7 +128,7 @@ services:
     restart: always
     command: redis-server --appendonly yes
     volumes:
-      - evolution_redis_data_v3:/data
+      - evolution_redis_data_v4:/data
     networks:
       - sql_agent_net
     healthcheck:
@@ -159,8 +159,8 @@ services:
 
 volumes:
   mysql_data: null
-  evolution_postgres_data_v3:
-  evolution_redis_data_v3:
+  evolution_postgres_data_v4:
+  evolution_redis_data_v4:
   evolution_instances:
 
 networks:
