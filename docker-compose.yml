@@ -1,10 +1,9 @@
 services:
-  # 🖥️ Interfaz de Chat (Chainlit)
   app:
     container_name: sql_agent_ui
     build: .
     ports:
-      - "8000:8000"
+      - 8000:8000
     env_file:
       - .env
     volumes:
@@ -19,13 +18,25 @@ services:
     restart: unless-stopped
     networks:
       - sql_agent_net
-
-  # ⚡ WhatsApp Bridge (FastAPI)
+      - dokploy-network
+    labels:
+      - traefik.docker.network=dokploy-network
+      - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-4-web.rule=Host(`chat-agent-oss.passport1996.qzz.io`)
+      - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-4-web.entrypoints=web
+      - traefik.http.services.sqlagentoss-chatsqlagentoss-1bousy-4-web.loadbalancer.server.port=8000
+      - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-4-web.service=sqlagentoss-chatsqlagentoss-1bousy-4-web
+      - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-4-web.middlewares=redirect-to-https@file
+      - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-4-websecure.rule=Host(`chat-agent-oss.passport1996.qzz.io`)
+      - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-4-websecure.entrypoints=websecure
+      - traefik.http.services.sqlagentoss-chatsqlagentoss-1bousy-4-websecure.loadbalancer.server.port=8000
+      - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-4-websecure.service=sqlagentoss-chatsqlagentoss-1bousy-4-websecure
+      - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-4-websecure.tls.certresolver=letsencrypt
+      - traefik.enable=true
   whatsapp_bridge:
     container_name: sql_agent_bridge
     build: .
     ports:
-      - "8001:8001"
+      - 8001:8001
     env_file:
       - .env
     volumes:
@@ -33,25 +44,23 @@ services:
       - ./config:/app/config
       - ./data:/app/data
       - ./logs:/app/logs
-    # Ejecutar FastAPI en puerto 8001
     command: uvicorn src.api.webhook:app --host 0.0.0.0 --port 8001 --reload
     restart: unless-stopped
     depends_on:
       - evolution_api
     networks:
       - sql_agent_net
-
-  # 🟢 Evolution API (WhatsApp Core)
   evolution_api:
     container_name: evolution_api
-    image: evoapicloud/evolution-api:v1.8.2 # Usar versión estable ligera
+    image: evoapicloud/evolution-api:v1.8.2
     restart: always
     ports:
-      - "8080:8080"
+      - 8080:8080
     environment:
       - SERVER_PORT=8080
       - AUTHENTICATION_API_KEY=${EVOLUTION_API_KEY}
       - DATABASE_ENABLED=true
+      - DATABASE_PROVIDER=postgresql
       - DATABASE_CONNECTION_URI=postgresql://evo:evo_password@evolution_postgres:5432/evolution
       - REDIS_ENABLED=true
       - REDIS_URI=redis://evolution_redis:6379/1
@@ -60,9 +69,22 @@ services:
       - evolution_redis
     networks:
       - sql_agent_net
-
-  # 🐘 Postgres para Evolution
+      - dokploy-network
+    labels:
+      - traefik.docker.network=dokploy-network
+      - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-5-web.rule=Host(`evolution-api.passport1996.qzz.io`)
+      - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-5-web.entrypoints=web
+      - traefik.http.services.sqlagentoss-chatsqlagentoss-1bousy-5-web.loadbalancer.server.port=8080
+      - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-5-web.service=sqlagentoss-chatsqlagentoss-1bousy-5-web
+      - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-5-web.middlewares=redirect-to-https@file
+      - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-5-websecure.rule=Host(`evolution-api.passport1996.qzz.io`)
+      - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-5-websecure.entrypoints=websecure
+      - traefik.http.services.sqlagentoss-chatsqlagentoss-1bousy-5-websecure.loadbalancer.server.port=8080
+      - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-5-websecure.service=sqlagentoss-chatsqlagentoss-1bousy-5-websecure
+      - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-5-websecure.tls.certresolver=letsencrypt
+      - traefik.enable=true
   evolution_postgres:
+    # ...
     container_name: evolution_postgres
     image: postgres:15-alpine
     restart: always
@@ -74,8 +96,6 @@ services:
       - evolution_postgres_data:/var/lib/postgresql/data
     networks:
       - sql_agent_net
-
-  # 🧠 Redis para Evolution
   evolution_redis:
     container_name: evolution_redis
     image: redis:alpine
@@ -85,8 +105,6 @@ services:
       - evolution_redis_data:/data
     networks:
       - sql_agent_net
-
-  # 🗄️ Base de Datos Local (Analítica/Legacy)
   mysql_db:
     image: mysql:8.0-debian
     container_name: sql_agent_mysql
@@ -96,22 +114,27 @@ services:
       MYSQL_USER: admin
       MYSQL_PASSWORD: adminpassword
     ports:
-      - "3306:3306"
+      - 3306:3306
     volumes:
       - mysql_data:/var/lib/mysql
       - ./mysql_dump:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test:
+        - CMD
+        - mysqladmin
+        - ping
+        - -h
+        - localhost
       interval: 5s
       retries: 5
     networks:
       - sql_agent_net
-
 volumes:
-  mysql_data:
-  evolution_postgres_data:
-  evolution_redis_data:
-
+  mysql_data: null
+  evolution_postgres_data: null
+  evolution_redis_data: null
 networks:
   sql_agent_net:
     driver: bridge
+  dokploy-network:
+    external: true
