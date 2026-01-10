@@ -63,9 +63,9 @@ services:
       - SERVER_PORT=8080
       - AUTHENTICATION_API_KEY=${EVOLUTION_API_KEY}
       - DATABASE_ENABLED=true
-      - MONGODB_ENABLED=false
-      - MONGO_ENABLED=false
-      - MONGODB_URI=
+      - MONGODB_ENABLED=true
+      - MONGO_ENABLED=true
+      - MONGODB_URI=mongodb://evolution_mongo:27017/evolution-whatsapp-api
       - DATABASE_PROVIDER=postgresql
       - DATABASE_CONNECTION_URI=postgresql://evo:evo_password@evolution_postgres:5432/evolution
       - REDIS_ENABLED=true
@@ -91,6 +91,26 @@ services:
       - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-5-websecure.service=sqlagentoss-chatsqlagentoss-1bousy-5-websecure
       - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-5-websecure.tls.certresolver=letsencrypt
       - traefik.enable=true
+
+  evolution_mongo:
+    container_name: evolution_mongo
+    image: mongo:6.0
+    restart: always
+    environment:
+      - MONGO_INITDB_DATABASE=evolution-whatsapp-api
+    volumes:
+      - evolution_mongo_data:/data/db
+    networks:
+      - sql_agent_net
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          'mongo --eval ''db.adminCommand("ping")'' >/dev/null 2>&1 || exit 1',
+        ]
+      interval: 5s
+      timeout: 2s
+      retries: 10
 
   evolution_postgres:
     container_name: evolution_postgres
@@ -155,3 +175,6 @@ networks:
     driver: bridge
   dokploy-network:
     external: true
+
+  evolution_mongo_net:
+    driver: bridge
