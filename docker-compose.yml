@@ -54,16 +54,15 @@ services:
 
   evolution_api:
     container_name: evolution_api
-    image: atendai/evolution-api:v2.1.1 # Usaremos una versión estable conocida
+    image: atendai/evolution-api:v2.1.1
     restart: always
     ports:
       - "8080:8080"
+    env_file:
+      - .env
     environment:
-      - SERVER_PORT=8080
-      - SERVER_URL=https://evolution-api.passport1996.qzz.io
       - AUTHENTICATION_API_KEY=${EVOLUTION_API_KEY}
     volumes:
-      - evolution_store:/evolution/store
       - evolution_instances:/evolution/instances
     networks:
       - sql_agent_net
@@ -81,6 +80,9 @@ services:
       - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-5-websecure.service=sqlagentoss-chatsqlagentoss-1bousy-5-websecure
       - traefik.routers.sqlagentoss-chatsqlagentoss-1bousy-5-websecure.tls.certresolver=letsencrypt
       - traefik.enable=true
+
+  # evolution_postgres: ELIMINADO - Usando modo Standalone
+  # evolution_redis: ELIMINADO - Usando modo Standalone
 
   mysql_db:
     image: mysql:8.0-debian
@@ -104,7 +106,6 @@ services:
 
 volumes:
   mysql_data: null
-  evolution_store:
   evolution_instances:
 
 networks:
