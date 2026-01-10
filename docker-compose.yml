@@ -65,6 +65,10 @@ services:
       - MONGODB_ENABLED=true
       - MONGO_ENABLED=true
       - MONGODB_URI=mongodb://evolution_mongo:27017/evolution-whatsapp-api
+      - MONGO_URI=mongodb://evolution_mongo:27017/evolution-whatsapp-api
+      - MONGO_URL=mongodb://evolution_mongo:27017/evolution-whatsapp-api
+      - MONGODB_URL=mongodb://evolution_mongo:27017/evolution-whatsapp-api
+      - MONGODB_CONNECTION_URI=mongodb://evolution_mongo:27017/evolution-whatsapp-api
       - DATABASE_PROVIDER=postgresql
       - DATABASE_CONNECTION_URI=postgresql://evo:evo_password@evolution_postgres:5432/evolution
       - REDIS_ENABLED=true
