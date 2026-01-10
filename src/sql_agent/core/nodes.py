@@ -3,6 +3,7 @@ import ast
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from sqlalchemy import text
+from langgraph.prebuilt import create_react_agent  # MOVED TO TOP-LEVEL
 
 # Importaciones de Arquitectura
 from sql_agent.llm.factory import LLMFactory
@@ -12,7 +13,7 @@ from sql_agent.database.connection import DatabaseManager
 
 # --- IMPORTACIÓN DE LA API (NUEVA UBICACIÓN) ---
 try:
-    from sql_agent.api.loader import load_api_tools
+    from sql_agent.api.loader import load_api_tools, load_swagger_summary
     API_AVAILABLE = True
 except ImportError as e:
     API_AVAILABLE = False
@@ -37,6 +38,40 @@ class AgentNodes:
 
         # Carga Herramientas API
         self.api_tools = load_api_tools() if API_AVAILABLE else []
+
+        # --- OPTIMIZACIÓN SINGLETON (Fase 1) ---
+        # Inicializamos el Agente API una sola vez al arranque para evitar overhead
+        if self.api_tools:
+            print("🚀 [Init] Compilando Agente API (Singleton)...")
+            api_instructions = """
+            Eres un operador de APIs preciso.
+            REGLAS:
+            1. Usa las herramientas para obtener datos REALES.
+            2. Si falla, reporta el error exacto.
+            3. NO inventes datos.
+            4. USA EL CONTEXTO: Si el usuario dice "ese endpoint", refiérete al último mencionado en la charla.
+            """
+            # Pre-construimos el agente. Al usar state_modifier, inyectamos las instrucciones sistema
+            # [FIX] state_modifier no disponible en esta versión, inyectamos SystemMessage manualmente en runtime
+            self.api_agent_executor = create_react_agent(self.llm, self.api_tools)
+        else:
+            self.api_agent_executor = None
+
+    # Guardamos las instrucciones como miembro de clase para usar luego
+    API_INSTRUCTIONS = """
+            Eres un operador de APIs preciso.
+            
+            REGLAS OPERATIVAS:
+            1. CONSULTAS DE META-DATA (¿Qué endpoints hay? ¿Cuál uso?): 
+               - RESPONDE usando SOLO la 'Documentación Dinámica' abajo. 
+               - NO uses herramientas (requests_get) para esto.
+               
+            2. CONSULTAS DE DATOS REALES (Trae usuarios, busca el ID 5):
+               - USA la herramienta 'requests_get' para obtener la respuesta de la API.
+               - Si falla la conexión, reporta el error.
+
+            Documentación Dinámica (Swagger Summary):
+    """ + (load_swagger_summary() if API_AVAILABLE else "")
 
     def _clean_content(self, content) -> str:
         """Helper para limpiar respuestas."""
@@ -83,45 +118,69 @@ class AgentNodes:
         print(f"   👉 Decisión: {intent}")
         return {"intent": intent}
 
-    # --- NODO 1: SQL GENERATOR ---
+    # --- NODO 1: SQL GENERATOR (AUTO-CORRECCIÓN) ---
     async def write_query(self, state: AgentState):
-        print("🤖 [Node: SQL] Generando consulta...")
         current_iter = state.get("iterations") or 0
         previous_error = state.get("sql_result", "")
         
-        error_context = ""
+        # Lógica de Retry / Self-Healing
+        is_retry = False
         if previous_error and "Error" in str(previous_error) and current_iter > 0:
-            print(f"   ⚠️ Reintentando corrección SQL ({current_iter})...")
-            error_context = f"ERROR PREVIO: {previous_error}. CORRIGE LA CONSULTA."
+            print(f"   🩹 [Self-Healing] Detectado error SQL. Intento de corrección #{current_iter}...")
+            print(f"      contexto: {str(previous_error)[:100]}...")
+            is_retry = True
 
-        prompt = ChatPromptTemplate.from_template(
-            """
-            Eres un experto SQL. Genera una consulta MySQL compatible.
-            
-            ESQUEMA:
+        prompt_template = """
+            Eres un arquitecto de bases de datos MySQL experto.
+            Tu tarea es generar UNA sola consulta SQL ejecutable para responder a la pregunta del usuario.
+
+            ESTRUCTURA DE TABLAS (Schema):
             {dictionary}
+
+            REGLAS CRÍTICAS:
+            1. Usa SOLO sintaxis MySQL estándar.
+            2. NO uses Markdown (```sql ... ```). Devuelve solo el código.
+            3. Si la pregunta busca 'últimos' o rankings, usa LIMIT.
+            4. Si hay nombres de columnas ambiguos, usa alias de tabla (t1.columna).
+        """
+
+        if is_retry:
+            prompt_template += f"""
             
-            ERRORES PREVIOS:
-            {error_context}
+            🚨 MODO DE CORRECCIÓN ACTIVADO 🚨
+            La consulta anterior FALLÓ con este error:
+            "{previous_error}"
             
-            PREGUNTA: "{question}"
-            
-            Responde SOLO el código SQL. Sin markdown.
+            ANALIZA EL ERROR Y CORRIGE LA CONSULTA:
+            - Si es "no such column": Verifica el diccionario y usa el nombre real.
+            - Si es "syntax error": Revisa comas, paréntesis y palabras clave.
+            - Si es "ambiguous column": Añade prefijos de tabla.
             """
-        )
+
+        prompt_template += """
+            PREGUNTA DEL USUARIO: "{question}"
+            
+            SQL Resultante:
+        """
+
+        prompt = ChatPromptTemplate.from_template(prompt_template)
+        
         chain = prompt | self.llm
         response = await chain.ainvoke({
             "dictionary": self.data_dictionary,
-            "error_context": error_context,
             "question": state["question"]
         })
+        
         sql = self._clean_content(response.content).replace("```sql", "").replace("```", "").strip()
+        print(f"   📝 Generado SQL: {sql[:60]}...")
+        
         return {"sql_query": sql, "iterations": current_iter + 1}
 
     # --- NODO 2: SQL EXECUTOR ---
     async def execute_query(self, state: AgentState):
         print("⚡ [Node: Exec] Ejecutando SQL...")
         try:
+            from sql_agent.database.connection import DatabaseManager # Importacion local para evitar ciclos si es necesario, pero mejor usar la global
             engine = DatabaseManager.get_engine()
             async with engine.connect() as conn:
                 result = await conn.execute(text(state["sql_query"]))
@@ -133,55 +192,45 @@ class AgentNodes:
             print(f"   ❌ Error SQL: {e}")
             return {"sql_result": f"Error SQL: {e}"}
 
-    # --- NODO 3: API EXECUTOR (NUEVO) ---
+    # --- NODO 3: API EXECUTOR (OPTIMIZADO) ---
     async def run_api_tool(self, state: AgentState):
         """
-        Ejecuta API con MEMORIA DE CONTEXTO y Protección Anti-Alucinaciones.
+        Ejecuta API utilizando el Agente Singleton (Fast-Path).
         """
         print("🌐 [Node: API] Ejecutando llamada a herramienta...")
         
-        if not self.api_tools:
+        if not self.api_agent_executor:
             return {"sql_result": "Error: Las herramientas de API no están configuradas."}
 
-        from langgraph.prebuilt import create_react_agent
-
-        # 1. Reglas (System Message)
-        instructions = """
-        Eres un operador de APIs preciso.
-        REGLAS:
-        1. Usa las herramientas para obtener datos REALES.
-        2. Si falla, reporta el error exacto.
-        3. NO inventes datos.
-        4. USA EL CONTEXTO: Si el usuario dice "ese endpoint", refiérete al último mencionado en la charla.
-        """
-        
-        api_agent = create_react_agent(self.llm, self.api_tools)
-        
         # 2. PREPARAR MEMORIA (CRÍTICO) 🧠
         # Obtenemos el historial previo del estado global
-        # Filtramos para no duplicar la pregunta actual si ya está en la lista
         history = state.get("messages", [])
         
-        # Si el historial tiene mensajes, los usamos. Si no, lista vacía.
         # Truco: Tomamos los últimos 5 mensajes para dar contexto sin saturar
         recent_history = history[-5:] if history else []
 
-        # 3. Construir la entrada completa para el sub-agente
-        # Orden: [Instrucciones Sistema] -> [Historial Chat] -> [Pregunta Actual]
-        input_messages = [SystemMessage(content=instructions)] + recent_history
+        # 3. Construir la entrada
+        # [FIX] Inyectamos SystemMessage manualmente aquí
+        input_messages = [SystemMessage(content=self.API_INSTRUCTIONS)] + list(recent_history)
         
-        # Verificamos si el último mensaje del historial es la pregunta actual.
-        # Si NO lo es, agregamos la pregunta manualmente.
         if not recent_history or recent_history[-1].content != state["question"]:
             input_messages.append(HumanMessage(content=state["question"]))
 
         try:
-            # Ejecutamos con contexto
-            result = await api_agent.ainvoke({"messages": input_messages})
+            # Ejecutamos el grafo pre-compilado
+            result = await self.api_agent_executor.ainvoke({"messages": input_messages})
             
-            last_message = result["messages"][-1].content
-            print(f"   🔙 [DEBUG API]: {str(last_message)[:300]}...") 
-            return {"sql_result": f"[Origen API] {last_message}"}
+            # Recuperamos el último mensaje
+            last_message_obj = result["messages"][-1]
+            last_message_content = last_message_obj.content
+            
+            # [OPTIMIZACIÓN] Eliminado chequeo estricto de herramientas (tool_calls_count == 0)
+            # Dado que inyectamos el resumen del Swagger en el SystemPrompt, el agente puede
+            # responder preguntas sobre "qué endpoints existen" usando su contexto válido sin alucinar.
+            # Confiamos en el LLM y el SystemPrompt para no inventar datos.
+            
+            print(f"   🔙 [DEBUG API]: {str(last_message_content)[:300]}...") 
+            return {"sql_result": f"[Origen API] {last_message_content}"}
             
         except Exception as e:
             print(f"   ❌ Error API: {e}")
