@@ -1,9 +1,10 @@
+version: "2.4"
 services:
   app:
     container_name: sql_agent_ui
     build: .
     ports:
-      - 8000:8000
+      - "8000:8000"
     env_file:
       - .env
     volumes:
@@ -32,11 +33,12 @@ services:
       - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-4-websecure.service=sqlagentoss-chatsqlagentoss-1bousy-4-websecure
       - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-4-websecure.tls.certresolver=letsencrypt
       - traefik.enable=true
+
   whatsapp_bridge:
     container_name: sql_agent_bridge
     build: .
     ports:
-      - 8001:8001
+      - "8001:8001"
     env_file:
       - .env
     volumes:
@@ -50,23 +52,29 @@ services:
       - evolution_api
     networks:
       - sql_agent_net
+
   evolution_api:
     container_name: evolution_api
     image: evoapicloud/evolution-api:v1.8.2
     restart: always
     ports:
-      - 8080:8080
+      - "8080:8080"
     environment:
       - SERVER_PORT=8080
       - AUTHENTICATION_API_KEY=${EVOLUTION_API_KEY}
       - DATABASE_ENABLED=true
+      - MONGODB_ENABLED=false
+      - MONGO_ENABLED=false
+      - MONGODB_URI=
       - DATABASE_PROVIDER=postgresql
       - DATABASE_CONNECTION_URI=postgresql://evo:evo_password@evolution_postgres:5432/evolution
       - REDIS_ENABLED=true
       - REDIS_URI=redis://evolution_redis:6379/1
     depends_on:
-      - evolution_postgres
-      - evolution_redis
+      evolution_postgres:
+        condition: service_healthy
+      evolution_redis:
+        condition: service_healthy
     networks:
       - sql_agent_net
       - dokploy-network
@@ -83,8 +91,8 @@ services:
       - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-5-websecure.service=sqlagentoss-chatsqlagentoss-1bousy-5-websecure
       - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-5-websecure.tls.certresolver=letsencrypt
       - traefik.enable=true
+
   evolution_postgres:
-    # ...
     container_name: evolution_postgres
     image: postgres:15-alpine
     restart: always
@@ -96,6 +104,12 @@ services:
       - evolution_postgres_data:/var/lib/postgresql/data
     networks:
       - sql_agent_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U evo -d evolution"]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+
   evolution_redis:
     container_name: evolution_redis
     image: redis:alpine
@@ -105,6 +119,12 @@ services:
       - evolution_redis_data:/data
     networks:
       - sql_agent_net
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping || exit 1"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+
   mysql_db:
     image: mysql:8.0-debian
     container_name: sql_agent_mysql
@@ -114,25 +134,22 @@ services:
       MYSQL_USER: admin
       MYSQL_PASSWORD: adminpassword
     ports:
-      - 3306:3306
+      - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./mysql_dump:/docker-entrypoint-initdb.d
     healthcheck:
-      test:
-        - CMD
-        - mysqladmin
-        - ping
-        - -h
-        - localhost
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 5s
       retries: 5
     networks:
       - sql_agent_net
+
 volumes:
   mysql_data: null
   evolution_postgres_data: null
   evolution_redis_data: null
+
 networks:
   sql_agent_net:
     driver: bridge
