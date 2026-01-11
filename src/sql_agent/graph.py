@@ -19,7 +19,7 @@ def check_sql_retry(state: AgentState):
     return "done"
 
 # --- Construcción ---
-def build_graph():
+def build_graph(checkpointer=None):
     nodes = AgentNodes()
     workflow = StateGraph(AgentState)
     
@@ -61,4 +61,4 @@ def build_graph():
     # 6. Salida
     workflow.add_edge("generate_answer", END)
     
-    return workflow.compile()
+    return workflow.compile(checkpointer=checkpointer)
