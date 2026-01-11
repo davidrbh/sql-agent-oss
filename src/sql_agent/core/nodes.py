@@ -157,8 +157,21 @@ class AgentNodes:
             - Si es "ambiguous column": Añade prefijos de tabla.
             """
 
-        prompt_template += """
-            PREGUNTA DEL USUARIO: "{question}"
+        # [FIX] Inyectar contexto de mensajes anteriores para resolver referencias ("y los activos?")
+        history_text = ""
+        messages = state.get("messages", [])
+        if messages:
+             # Tomamos los últimos 4 mensajes omitiendo el actual (que ya está en question)
+             relevant_msgs = messages[:-1][-4:] 
+             if relevant_msgs:
+                 history_text = "\nCONTEXTO CONVERSACIÓN PREVIA:\n" + "\n".join(
+                     [f"- {m.type.upper()}: {m.content}" for m in relevant_msgs]
+                 )
+
+        prompt_template += f"""
+            {history_text}
+            
+            PREGUNTA ACTUAL: "{{question}}"
             
             SQL Resultante:
         """
@@ -239,6 +252,7 @@ class AgentNodes:
     # --- NODO 4: RESPUESTA FINAL ---
     async def generate_answer(self, state: AgentState):
         print("🗣️ [Node: Answer] Resumiendo...")
+        
         prompt = ChatPromptTemplate.from_template(
             """
             Responde al usuario basándote en los datos obtenidos.

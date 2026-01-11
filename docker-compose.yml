@@ -1,5 +1,4 @@
 services:
-  # 🖥️ Interfaz de Chat (Chainlit) + Agente
   app:
     container_name: sql_agent_ui
     build: .
@@ -8,23 +7,69 @@ services:
     env_file:
       - .env
     volumes:
-      # Montar carpetas clave para desarrollo (Hot Reload)
       - ./src:/app/src
       - ./config:/app/config
       - ./docs:/app/docs
       - ./data:/app/data
       - ./scripts:/app/scripts
       - ./app.py:/app/app.py
-      # Persistencia de logs
       - ./logs:/app/logs
     command: chainlit run app.py -w --host 0.0.0.0 --port 8000
     restart: unless-stopped
-    # Descomentar si usas la DB local
-    # depends_on:
-    #   mysql_db:
-    #     condition: service_healthy
+    networks:
+      - sql_agent_net
+      - dokploy-network
+    labels:
+      - traefik.docker.network=dokploy-network
+      - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-4-web.rule=Host(`chat-agent-oss.passport1996.qzz.io`)
+      - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-4-web.entrypoints=web
+      - traefik.http.services.sqlagentoss-chatsqlagentoss-1bousy-4-web.loadbalancer.server.port=8000
+      - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-4-web.service=sqlagentoss-chatsqlagentoss-1bousy-4-web
+      - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-4-web.middlewares=redirect-to-https@file
+      - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-4-websecure.rule=Host(`chat-agent-oss.passport1996.qzz.io`)
+      - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-4-websecure.entrypoints=websecure
+      - traefik.http.services.sqlagentoss-chatsqlagentoss-1bousy-4-websecure.loadbalancer.server.port=8000
+      - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-4-websecure.service=sqlagentoss-chatsqlagentoss-1bousy-4-websecure
+      - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-4-websecure.tls.certresolver=letsencrypt
+      - traefik.enable=true
 
-  # 🗄️ Base de Datos Local (Opcional, para desarrollo/pruebas)
+  whatsapp-bridge:
+    container_name: sql_agent_bridge
+    build: .
+    ports:
+      - "8001:8001"
+    env_file:
+      - .env
+    environment:
+      - PYTHONPATH=/app/src
+    volumes:
+      - ./src:/app/src
+      - ./config:/app/config
+      - ./data:/app/data
+      - ./logs:/app/logs
+    command: uvicorn src.api.webhook:app --host 0.0.0.0 --port 8001 --reload
+    restart: unless-stopped
+    networks:
+      - sql_agent_net
+
+  waha:
+    image: devlikeapro/waha
+    container_name: waha
+    restart: always
+    ports:
+      - "3001:3000"
+    environment:
+      - WAHA_API_KEY=${WAHA_API_KEY}
+      - WAHA_DASHBOARD_USERNAME=${WAHA_DASHBOARD_USERNAME}
+      - WAHA_DASHBOARD_PASSWORD=${WAHA_DASHBOARD_PASSWORD}
+      - WHATSAPP_HOOK_URL=http://whatsapp-bridge:8001/webhook?secret=d22441e36f617c929ec21b4b8c873909fd74e4906f8bc64bde9828ba2858f02d
+      - WHATSAPP_HOOK_EVENTS=message
+    volumes:
+      - ./waha_sessions:/app/.sessions
+    networks:
+      - sql_agent_net
+      - dokploy-network
+
   mysql_db:
     image: mysql:8.0-debian
     container_name: sql_agent_mysql
@@ -34,7 +79,7 @@ services:
       MYSQL_USER: admin
       MYSQL_PASSWORD: adminpassword
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./mysql_dump:/docker-entrypoint-initdb.d
@@ -42,6 +87,14 @@ services:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 5s
       retries: 5
+    networks:
+      - sql_agent_net
 
 volumes:
-  mysql_data:
+  mysql_data: null
+
+networks:
+  sql_agent_net:
+    driver: bridge
+  dokploy-network:
+    external: true

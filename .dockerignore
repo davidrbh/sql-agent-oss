@@ -50,3 +50,5 @@ tmp/
 
 # Ignorar documentación generada localmente (opcional)
 site/
+waha_sessions/
+mysql_data/
