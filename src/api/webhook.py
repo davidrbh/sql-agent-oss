@@ -58,12 +58,17 @@ async def receive_message(request: Request, secret: Optional[str] = Query(None))
     if data.get("fromMe", False):
         return {"status": "ignored", "reason": "Self message"}
     
-    # Ignorar mensajes de estado o grupos (opcional)
-    # if "@g.us" in data.get("from", ""):
-    #      return {"status": "ignored", "reason": "Group message"}
-
     # 2. Extraer información
     remote_jid = data.get("from") # ID del chat (ej: 573001234567@c.us)
+    
+    # Bloquear mensajes de estado (stories) para evitar repostear
+    if "status@broadcast" in remote_jid:
+        return {"status": "ignored", "reason": "Status update"}
+    
+    # Ignorar mensajes de grupos (opcional - descomentar si se requiere)
+    # if "@g.us" in remote_jid:
+    #      return {"status": "ignored", "reason": "Group message"}
+
     push_name = data.get("_data", {}).get("notifyName", "User")
     
     # Extraer texto
