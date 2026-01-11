@@ -33,13 +33,15 @@ services:
       - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-4-websecure.tls.certresolver=letsencrypt
       - traefik.enable=true
 
-  whatsapp_bridge:
+  whatsapp-bridge:
     container_name: sql_agent_bridge
     build: .
     ports:
       - "8001:8001"
     env_file:
       - .env
+    environment:
+      - PYTHONPATH=/app/src
     volumes:
       - ./src:/app/src
       - ./config:/app/config
@@ -47,95 +49,26 @@ services:
       - ./logs:/app/logs
     command: uvicorn src.api.webhook:app --host 0.0.0.0 --port 8001 --reload
     restart: unless-stopped
-    depends_on:
-      - evolution_api
     networks:
       - sql_agent_net
 
-  evolution_api:
-    container_name: evolution_api
-    image: atendai/evolution-api:latest
+  waha:
+    image: devlikeapro/waha
+    container_name: waha
     restart: always
     ports:
-      - "8080:8080"
+      - "3000:3000"
     environment:
-      - SERVER_PORT=8080
-      - SERVER_URL=https://evolution-api.passport1996.qzz.io
-      - AUTHENTICATION_API_KEY=${EVOLUTION_API_KEY}
-      # Database Config
-      - DATABASE_ENABLED=true
-      - DATABASE_PROVIDER=postgresql
-      - DATABASE_CONNECTION_URI=postgresql://evo:evo_password@evolution_postgres:5432/evolution?schema=public
-      - DATABASE_CLIENT_NAME=evolution_exchange
-      - DATABASE_SAVE_DATA_INSTANCE=true
-      - DATABASE_SAVE_DATA_NEW_MESSAGE=true
-      - DATABASE_SAVE_MESSAGE_UPDATE=true
-      - DATABASE_SAVE_DATA_CONTACTS=true
-      - DATABASE_SAVE_DATA_CHATS=true
-      - DATABASE_SAVE_DATA_LABELS=true
-      - DATABASE_SAVE_DATA_HISTORIC=true
-      # Redis Config
-      - CACHE_REDIS_ENABLED=true
-      - CACHE_REDIS_URI=redis://evolution_redis:6379/1
-      - CACHE_REDIS_PREFIX_KEY=evolution
-      - CACHE_REDIS_SAVE_INSTANCES=true
-      - CACHE_LOCAL_ENABLED=true
-    depends_on:
-      evolution_postgres:
-        condition: service_healthy
-      evolution_redis:
-        condition: service_healthy
+      - WAHA_API_KEY=${WAHA_API_KEY}
+      - WAHA_DASHBOARD_USERNAME=${WAHA_DASHBOARD_USERNAME}
+      - WAHA_DASHBOARD_PASSWORD=${WAHA_DASHBOARD_PASSWORD}
+      - WHATSAPP_HOOK_URL=http://whatsapp-bridge:8001/webhook?secret=d22441e36f617c929ec21b4b8c873909fd74e4906f8bc64bde9828ba2858f02d
+      - WHATSAPP_HOOK_EVENTS=message
     volumes:
-      - evolution_instances:/evolution/instances
+      - ./waha_sessions:/app/.sessions
     networks:
       - sql_agent_net
       - dokploy-network
-    labels:
-      - traefik.docker.network=dokploy-network
-      - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-5-web.rule=Host(`evolution-api.passport1996.qzz.io`)
-      - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-5-web.entrypoints=web
-      - traefik.http.services.sqlagentoss-chatsqlagentoss-1bousy-5-web.loadbalancer.server.port=8080
-      - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-5-web.service=sqlagentoss-chatsqlagentoss-1bousy-5-web
-      - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-5-web.middlewares=redirect-to-https@file
-      - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-5-websecure.rule=Host(`evolution-api.passport1996.qzz.io`)
-      - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-5-websecure.entrypoints=websecure
-      - traefik.http.services.sqlagentoss-chatsqlagentoss-1bousy-5-websecure.loadbalancer.server.port=8080
-      - traefik.http.routers.sqlagentoss-chatsqlagentoss-1bousy-5-websecure.service=sqlagentoss-chatsqlagentoss-1bousy-5-websecure
-      - traefik.routers.sqlagentoss-chatsqlagentoss-1bousy-5-websecure.tls.certresolver=letsencrypt
-      - traefik.enable=true
-
-  evolution_postgres:
-    container_name: evolution_postgres
-    image: postgres:15-alpine
-    restart: always
-    environment:
-      - POSTGRES_USER=evo
-      - POSTGRES_PASSWORD=evo_password
-      - POSTGRES_DB=evolution
-    volumes:
-      - evolution_postgres_data_v4:/var/lib/postgresql/data
-    networks:
-      - sql_agent_net
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U evo -d evolution"]
-      interval: 5s
-      timeout: 2s
-      retries: 10
-
-  evolution_redis:
-    container_name: evolution_redis
-    image: redis:alpine
-    restart: always
-    command: redis-server --appendonly yes
-    volumes:
-      - evolution_redis_data_v4:/data
-    networks:
-      - sql_agent_net
-    healthcheck:
-      test: ["CMD-SHELL", "redis-cli ping || exit 1"]
-      interval: 5s
-      timeout: 2s
-      retries: 5
 
   mysql_db:
     image: mysql:8.0-debian
@@ -146,7 +79,7 @@ services:
       MYSQL_USER: admin
       MYSQL_PASSWORD: adminpassword
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./mysql_dump:/docker-entrypoint-initdb.d
@@ -159,9 +92,6 @@ services:
 
 volumes:
   mysql_data: null
-  evolution_postgres_data_v4:
-  evolution_redis_data_v4:
-  evolution_instances:
 
 networks:
   sql_agent_net:
