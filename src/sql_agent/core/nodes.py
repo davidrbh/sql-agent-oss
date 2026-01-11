@@ -240,26 +240,18 @@ class AgentNodes:
     async def generate_answer(self, state: AgentState):
         print("🗣️ [Node: Answer] Resumiendo...")
         
-        # Optimización: Recortar resultado si es muy extenso para agilizar el LLM
-        raw_result = str(state.get("sql_result", "Sin datos"))
-        if len(raw_result) > 4000:
-            raw_result = raw_result[:4000] + "... (datos truncados por longitud)"
-
         prompt = ChatPromptTemplate.from_template(
             """
-            Eres un asistente directo y conciso.
-            Responde a la pregunta usando SOLO los datos proprocionados abajo.
-            
+            Responde al usuario basándote en los datos obtenidos.
+            Fuente de datos: {intent}
+            Datos: {result}
             Pregunta: {question}
-            Datos crudos: {result}
-            
-            Respuesta breve y clara:
             """
         )
         chain = prompt | self.llm
         res = await chain.ainvoke({
             "intent": state.get("intent", "GENERAL"),
-            "result": raw_result,
+            "result": state.get("sql_result", "Sin datos"),
             "question": state["question"]
         })
         return {"messages": [res]}
