@@ -5,8 +5,9 @@ from fastapi import FastAPI, Request, HTTPException, Query
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
 
-# Importar el Singleton del Agente
+# Importar el Singleton del Agente y MemorySaver
 from sql_agent.graph import build_graph
+from langgraph.checkpoint.memory import MemorySaver
 from langchain_core.messages import HumanMessage
 
 # Configuración
@@ -14,9 +15,10 @@ WAHA_BASE_URL = os.getenv("WAHA_BASE_URL", "http://waha:3000")
 WAHA_API_KEY = os.getenv("WAHA_API_KEY", "")
 AGENT_API_KEY = os.getenv("AGENT_API_KEY", "secret_agent_key") # Para proteger nuestro webhook
 
-# Inicializar App y Grafo
+# Inicializar App y Grafo con Memoria
 app = FastAPI(title="WhatsApp Bridge for SQL Agent (WAHA)")
-agent_graph = build_graph()
+memory = MemorySaver()
+agent_graph = build_graph(checkpointer=memory)
 
 # Logger
 logging.basicConfig(level=logging.INFO)
@@ -74,16 +76,26 @@ async def receive_message(request: Request, secret: Optional[str] = Query(None))
 
     # 3. Invocar al Agente SQL
     try:
+        session_name = payload.get("session", "default")
+        
+        # Activar 'Escribiendo...' en WhatsApp
+        await set_typing_state(remote_jid, session_name, True)
+        
         inputs = {
             "question": user_text,
             "messages": [HumanMessage(content=user_text)] 
         }
         
-        result = await agent_graph.ainvoke(inputs)
+        # Usar remote_jid como thread_id para mantener memoria por usuario
+        config = {"configurable": {"thread_id": remote_jid}}
+        
+        result = await agent_graph.ainvoke(inputs, config=config)
         ai_response = result["messages"][-1].content
         
+        # Desactivar 'Escribiendo...'
+        await set_typing_state(remote_jid, session_name, False)
+        
         # 4. Enviar respuesta a WhatsApp via WAHA
-        session_name = payload.get("session", "default")
         await send_whatsapp_message(remote_jid, ai_response, session_name)
         
     except Exception as e:
@@ -115,4 +127,31 @@ async def send_whatsapp_message(chat_id: str, text: str, session: str):
                 logger.error(f"⚠️ Fallo al enviar WhatsApp: {resp.status} - {error_text}")
             else:
                 logger.info(f"📤 Respuesta enviada a {chat_id}")
+
+async def set_typing_state(chat_id: str, session: str, state: bool = True):
+    """
+    Activa o desactiva el estado 'escribiendo...' en WhatsApp.
+    state=True -> startTyping
+    state=False -> stopTyping
+    """
+    endpoint = "startTyping" if state else "stopTyping"
+    url = f"{WAHA_BASE_URL}/api/{endpoint}"
+    
+    headers = {
+        "X-Api-Key": WAHA_API_KEY,
+        "Content-Type": "application/json"
+    }
+    
+    body = {
+        "chatId": chat_id,
+        "session": session
+    }
+    
+    try:
+        async with aiohttp.ClientSession() as session_http:
+            async with session_http.post(url, json=body, headers=headers) as resp:
+                if resp.status not in [200, 201]:
+                    logger.warning(f"⚠️ Fallo al cambiar estado typing ({endpoint}): {resp.status}")
+    except Exception as e:
+        logger.error(f"⚠️ Error conectando con WAHA para typing: {e}")
 
