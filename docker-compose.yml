@@ -57,7 +57,7 @@ services:
     container_name: waha
     restart: always
     ports:
-      - "3000:3000"
+      - "3001:3000"
     environment:
       - WAHA_API_KEY=${WAHA_API_KEY}
       - WAHA_DASHBOARD_USERNAME=${WAHA_DASHBOARD_USERNAME}
