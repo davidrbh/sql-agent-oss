@@ -79,16 +79,26 @@ async def receive_message(request: Request, secret: Optional[str] = Query(None))
 
     logger.info(f"📩 Mensaje de {push_name} ({remote_jid}): {user_text}")
 
-    # 3. Invocar al Agente SQL
+        # 3. Invocar al Agente SQL
     try:
         session_name = payload.get("session", "default")
         
         # Activar 'Escribiendo...' en WhatsApp
         await set_typing_state(remote_jid, session_name, True)
         
+        # [CRITICAL UPDATE]
+        # Al usar checkpoints (Memoria), el estado persiste entre turnos.
+        # Debemos limpiar las variables de ejecución (intent, sql_result, etc.)
+        # para que no contaminen la nueva pregunta. Solo conservamos 'messages'.
         inputs = {
             "question": user_text,
-            "messages": [HumanMessage(content=user_text)] 
+            "messages": [HumanMessage(content=user_text)],
+            
+            # Reset de "Memoria de Trabajo" para evitar alucinaciones con datos viejos
+            "intent": "",       
+            "sql_query": "",
+            "sql_result": "",
+            "iterations": 0
         }
         
         # Usar remote_jid como thread_id para mantener memoria por usuario
