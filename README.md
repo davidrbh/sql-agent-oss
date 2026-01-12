@@ -33,6 +33,7 @@ Este proyecto implementa una arquitectura de **Sistema de IA Compuesto** que sep
 - **🧠 Capa Semántica v2.5:** Define "Modelos Lógicos" en YAML que abstraen la complejidad física de las tablas para el negocio.
 - **🚦 Router de Intención:** Clasifica preguntas en `DATABASE`, `API` o `GENERAL` para usar la herramienta óptima.
 - **⚡ AsyncIO Nativo:** Núcleo 100% asíncrono para manejar alta concurrencia en I/O.
+- **📱 Integración con WhatsApp:** Conexión vía WAHA para interacciones naturales, con memoria de conversaciones, indicadores de escritura y filtros de status. Ver [docs/05_whatsapp_integration.md](docs/05_whatsapp_integration.md).
 
 ## 🏗️ Estructura del Proyecto
 
@@ -113,8 +114,10 @@ poetry run python scripts/run_agent.py
 - [x] Extracción de Esquema
 - [x] Hidratación Semántica con IA
 - [x] Bucle de Razonamiento (LangGraph)
+- [x] Integración con WhatsApp (WAHA)
 - [ ] Interfaz de Chat (Chainlit/Streamlit)
 - [ ] Tests de integración API
+- [ ] Migración a MCP para interoperabilidad
 
 ## 🤝 Contribución
 
