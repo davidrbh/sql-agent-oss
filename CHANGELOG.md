@@ -5,6 +5,36 @@ All notable changes to the **SQL Agent OSS** project will be documented in this 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v2.2.0] - 2026-01-11
+
+### 🚀 WhatsApp Integration & Memory Enhancements
+
+- **Migración de Evolution API a WAHA**:
+  - Reemplazado Evolution API con WAHA (WhatsApp HTTP API) para mayor estabilidad y ligereza.
+  - Actualizada arquitectura de contenedores: `waha` (motor WhatsApp) y `agent-bridge` (FastAPI intermedio).
+  - Mejorada configuración de sesiones, QR scanning y webhooks.
+- **Memoria de Conversaciones Persistente**:
+  - Implementado LangGraph MemorySaver para mantener contexto entre mensajes en WhatsApp.
+  - Agregado reset de estado de trabajo para evitar contaminación entre consultas.
+  - Inyección de historial de chat en prompts de SQL para mayor precisión (e.g., referencias como "y los activos?").
+- **Indicadores de Escritura (Typing)**:
+  - Agregado soporte para "escribiendo..." en WhatsApp durante procesamiento del agente.
+  - Mejora la experiencia de usuario simulando respuestas humanas.
+- **Filtros de Seguridad**:
+  - Bloqueo de mensajes de status@broadcast para evitar respuestas automáticas a stories.
+  - Webhook protegido con secrets para mayor seguridad.
+
+### ✨ New Features
+
+- **Self-Healing Contextual**: El generador SQL ahora recibe historial de conversación para resolver ambigüedades.
+- **Optimización de Respuestas**: Truncado de datos largos en prompts para reducir latencia del LLM.
+
+### 📚 Documentation
+
+- Reescrita `docs/05_whatsapp_integration.md` para WAHA.
+- Actualizado `README.md` con nueva característica de WhatsApp y roadmap.
+- Agregadas referencias cruzadas en `overview.md` e `infrastructure_spec.md`.
+
 ## [v2.1.0] - 2026-01-10
 
 ### 🚀 Major Performance & Architecture Updates ("Fast Agent")
