@@ -82,7 +82,7 @@ Se mantiene el uso de `asyncio` para todas las operaciones I/O (DB y HTTP Reques
 - **LLM:** DeepSeek / OpenAI (Configurable vía Factory)
 - **Integración API:** OpenAPIToolkit + RequestsWrapper
 - **Base de Datos:** SQLAlchemy Async + Drivers nativos
-- **Interfaz:** CLI (Script Python) actualmente, extensible a Web.
+- **Interfaz:** CLI (Script Python), Web UI (Chainlit) y WhatsApp (WAHA) actualmente, extensible a más canales.
 
 ## 5. Estrategia de Seguridad
 
