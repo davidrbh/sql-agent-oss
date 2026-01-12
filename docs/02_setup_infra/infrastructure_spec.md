@@ -12,6 +12,9 @@ El proyecto utiliza **Docker** para orquestar los servicios, garantizando que el
     - **Inyección de Datos:** Se utiliza el directorio `./mysql_dump/` mapeado a `/docker-entrypoint-initdb.d`. Cualquier archivo `.sql` colocado aquí se ejecutará automáticamente al crear el contenedor por primera vez.
 2.  **Interfaz de Gestión (Adminer):**
     - Herramienta ligera para inspección visual de datos y depuración de queries sin necesidad de clientes instalados localmente.
+3.  **WhatsApp Integration (WAHA + Agent Bridge):**
+    - **WAHA:** Motor que conecta a WhatsApp via WebJS o Noweb, manejando sesiones y webhooks.
+    - **Agent Bridge:** Servidor FastAPI que recibe mensajes de WhatsApp, maneja memoria de conversaciones y orquesta respuestas del agente. Incluye servicios para WhatsApp via WAHA.
 
 ## 2. Estrategia de Conexión de Datos
 
