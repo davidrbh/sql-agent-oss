@@ -11,6 +11,10 @@ dist/
 build/
 *.egg-info/
 .DS_Store
+
+# Turborepo
+.turbo/
+
 # Logs
 logs/
 *.log
@@ -21,3 +25,17 @@ mysql_data/
 data/chroma_db/
 chroma_db/
 waha_sessions/
+
+# Node.js / TypeScript
+node_modules/
+npm-debug.log
+pnpm-debug.log*
+yarn-error.log
+
+# Monorepo / Services artifacts
+services/*/dist/
+services/*/coverage/
+apps/*/pt_cache/
+
+# New Logs structure
+data/logs/
