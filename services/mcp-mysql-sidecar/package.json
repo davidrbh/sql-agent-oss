@@ -1,0 +1,28 @@
+{
+  "name": "mcp-mysql-sidecar",
+  "version": "1.0.0",
+  "description": "Bridge TypeScript SSE para MCP MySQL",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "swc src -d dist --copy-files",
+    "start": "node dist/index.js",
+    "dev": "node --loader ts-node/esm src/index.ts"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.2.0",
+    "@modelcontextprotocol/sdk": "^0.6.0",
+    "@swc/cli": "^0.7.10",
+    "@swc/core": "^1.15.8",
+    "@swc/core-linux-x64-musl": "^1.15.8",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "fastify": "^5.6.2",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/node": "^20.19.29",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.3.3"
+  }
+}

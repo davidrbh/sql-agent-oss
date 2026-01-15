@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "sql-agent-host"
+version = "0.1.0"
+description = "Python Agent Host"
+authors = ["Admin <admin@example.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.109.0"
+uvicorn = "^0.27.0"
+httpx = "^0.27.0"
+mcp = "^0.1.0"
+sse-starlette = "^1.8.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
