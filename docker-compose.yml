@@ -28,3 +28,4 @@ services:
     volumes:
       - ./apps/agent-host/src:/app/src # Hot reload logic support
       - ./config:/app/config
+      - ./data:/app/data

@@ -6,6 +6,9 @@ from fastapi import FastAPI
 from mcp import ClientSession
 from mcp.client.sse import sse_client
 
+# Importar el Singleton Manager
+from sql_agent.utils.mcp_client import mcp_manager
+
 # Configuración
 SIDECAR_URL = "http://mcp-mysql:3000"  # Sin /sse para el health check
 
@@ -41,8 +44,10 @@ async def lifespan(app: FastAPI):
             print("🚀 Conectado a MCP MySQL via SSE")
             await session.initialize()
             
-            # Guardar en estado
+            # Guardar en estado Y en el Singleton para los nodos
             app.state.mcp_mysql = session
+            mcp_manager.set_session(session)
+            
             yield
 
     print("🛑 Desconectando MCP...")
