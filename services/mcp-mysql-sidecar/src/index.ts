@@ -46,7 +46,7 @@ const start = async () => {
       capabilities: {
         tools: {},
       },
-    }
+    },
   );
 
   // Define tools
@@ -151,7 +151,7 @@ const start = async () => {
         // @ts-expect-error - req.body is raw stream
         await transport.handlePostMessage(req.body, reply.raw);
       }
-    }
+    },
   );
 
   try {
