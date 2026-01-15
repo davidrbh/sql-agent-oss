@@ -1,0 +1,8 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "./services/mcp-mysql-sidecar"
+    }
+  ]
+}
