@@ -3,12 +3,14 @@ services:
   mcp-mysql:
     build:
       context: ./services/mcp-mysql-sidecar
+    env_file:
+      - .env
     environment:
-      # VARIABLES CRÍTICAS: Reemplaza con tus datos reales o usa un .env
-      - MYSQL_HOST=host.docker.internal # O la IP de tu BD
-      - MYSQL_USER=${MYSQL_USER:-admin}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-adminpassword}
-      - MYSQL_DATABASE=${MYSQL_DATABASE:-production_copy}
+      # Mapeo de variables del .env (DB_*) a las esperadas por el Sidecar (MYSQL_*)
+      - MYSQL_HOST=${DB_HOST}
+      - MYSQL_USER=${DB_USER}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+      - MYSQL_DATABASE=${DB_NAME}
       - MYSQL_PORT=3306
     ports:
       - "3000:3000"
@@ -23,6 +25,8 @@ services:
       - "8000:8000"
     depends_on:
       - mcp-mysql
+    env_file:
+      - .env
     environment:
       - SIDECAR_URL=http://mcp-mysql:3000
     volumes:
