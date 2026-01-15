@@ -9,7 +9,8 @@ from langchain_core.prompts import ChatPromptTemplate
 # Importamos la Fábrica y Configuración
 from sql_agent.llm.factory import LLMFactory
 from sql_agent.config.loader import ConfigLoader
-from sql_agent.database.connection import DatabaseManager
+# from sql_agent.database.connection import DatabaseManager # REPLACE
+from sql_agent.utils.mcp_client import mcp_manager
 from sql_agent.database.inspector import SchemaExtractor
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
@@ -64,20 +65,24 @@ class SemanticHydrator:
 
     async def _get_sample_data(self, table_name: str, limit: int = 3):
         """Obtiene 3 filas de muestra para que el Agente vea el formato real."""
-        engine = DatabaseManager.get_engine()
-        async with engine.connect() as conn:
-            try:
-                # Extraemos solo el nombre de la tabla si tiene esquema (ej: db.tabla -> tabla)
-                clean_name = table_name.split('.')[-1]
-                query = text(f"SELECT * FROM {clean_name} LIMIT {limit}")
-                result = await conn.execute(query)
-                rows = result.fetchall()
-                keys = result.keys()
-                # Convertimos a string para evitar errores de serialización (fechas, decimales)
-                return [{key: str(val) for key, val in zip(keys, row)} for row in rows]
-            except Exception as e:
-                print(f"   ⚠️ No se pudo obtener muestra de '{table_name}': {e}")
-                return []
+        try:
+            # Extraemos solo el nombre de la tabla si tiene esquema (ej: db.tabla -> tabla)
+            clean_name = table_name.split('.')[-1]
+            sql = f"SELECT * FROM {clean_name} LIMIT {limit}"
+            
+            result_json = await mcp_manager.execute_query(sql)
+            rows = json.loads(result_json)
+            
+            if not rows: return []
+            
+            # Convertimos a string para evitar errores de serialización
+            # Si MCP devuelve JSON, los tipos ya son JS-compatible (str, num, etc)
+            # Aseguramos formato [{k: str(v)}]
+            return [{k: str(v) for k, v in row.items()} for row in rows]
+            
+        except Exception as e:
+            print(f"   ⚠️ No se pudo obtener muestra de '{table_name}': {e}")
+            return []
 
     def _clean_json_string(self, content: str) -> str:
         """Limpieza robusta para extraer JSON de la respuesta del LLM."""

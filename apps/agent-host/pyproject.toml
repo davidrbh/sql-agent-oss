@@ -49,6 +49,10 @@ fastapi = "^0.128.0"
 uvicorn = "^0.40.0"
 requests = "^2.32.5"
 aiohttp = "^3.13.3"
+mcp = "^1.25.0"
+
+# ACTUALIZADO: httpx debe ser >=0.28.1 para compatibilidad con google-genai
+httpx = "^0.28.1"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.1.14"

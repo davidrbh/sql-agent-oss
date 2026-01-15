@@ -1,6 +1,7 @@
-from sqlalchemy import inspect
-# Eliminamos 'text' ya que no se usa en este archivo específico
-from .connection import DatabaseManager
+import json
+from sql_agent.utils.mcp_client import mcp_manager
+# from sqlalchemy import inspect # Removed
+# from .connection import DatabaseManager # Removed
 
 class SchemaExtractor:
     """
@@ -11,35 +12,46 @@ class SchemaExtractor:
     @staticmethod
     async def get_schema_info():
         """
-        Extrae la lista de tablas y sus columnas usando SQLAlchemy Inspector.
+        Extrae la lista de tablas y sus columnas usando MCP Sidecar.
         Retorna un diccionario estructurado.
         """
-        engine = DatabaseManager.get_engine()
+        print("🔍 [SchemaExtractor] Fetching schema via MCP...")
+        session = await mcp_manager.get_session()
         
-        # Inicializamos el diccionario vacío
+        # 1. Listar Tablas
+        # Sidecar 'list_tables' -> content: JSON string of [{"Tables_in_xyz": "tablename"}]
+        result = await session.call_tool("list_tables", arguments={})
+        text_content = "".join([c.text for c in result.content if c.type == 'text'])
+        
+        try:
+            tables_raw = json.loads(text_content)
+            tables = []
+            for row in tables_raw:
+                # Extraer el primer valor (nombre de la tabla)
+                tables.extend(list(row.values()))
+        except Exception as e:
+            print(f"❌ Error parsing tables list: {e}")
+            return {}
+            
         schema_info = {}
         
-        # SQLAlchemy Async requiere 'run_sync' para operaciones de inspección (Inspector es síncrono)
-        async with engine.connect() as conn:
-            def sync_inspect(connection):
-                inspector = inspect(connection)
-                tables = inspector.get_table_names()
+        # 2. Detalar cada tabla
+        for table in tables:
+            try:
+                desc_result = await session.call_tool("describe_table", arguments={"tableName": table})
+                desc_text = "".join([c.text for c in desc_result.content if c.type == 'text'])
+                columns_data = json.loads(desc_text)
                 
-                data = {}
-                for table in tables:
-                    columns = inspector.get_columns(table)
-                    # Simplificamos la salida para no saturar al LLM con metadatos innecesarios
-                    data[table] = [
-                        {
-                            "name": col["name"],
-                            "type": str(col["type"]),
-                            "nullable": col["nullable"]
-                        }
-                        for col in columns
-                    ]
-                return data
-
-            # Ejecutamos la función síncrona dentro del contexto asíncrono
-            schema_info = await conn.run_sync(sync_inspect)
-            
+                # Mapear formato DESCRIBE normalizado
+                schema_info[table] = [
+                    {
+                        "name": col.get("Field") or col.get("name"),
+                        "type": col.get("Type") or col.get("type"),
+                        "nullable": (col.get("Null") == "YES") or (col.get("nullable") == True)
+                    }
+                    for col in columns_data
+                ]
+            except Exception as e:
+                print(f"⚠️ Error describing table {table}: {e}")
+                
         return schema_info

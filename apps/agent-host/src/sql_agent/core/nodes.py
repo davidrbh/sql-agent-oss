@@ -9,7 +9,8 @@ from langgraph.prebuilt import create_react_agent  # MOVED TO TOP-LEVEL
 from sql_agent.llm.factory import LLMFactory
 from sql_agent.core.state import AgentState
 from sql_agent.config.loader import ConfigLoader
-from sql_agent.database.connection import DatabaseManager
+# from sql_agent.database.connection import DatabaseManager # Legacy
+from sql_agent.utils.mcp_client import mcp_manager
 
 # --- IMPORTACIÓN DE LA API (NUEVA UBICACIÓN) ---
 try:
@@ -191,16 +192,23 @@ class AgentNodes:
 
     # --- NODO 2: SQL EXECUTOR ---
     async def execute_query(self, state: AgentState):
-        print("⚡ [Node: Exec] Ejecutando SQL...")
+        print("⚡ [Node: Exec] Ejecutando SQL (via MCP)...")
         try:
-            from sql_agent.database.connection import DatabaseManager # Importacion local para evitar ciclos si es necesario, pero mejor usar la global
-            engine = DatabaseManager.get_engine()
-            async with engine.connect() as conn:
-                result = await conn.execute(text(state["sql_query"]))
-                rows = [dict(row._mapping) for row in result.fetchall()] # Mapeo seguro
-                # Truncar si es muy largo
-                if len(rows) > 15: rows = rows[:15] + [{"note": "...más resultados..."}]
-                return {"sql_result": str(rows)}
+            # Reemplazo de DatabaseManager por mcp_manager
+            # El cliente MCP se conecta al Sidecar que ejecuta la query
+            result_json = await mcp_manager.execute_query(state["sql_query"])
+            
+            # Procesamiento de resultados
+            import json
+            try:
+                rows = json.loads(result_json)
+                if isinstance(rows, list) and len(rows) > 15:
+                    rows = rows[:15] + [{"note": "...más resultados..."}]
+                    return {"sql_result": str(rows)}
+            except:
+                pass # Si falla el parseo, devolvemos el raw string
+
+            return {"sql_result": result_json}
         except Exception as e:
             print(f"   ❌ Error SQL: {e}")
             return {"sql_result": f"Error SQL: {e}"}
