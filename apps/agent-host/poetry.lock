@@ -2342,6 +2342,23 @@ langchain-core = ">=1.2.5,<2.0.0"
 pydantic = ">=2.0.0,<3.0.0"
 
 [[package]]
+name = "langchain-mcp-adapters"
+version = "0.2.1"
+description = "Make Anthropic Model Context Protocol (MCP) tools compatible with LangChain and LangGraph agents."
+optional = false
+python-versions = ">=3.10"
+groups = ["main"]
+files = [
+    {file = "langchain_mcp_adapters-0.2.1-py3-none-any.whl", hash = "sha256:9f96ad4c64230f6757297fec06fde19d772c99dbdfbca987f7b7cfd51ff77240"},
+    {file = "langchain_mcp_adapters-0.2.1.tar.gz", hash = "sha256:58e64c44e8df29ca7eb3b656cf8c9931ef64386534d7ca261982e3bdc63f3176"},
+]
+
+[package.dependencies]
+langchain-core = ">=1.0.0,<2.0.0"
+mcp = ">=1.9.2"
+typing-extensions = ">=4.14.0"
+
+[[package]]
 name = "langchain-openai"
 version = "1.1.7"
 description = "An integration package connecting OpenAI and LangChain"
@@ -7352,4 +7369,4 @@ cffi = ["cffi (>=1.17,<2.0) ; platform_python_implementation != \"PyPy\" and pyt
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<3.13"
-content-hash = "295d5466f7c64377832e68c35a23faf67491f787948c1b05462f0e66db872ba3"
+content-hash = "b907b4e26c0a55c6f75b8c36f89a0ae241e9b88186d325e9f2ef23cf0e9f95a5"

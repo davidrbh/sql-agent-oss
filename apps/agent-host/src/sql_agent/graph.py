@@ -1,64 +1,87 @@
+import os
+from typing import List
+from langchain_openai import ChatOpenAI
+from langchain_core.tools import BaseTool
+from langchain_core.messages import ToolMessage
 from langgraph.graph import StateGraph, END
-from sql_agent.core.state import AgentState
-from sql_agent.core.nodes import AgentNodes
+from langgraph.prebuilt import ToolNode
 
-# --- Lógica Condicional ---
-def route_intent(state: AgentState):
-    """Router Principal"""
-    intent = state.get("intent", "GENERAL")
-    if intent == "DATABASE": return "write_query"
-    if intent == "API": return "call_api"
-    return "generate_answer"
+# Importa tu estado (asegúrate de que coincida con tu archivo actual)
+from sql_agent.core.state import AgentState 
 
-def check_sql_retry(state: AgentState):
-    """Router de Reintento SQL"""
-    result = state.get("sql_result", "")
-    iters = state.get("iterations", 0)
-    if "Error" in str(result) and iters < 3:
-        return "retry"
-    return "done"
+def build_graph(tools: List[BaseTool]):
+    """
+    Construye el Grafo del Agente inyectando las herramientas dinámicas del Sidecar.
+    """
+    # 1. Configurar el LLM con las herramientas reales
+    # Usamos DeepSeek como LLM principal
+    llm = ChatOpenAI(
+        model="deepseek-chat",
+        temperature=0,
+        api_key=os.getenv("DEEPSEEK_API_KEY"),
+        base_url="https://api.deepseek.com"
+    )
+    llm_with_tools = llm.bind_tools(tools)
 
-# --- Construcción ---
-def build_graph(checkpointer=None):
-    nodes = AgentNodes()
+    # 2. Nodo del Agente (El Cerebro)
+    def agent_node(state: AgentState):
+        messages = state["messages"]
+        print(f"DEBUG MESSAGES: {messages}") 
+
+        # --- SANITIZATION FOR DEEPSEEK ---
+        # DeepSeek API (OpenAI compat) falla si el contenido de ToolMessage es una lista de dicts.
+        # LangChain ToolNode a veces devuelve bloques de contenido multimodal. Lo aplanamos a texto.
+        sanitized_messages = []
+        for m in messages:
+            if isinstance(m, ToolMessage) and isinstance(m.content, list):
+                # Unir todos los bloques de texto
+                text_content = "".join([
+                    block.get("text", "") for block in m.content 
+                    if isinstance(block, dict) and block.get("type") == "text"
+                ])
+                # Crear nueva copia con contenido string
+                new_m = ToolMessage(
+                    content=text_content, 
+                    tool_call_id=m.tool_call_id, 
+                    name=m.name,
+                    artifact=m.artifact
+                )
+                sanitized_messages.append(new_m)
+            else:
+                sanitized_messages.append(m)
+
+        response = llm_with_tools.invoke(sanitized_messages)
+        return {"messages": [response]}
+
+    # 3. Nodo de Herramientas (El Brazo)
+    # ToolNode de LangGraph ejecuta automáticamente la herramienta que el LLM pida
+    tool_node = ToolNode(tools)
+
+    # 4. Definición del Flujo (Workflow)
     workflow = StateGraph(AgentState)
-    
-    # 1. Añadir Nodos
-    workflow.add_node("router", nodes.classify_intent)
-    workflow.add_node("write_query", nodes.write_query)
-    workflow.add_node("execute_query", nodes.execute_query)
-    workflow.add_node("call_api", nodes.run_api_tool)
-    workflow.add_node("generate_answer", nodes.generate_answer)
-    
-    # 2. Punto de Entrada
-    workflow.set_entry_point("router")
-    
-    # 3. Conexiones del Router (La "Y")
+
+    workflow.add_node("agent", agent_node)
+    workflow.add_node("tools", tool_node)
+
+    workflow.set_entry_point("agent")
+
+    # Lógica condicional: ¿El LLM quiere usar una herramienta o responder al usuario?
+    def should_continue(state):
+        last_message = state["messages"][-1]
+        if last_message.tool_calls:
+            return "tools"
+        return END
+
     workflow.add_conditional_edges(
-        "router",
-        route_intent,
+        "agent",
+        should_continue,
         {
-            "write_query": "write_query",
-            "call_api": "call_api",
-            "generate_answer": "generate_answer"
+            "tools": "tools",
+            END: END
         }
     )
-    
-    # 4. Rama SQL
-    workflow.add_edge("write_query", "execute_query")
-    workflow.add_conditional_edges(
-        "execute_query",
-        check_sql_retry,
-        {
-            "retry": "write_query",
-            "done": "generate_answer"
-        }
-    )
-    
-    # 5. Rama API
-    workflow.add_edge("call_api", "generate_answer")
-    
-    # 6. Salida
-    workflow.add_edge("generate_answer", END)
-    
-    return workflow.compile(checkpointer=checkpointer)
+
+    # El agente vuelve a pensar después de usar una herramienta
+    workflow.add_edge("tools", "agent")
+
+    return workflow.compile()
