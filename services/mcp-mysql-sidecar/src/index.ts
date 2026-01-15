@@ -1,15 +1,29 @@
-import Fastify, { FastifyRequest, FastifyReply } from "fastify";
+import "dotenv/config";
+
 import cors from "@fastify/cors";
-import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
 import {
-  ListToolsRequestSchema,
   CallToolRequestSchema,
+  ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { z } from "zod";
+import Fastify, { FastifyReply, FastifyRequest } from "fastify";
+import mysql from "mysql2/promise";
+// import { z } from "zod";
 
 const fastify = Fastify({
   logger: true,
+});
+
+// 1. Connection Pool (Outside handler to be persistent)
+const pool = mysql.createPool({
+  host: process.env.MYSQL_HOST,
+  user: process.env.MYSQL_USER,
+  password: process.env.MYSQL_PASSWORD,
+  database: process.env.MYSQL_DATABASE,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
 });
 
 const start = async () => {
@@ -37,6 +51,8 @@ const start = async () => {
 
   // Define tools
   server.setRequestHandler(ListToolsRequestSchema, async () => {
+    // Simulated async operation
+    await Promise.resolve();
     return {
       tools: [
         {
@@ -56,18 +72,35 @@ const start = async () => {
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     if (request.params.name === "query") {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const sql = Array.isArray(request.params.arguments?.sql)
         ? request.params.arguments?.sql[0]
         : request.params.arguments?.sql;
 
       if (typeof sql !== "string") {
-        throw new Error("Invalid SQL argument");
+        throw new TypeError("Invalid SQL argument");
       }
 
-      // In a real implementation, we'd connect to MySQL here
-      return {
-        content: [{ type: "text", text: `Executed: ${sql}` }],
-      };
+      try {
+        // 2. REAL EXECUTION (Replaces Mock)
+        const [rows] = await pool.execute(sql);
+
+        return {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(rows, null, 2), // Return real data as JSON
+            },
+          ],
+        };
+      } catch (error) {
+        return {
+          isError: true,
+          content: [
+            { type: "text", text: `MySQL Error: ${(error as Error).message}` },
+          ],
+        };
+      }
     }
     throw new Error("Tool not found");
   });
@@ -75,7 +108,9 @@ const start = async () => {
   // Map of sessionId -> Transport
   const transports = new Map<string, SSEServerTransport>();
 
-  fastify.get("/health", async (req, reply) => {
+  fastify.get("/health", async () => {
+    // Simulated async health check
+    await Promise.resolve();
     return { status: "ok" };
   });
 
@@ -113,7 +148,7 @@ const start = async () => {
         reply.hijack();
 
         // req.body is now the raw stream because of our custom parser
-        // @ts-ignore
+        // @ts-expect-error - req.body is raw stream
         await transport.handlePostMessage(req.body, reply.raw);
       }
     }
@@ -121,10 +156,11 @@ const start = async () => {
 
   try {
     await fastify.listen({ port: 3000, host: "0.0.0.0" });
-  } catch (err) {
-    fastify.log.error(err);
+  } catch (error) {
+    fastify.log.error(error);
+    // eslint-disable-next-line unicorn/no-process-exit
     process.exit(1);
   }
 };
 
-start();
+void start();
