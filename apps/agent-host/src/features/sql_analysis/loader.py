@@ -7,14 +7,19 @@ from infra.mcp.loader import get_agent_tools as get_mcp_tools # Reusing existing
 
 # We need to calculate paths relative to this feature
 # apps/agent-host/src/features/sql_analysis/loader.py
-BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
-# apps/agent-host/src/features/sql_analysis -> features -> src -> agent-host -> apps -> root
-# Actually, let's use relative to 'config' folder in root if that's where business_context is.
-# Current structure:
-# root/config/business_context.yaml
-# root/apps/agent-host/src/features/sql_analysis/loader.py
 
-CONFIG_DIR = BASE_DIR / "config"
+# Detección inteligente del entorno (Docker vs Local)
+# En Docker, WORKDIR es /app, así que config suele estar en /app/config
+DOCKER_CONFIG_PATH = Path("/app/config")
+
+if DOCKER_CONFIG_PATH.exists():
+    CONFIG_DIR = DOCKER_CONFIG_PATH
+else:
+    # Fallback para entorno local (Monorepo)
+    # Subimos niveles hasta encontrar la carpeta config en la raíz del proyecto
+    # src/features/sql_analysis/loader.py -> ... -> sql-agent-oss/config
+    BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
+    CONFIG_DIR = BASE_DIR / "config"
 
 SYSTEM_PROMPT_TEMPLATE = """Eres un experto Agente SQL.
 

@@ -23,7 +23,8 @@ services:
       context: ./apps/agent-host
     ports:
       - "8000:8000"
-    command: chainlit run src/main.py --host 0.0.0.0 --port 8000 --headless
+    # CAMBIO: Usamos uvicorn para correr server.py (Multicanal) en lugar de chainlit directo
+    command: uvicorn src.api.server:app --host 0.0.0.0 --port 8000 --reload
     depends_on:
       - mcp-mysql
     env_file:
@@ -34,3 +35,4 @@ services:
       - ./apps/agent-host/src:/app/src # Hot reload logic support
       - ./config:/app/config
       - ./data:/app/data
+      - ./docs:/app/docs # DOCUMENTACIÓN (Swagger.json)
