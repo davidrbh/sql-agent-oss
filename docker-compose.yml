@@ -36,3 +36,25 @@ services:
       - ./config:/app/config
       - ./data:/app/data
       - ./docs:/app/docs # DOCUMENTACIÓN (Swagger.json)
+
+  # La Boca (WhatsApp HTTP API - WAHA)
+  waha:
+    image: devlikeapro/waha:latest
+    ports:
+      - "3001:3000" # Dashboard en puerto 3001
+    env_file:
+      - .env
+    environment:
+      # URL donde WAHA enviará los mensajes recibidos
+      - WHATSAPP_WEBHOOK_URL=http://agent-host:8000/whatsapp/webhook
+      # Eventos que queremos recibir
+      - WHATSAPP_WEBHOOK_EVENTS=message
+      # Puerto interno
+      - PORT=3000
+      # Seguridad (Mapeo desde .env)
+      - WHATSAPP_API_KEY=${WAHA_API_KEY}
+      - WHATSAPP_SWAGGER_USERNAME=${WHATSAPP_SWAGGER_USERNAME}
+      - WHATSAPP_SWAGGER_PASSWORD=${WHATSAPP_SWAGGER_PASSWORD}
+    volumes:
+      - .waha_sessions:/app/sessions # Persistencia de sesión (QR)
+    restart: on-failure
