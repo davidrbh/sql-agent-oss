@@ -23,6 +23,7 @@ services:
       context: ./apps/agent-host
     ports:
       - "8000:8000"
+    command: chainlit run src/main.py --host 0.0.0.0 --port 8000 --headless
     depends_on:
       - mcp-mysql
     env_file:
