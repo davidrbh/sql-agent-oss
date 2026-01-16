@@ -6,8 +6,11 @@ from langchain_core.messages import HumanMessage
 # --- MCP Imports ---
 from mcp import ClientSession
 from mcp.client.sse import sse_client
-from infra.mcp.loader import get_agent_tools
 from infra.mcp.manager import MCPSessionManager
+
+# --- FEATURE Imports (Arquitectura Híbrida) ---
+# Cargamos la "feature" de Análisis SQL específicamente.
+from features.sql_analysis.loader import get_sql_tools, get_sql_system_prompt
 
 # --- CONFIGURACIÓN DE PATH ---
 # Aseguramos que el sistema pueda encontrar el paquete 'src'
@@ -44,17 +47,18 @@ async def on_chat_start():
         msg.content = "✅ Conexión MCP Establecida. Cargando herramientas..."
         await msg.update()
 
-        # 3. Cargar Herramientas
-        # Pasamos el manager en lugar de la session cruda.
-        # El loader debe aceptar este objeto duck-typed (tiene .call_tool y .list_tools)
-        tools = await get_agent_tools(mcp_manager)
+        # 3. Cargar Herramientas y Contexto (Feature SQL)
+        # Usamos el loader específico de la feature SQL
+        tools = await get_sql_tools(mcp_manager)
+        system_prompt = get_sql_system_prompt()
         
         tool_names = [t.name for t in tools]
         msg.content = f"🔧 Herramientas cargadas: {tool_names}. Construyendo Cerebro..."
         await msg.update()
 
         # 4. Construir Grafo
-        graph = build_graph(tools)
+        # Ahora inyectamos explícitamente el prompt y las herramientas
+        graph = build_graph(tools, system_prompt)
         cl.user_session.set("graph", graph)
         cl.user_session.set("history", [])
 

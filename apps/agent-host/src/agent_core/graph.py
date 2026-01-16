@@ -8,38 +8,14 @@ from langgraph.prebuilt import ToolNode
 
 # Importa tu estado (asegúrate de que coincida con tu archivo actual)
 from agent_core.core.state import AgentState 
-from agent_core.config.loader import ConfigLoader
 
-SYSTEM_PROMPT = """Eres un experto Agente SQL.
+# --- La lógica del core es GENÉRICA ---
+# No sabe nada de SQL, ni de negocio.
+# Solo recibe herramientas y prompts.
 
-⚠️ REGLAS CRÍTICAS DE SEGURIDAD ⚠️
-1. PROHIBIDO ejecutar `SELECT *` en la tabla `users`. Contiene columnas de imágenes Base64 (doc_photo, selfie_photo) que rompen la conexión.
-2. ANTES de consultar `users`, SIEMPRE ejecuta `DESCRIBE users` para ver las columnas disponibles.
-3. Selecciona SIEMPRE columnas específicas (ej. `SELECT id, name, email FROM users...`).
-4. Para otras tablas, inspecciona primero el esquema igualmente.
-
-🎨 ESTILO DE RESPUESTA:
-- Sé amable y conciso.
-- EVITA el uso excesivo de saltos de línea (\\n).
-- Cuando listes datos simples (como nombres), úsalos separados por comas.
-"""
-
-def get_system_prompt():
-    """Genera el System Prompt dinámico incluyendo el contexto de negocio"""
-    context = ConfigLoader.load_context()
-    return f"""{SYSTEM_PROMPT}
-
-📘 CONTEXTO DE NEGOCIO Y DICCIONARIO DE DATOS:
-A continuación se definen las entidades, sinónimos y reglas de negocio. ÚSALO para entender qué tabla consultar según los términos del usuario.
-
-```yaml
-{context}
-```
-"""
-
-def build_graph(tools: List[BaseTool]):
+def build_graph(tools: List[BaseTool], system_prompt: str):
     """
-    Construye el Grafo del Agente inyectando las herramientas dinámicas del Sidecar.
+    Construye el Grafo del Agente inyectando las herramientas dinámicas y el prompt.
     """
     # Configurar el LLM con las herramientas reales
     # Habilitar manejo de errores para que el Agente pueda recuperarse de fallos SQL
@@ -61,8 +37,8 @@ def build_graph(tools: List[BaseTool]):
         
         # Inyectar System Prompt si no existe
         if not isinstance(messages[0], SystemMessage):
-            final_prompt = get_system_prompt()
-            messages = [SystemMessage(content=final_prompt)] + messages
+            # Usamos el prompt pasado por argumento
+            messages = [SystemMessage(content=system_prompt)] + messages
             
         print(f"DEBUG MESSAGES: {messages}") 
 
