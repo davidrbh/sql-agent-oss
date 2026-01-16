@@ -7,8 +7,8 @@ from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode
 
 # Importa tu estado (asegúrate de que coincida con tu archivo actual)
-from sql_agent.core.state import AgentState 
-from sql_agent.config.loader import ConfigLoader
+from agent_core.core.state import AgentState 
+from agent_core.config.loader import ConfigLoader
 
 SYSTEM_PROMPT = """Eres un experto Agente SQL.
 

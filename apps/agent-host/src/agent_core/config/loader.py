@@ -30,17 +30,13 @@ class ConfigLoader:
                 print(f"⚠️ Alerta: No se encontró {path}, usando valores por defecto.")
         return cls._settings
 
-    @classmethod
-    def load_context(cls):
-        """Carga config/business_context.yaml y lo devuelve como string YAML"""
-        if cls._business_context is None:
-            path = CONFIG_DIR / "business_context.yaml"
-            try:
-                with open(path, "r", encoding="utf-8") as f:
-                    # Leemos el archivo crudo para pasarlo tal cual al LLM,
-                    # manteniendo los comentarios y estructura visual que ayudan al modelo.
-                    cls._business_context = f.read()
-            except FileNotFoundError:
-                cls._business_context = "Sin contexto definido."
-                print(f"⚠️ Alerta: No se encontró {path}")
-        return cls._business_context
+    
+    @staticmethod
+    def _find_project_root():
+        # src/agent_core/config/loader.py -> ... -> root
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        
+        # Subir 4 niveles para llegar a la raíz del monorepo (desde src/agent_core/config)
+        # apps/agent-host/src/agent_core/config -> apps/agent-host/src/agent_core -> apps/agent-host/src -> apps/agent-host -> root
+        # Ajustar según estructura real
+        return os.path.abspath(os.path.join(current_dir, "../../../../"))

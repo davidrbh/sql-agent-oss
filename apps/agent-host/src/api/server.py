@@ -9,8 +9,11 @@ from langchain_core.messages import HumanMessage
 
 # Importamos nuestro nuevo loader
 from infra.mcp.loader import get_agent_tools
-# Importamos el constructor del grafo
-from sql_agent.graph import build_graph
+
+# IMPORTANTE: Importar el grafo desde agent_core (no sql_agent)
+from agent_core.graph import build_graph
+from langchain_core.messages import HumanMessage
+from dotenv import load_dotenv
 
 # URL interna de Docker (la red que ya configuraste)
 SIDECAR_URL = "http://mcp-mysql:3000"

@@ -5,7 +5,7 @@ from typing import List, Dict
 from langchain_community.agent_toolkits.openapi.toolkit import RequestsToolkit
 from langchain_community.utilities.requests import RequestsWrapper
 from langchain_community.tools.json.tool import JsonSpec
-from sql_agent.llm.factory import LLMFactory
+from agent_core.llm.factory import LLMFactory
 from dotenv import load_dotenv
 
 load_dotenv()

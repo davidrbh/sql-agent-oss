@@ -6,15 +6,15 @@ from sqlalchemy import text
 from langgraph.prebuilt import create_react_agent  # MOVED TO TOP-LEVEL
 
 # Importaciones de Arquitectura
-from sql_agent.llm.factory import LLMFactory
-from sql_agent.core.state import AgentState
-from sql_agent.config.loader import ConfigLoader
-# from sql_agent.database.connection import DatabaseManager # Legacy
-from sql_agent.utils.mcp_client import mcp_manager
+from agent_core.llm.factory import LLMFactory
+from agent_core.core.state import AgentState
+from agent_core.config.loader import ConfigLoader
+# from agent_core.database.connection import DatabaseManager # Legacy
+from agent_core.utils.mcp_client import mcp_manager
 
 # --- IMPORTACIÓN DE LA API (NUEVA UBICACIÓN) ---
 try:
-    from sql_agent.api.loader import load_api_tools, load_swagger_summary
+    from agent_core.api.loader import load_api_tools, load_swagger_summary
     API_AVAILABLE = True
 except ImportError as e:
     API_AVAILABLE = False

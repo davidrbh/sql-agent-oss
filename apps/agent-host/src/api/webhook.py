@@ -6,7 +6,7 @@ from pydantic import BaseModel
 from typing import Dict, Any, Optional
 
 # Importar el Singleton del Agente y MemorySaver
-from sql_agent.graph import build_graph
+from agent_core.graph import build_graph
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_core.messages import HumanMessage
 
