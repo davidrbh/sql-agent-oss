@@ -40,7 +40,7 @@ def _create_args_schema(tool_name: str, schema: Dict[str, Any]) -> Type[BaseMode
     safe_name = tool_name.replace("-", "_").replace(" ", "_").capitalize() + "Schema"
     return create_model(safe_name, **fields)
 
-async def get_agent_tools(session: ClientSession) -> List[BaseTool]:
+async def get_agent_tools(session: Any) -> List[BaseTool]:
     """
     Manual implementation of MCP to LangChain tool conversion 
     to avoid library version mismatches and 'config' arg errors.
@@ -72,6 +72,7 @@ async def get_agent_tools(session: ClientSession) -> List[BaseTool]:
             ) -> str:
                 try:
                     # print(f"▶️ Executing tool: {_tool_name} with args: {kwargs}")
+                    
                     # Validate: filter out any None values for optional args if needed, 
                     # but MCP usually handles nulls fine.
                     
@@ -96,7 +97,13 @@ async def get_agent_tools(session: ClientSession) -> List[BaseTool]:
                         return f"Error from tool {_tool_name}: {final_text}"
                     return final_text
                 except Exception as e:
-                    return f"Error executing tool {_tool_name}: {str(e)}"
+                    import traceback
+                    print(f"❌ Exception in tool {_tool_name}: {type(e).__name__}: {e}")
+                    traceback.print_exc()
+                    error_msg = str(e)
+                    if not error_msg:
+                        error_msg = f"{type(e).__name__} (No details provided)"
+                    return f"Error executing tool {_tool_name}: {error_msg}"
 
             # 4. Wrap with LangChain's StructuredTool
             langchain_tool = StructuredTool.from_function(

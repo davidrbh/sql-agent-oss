@@ -7,6 +7,7 @@ from langchain_core.messages import HumanMessage
 from mcp import ClientSession
 from mcp.client.sse import sse_client
 from infra.mcp.loader import get_agent_tools
+from infra.mcp.manager import MCPSessionManager
 
 # --- CONFIGURACIÓN DE PATH ---
 # Aseguramos que el sistema pueda encontrar el paquete 'src'
@@ -33,39 +34,20 @@ async def on_chat_start():
     await msg.send()
 
     try:
-        # 2. Inicializar Conexión MCP Persistente
-        # NOTA: Chainlit no tiene un "lifespan" global fácil para conexiones persistentes en modo async puro.
-        # Estrategia: Abrimos el contexto y lo mantenemos vivo durante la sesión.
-        # Usamos sse_client directamente sin 'async with' bloqueante, manejando el enter/exit manual
-        # o manteniendo la referencia.
+        # 2. Inicializar Conexión MCP Persistente (Auto-Reconnect)
+        # Usamos MCPSessionManager para manejar reconexiones automáticas si el socket se cierra.
+        mcp_manager = MCPSessionManager(SIDECAR_URL)
+        await mcp_manager.connect()
         
-        # Monkey patch para mantener la session viva:
-        # Realmente sse_client devuelve un context manager.
-        # Vamos a usar aiohttp o httpx streams manualmente si es necesario, 
-        # pero mcp.client.sse.sse_client es un helper.
-        
-        # TRUCO: Definimos una task que mantiene la conexión viva o usamos un wrapper.
-        # Para simplificar en Chainlit, vamos a asumir conexión por request O
-        # Mejor: Abrir la conexión y guardarla en user_session.
-        
-        # Pero `sse_client` es un AsyncContextManager.
-        # Ajustamos el timeout a None para evitar desconexiones por inactividad (SSE requiere conexión persistente)
-        sse_ctx = sse_client(url=f"{SIDECAR_URL}/sse", timeout=None)
-        streams = await sse_ctx.__aenter__() # Entramos manualmente
-        
-        cl.user_session.set("sse_ctx", sse_ctx) # Guardamos para cerrar luego
-        
-        client = ClientSession(streams[0], streams[1])
-        await client.__aenter__() # <--- IMPORTANTE: Inicia el loop de lectura de mensajes
-        await client.initialize()
-        
-        cl.user_session.set("mcp_client", client) # Guardamos cliente
+        cl.user_session.set("mcp_manager", mcp_manager)
         
         msg.content = "✅ Conexión MCP Establecida. Cargando herramientas..."
         await msg.update()
 
         # 3. Cargar Herramientas
-        tools = await get_agent_tools(client)
+        # Pasamos el manager en lugar de la session cruda.
+        # El loader debe aceptar este objeto duck-typed (tiene .call_tool y .list_tools)
+        tools = await get_agent_tools(mcp_manager)
         
         tool_names = [t.name for t in tools]
         msg.content = f"🔧 Herramientas cargadas: {tool_names}. Construyendo Cerebro..."
@@ -96,8 +78,9 @@ _¿Qué necesitas saber hoy?_"""
 async def on_chat_end():
     """Limpieza de recursos al cerrar la pestaña"""
     # 1. Cerrar Cliente MCP
-    client = cl.user_session.get("mcp_client")
-    if client:
+    manager = cl.user_session.get("mcp_manager")
+    if manager:
+        await manager.close()
         try:
             await client.__aexit__(None, None, None)
         except Exception as e:
@@ -140,7 +123,7 @@ async def on_message(message: cl.Message):
         await msg.update()
         
         # Ejecución del Grafo (Async)
-        config = {"recursion_limit": 50} # Límite de seguridad
+        config = {"recursion_limit": 150} # Límite de seguridad aumentado
         result = await graph.ainvoke(inputs, config=config)
         
         # Actualizar historial con lo que devolvió el agente (incluye ToolMessages, AIMessages, etc)
