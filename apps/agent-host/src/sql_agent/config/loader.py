@@ -32,13 +32,14 @@ class ConfigLoader:
 
     @classmethod
     def load_context(cls):
-        """Carga config/business_context.yaml"""
+        """Carga config/business_context.yaml y lo devuelve como string YAML"""
         if cls._business_context is None:
             path = CONFIG_DIR / "business_context.yaml"
             try:
                 with open(path, "r", encoding="utf-8") as f:
-                    data = yaml.safe_load(f)
-                    cls._business_context = data.get("business_context", "")
+                    # Leemos el archivo crudo para pasarlo tal cual al LLM,
+                    # manteniendo los comentarios y estructura visual que ayudan al modelo.
+                    cls._business_context = f.read()
             except FileNotFoundError:
                 cls._business_context = "Sin contexto definido."
                 print(f"⚠️ Alerta: No se encontró {path}")

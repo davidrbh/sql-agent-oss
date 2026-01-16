@@ -8,6 +8,7 @@ from langgraph.prebuilt import ToolNode
 
 # Importa tu estado (asegúrate de que coincida con tu archivo actual)
 from sql_agent.core.state import AgentState 
+from sql_agent.config.loader import ConfigLoader
 
 SYSTEM_PROMPT = """Eres un experto Agente SQL.
 
@@ -21,6 +22,19 @@ SYSTEM_PROMPT = """Eres un experto Agente SQL.
 - Sé amable y conciso.
 - EVITA el uso excesivo de saltos de línea (\\n).
 - Cuando listes datos simples (como nombres), úsalos separados por comas.
+"""
+
+def get_system_prompt():
+    """Genera el System Prompt dinámico incluyendo el contexto de negocio"""
+    context = ConfigLoader.load_context()
+    return f"""{SYSTEM_PROMPT}
+
+📘 CONTEXTO DE NEGOCIO Y DICCIONARIO DE DATOS:
+A continuación se definen las entidades, sinónimos y reglas de negocio. ÚSALO para entender qué tabla consultar según los términos del usuario.
+
+```yaml
+{context}
+```
 """
 
 def build_graph(tools: List[BaseTool]):
@@ -47,7 +61,8 @@ def build_graph(tools: List[BaseTool]):
         
         # Inyectar System Prompt si no existe
         if not isinstance(messages[0], SystemMessage):
-            messages = [SystemMessage(content=SYSTEM_PROMPT)] + messages
+            final_prompt = get_system_prompt()
+            messages = [SystemMessage(content=final_prompt)] + messages
             
         print(f"DEBUG MESSAGES: {messages}") 
 
