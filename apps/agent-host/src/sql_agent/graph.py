@@ -2,18 +2,31 @@ import os
 from typing import List
 from langchain_openai import ChatOpenAI
 from langchain_core.tools import BaseTool
-from langchain_core.messages import ToolMessage
+from langchain_core.messages import ToolMessage, SystemMessage
 from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode
 
 # Importa tu estado (asegúrate de que coincida con tu archivo actual)
 from sql_agent.core.state import AgentState 
 
+SYSTEM_PROMPT = """Eres un experto Agente SQL.
+
+⚠️ REGLAS CRÍTICAS DE SEGURIDAD ⚠️
+1. PROHIBIDO ejecutar `SELECT *` en la tabla `users`. Contiene columnas de imágenes Base64 (doc_photo, selfie_photo) que rompen la conexión.
+2. ANTES de consultar `users`, SIEMPRE ejecuta `DESCRIBE users` para ver las columnas disponibles.
+3. Selecciona SIEMPRE columnas específicas (ej. `SELECT id, name, email FROM users...`).
+4. Para otras tablas, inspecciona primero el esquema igualmente.
+"""
+
 def build_graph(tools: List[BaseTool]):
     """
     Construye el Grafo del Agente inyectando las herramientas dinámicas del Sidecar.
     """
-    # 1. Configurar el LLM con las herramientas reales
+    # Configurar el LLM con las herramientas reales
+    # Habilitar manejo de errores para que el Agente pueda recuperarse de fallos SQL
+    for tool in tools:
+        tool.handle_tool_error = True
+
     # Usamos DeepSeek como LLM principal
     llm = ChatOpenAI(
         model="deepseek-chat",
@@ -26,6 +39,11 @@ def build_graph(tools: List[BaseTool]):
     # 2. Nodo del Agente (El Cerebro)
     def agent_node(state: AgentState):
         messages = state["messages"]
+        
+        # Inyectar System Prompt si no existe
+        if not isinstance(messages[0], SystemMessage):
+            messages = [SystemMessage(content=SYSTEM_PROMPT)] + messages
+            
         print(f"DEBUG MESSAGES: {messages}") 
 
         # --- SANITIZATION FOR DEEPSEEK ---
