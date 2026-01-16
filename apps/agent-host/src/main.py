@@ -49,7 +49,8 @@ async def on_chat_start():
         # Mejor: Abrir la conexión y guardarla en user_session.
         
         # Pero `sse_client` es un AsyncContextManager.
-        sse_ctx = sse_client(url=f"{SIDECAR_URL}/sse")
+        # Ajustamos el timeout a None para evitar desconexiones por inactividad (SSE requiere conexión persistente)
+        sse_ctx = sse_client(url=f"{SIDECAR_URL}/sse", timeout=None)
         streams = await sse_ctx.__aenter__() # Entramos manualmente
         
         cl.user_session.set("sse_ctx", sse_ctx) # Guardamos para cerrar luego
