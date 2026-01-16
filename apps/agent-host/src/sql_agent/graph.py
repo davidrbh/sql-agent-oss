@@ -16,6 +16,11 @@ SYSTEM_PROMPT = """Eres un experto Agente SQL.
 2. ANTES de consultar `users`, SIEMPRE ejecuta `DESCRIBE users` para ver las columnas disponibles.
 3. Selecciona SIEMPRE columnas específicas (ej. `SELECT id, name, email FROM users...`).
 4. Para otras tablas, inspecciona primero el esquema igualmente.
+
+🎨 ESTILO DE RESPUESTA:
+- Sé amable y conciso.
+- EVITA el uso excesivo de saltos de línea (\\n).
+- Cuando listes datos simples (como nombres), úsalos separados por comas.
 """
 
 def build_graph(tools: List[BaseTool]):
@@ -73,7 +78,8 @@ def build_graph(tools: List[BaseTool]):
 
     # 3. Nodo de Herramientas (El Brazo)
     # ToolNode de LangGraph ejecuta automáticamente la herramienta que el LLM pida
-    tool_node = ToolNode(tools)
+    # handle_tool_errors=True permite que el nodo capture excepciones y devuelva un mensaje de error al LLM
+    tool_node = ToolNode(tools, handle_tool_errors=True)
 
     # 4. Definición del Flujo (Workflow)
     workflow = StateGraph(AgentState)
