@@ -4,6 +4,8 @@
 
 **SQL Agent OSS** ha evolucionado hacia un **Sistema de Inteligencia Artificial Compuesto Híbrido**. Ya no se limita a traducir texto a SQL, sino que actúa como un orquestador inteligente capaz de decidir cuándo consultar la base de datos analítica y cuándo consumir APIs operacionales en tiempo real.
 
+Esta evolución se materializa en una **Arquitectura "Hybrid Slice"**, que desacopla funcionalmente los componentes del agente para maximizar la flexibilidad y mantenibilidad.
+
 El objetivo es resolver la necesidad empresarial de tener una interfaz unificada para datos históricos (SQL) y datos en tiempo real (APIs).
 
 ## 2. El Problema Ampliado
@@ -14,9 +16,15 @@ Los enfoques tradicionales de "Text-to-SQL" tienen un límite duro: la base de d
 - ¿Cuál es el estado actual del envío #123? -> SQL (Posiblemente desactualizado) vs API (Tiempo real).
 - ¿Cómo cancelo el pedido #999? -> SQL (PELIGROSO/IMPOSIBLE) vs API (Correcto).
 
-## 3. La Solución: Arquitectura Híbrida con Router
+## 3. La Solución: Arquitectura "Hybrid Slice" y Orquestación Inteligente
 
 Implementamos un **Grafo de Estado (StateGraph)** orquestado por LangGraph que introduce un "Córtex Prefrontal" (Router) antes de cualquier acción.
+
+Esta arquitectura se concibe como un ecosistema de micro-agentes, donde cada componente juega un rol clave, siguiendo la metáfora de "Cerebro, Brazo y Boca":
+
+*   **El Cerebro (`agent-host`):** El orquestador principal basado en LangGraph, responsable de la lógica de negocio y la toma de decisiones.
+*   **El Brazo (`mcp-mysql-sidecar`):** El componente especializado en la interacción segura y eficiente con fuentes de datos (ej. MySQL).
+*   **La Boca (`waha`, Chainlit UI):** Los distintos interfaces de usuario y canales de comunicación que permiten la interacción con el usuario final.
 
 ### Diagrama de Flujo Lógico
 

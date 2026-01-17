@@ -1,112 +1,85 @@
-# Integración con WhatsApp (WAHA - WhatsApp HTTP API)
+# Guía de Integración con WhatsApp (vía WAHA)
 
-Esta guía explica cómo conectar tu Agente SQL con WhatsApp utilizando [WAHA (WhatsApp HTTP API)](https://waha.devlike.pro/), una alternativa estable y ligera a Evolution API. Incluye soporte para memoria de conversaciones, indicadores de escritura, y filtros para evitar respuestas a status updates.
+Este documento describe cómo el proyecto se integra con WhatsApp para permitir a los usuarios interactuar con el agente a través de mensajería. La integración se realiza utilizando [WAHA (WhatsApp HTTP API)](https://waha.devlike.pro/), una solución robusta que actúa como un puente entre la API de WhatsApp y nuestra aplicación.
 
-## 1. Arquitectura
+## 1. Arquitectura y Flujo de Mensajes
 
-Hemos desplegado un entorno con los siguientes contenedores:
+La arquitectura es simple y se basa en la comunicación entre dos servicios principales de nuestro `docker-compose.yml`:
 
-- `waha`: El motor que se conecta a los servidores de WhatsApp via WebJS o Noweb.
-- `agent-bridge`: Un servidor intermedio (Python/FastAPI) que recibe los mensajes de WhatsApp, maneja memoria y contextos, y los pasa al Agente SQL.
-- `mysql`: Base de datos para el agente (opcional para persistencia de sesiones).
+-   **`waha`**: El servicio Docker que se conecta directamente a los servidores de WhatsApp y expone una API REST para enviar y recibir mensajes.
+-   **`agent-host`**: Nuestro servidor principal, que contiene la lógica del agente y un endpoint para recibir los webhooks de `waha`.
 
-El flujo es: WhatsApp → WAHA → Webhook → Agent Bridge → LangGraph Agent → Respuesta a WhatsApp.
+### Flujo de un Mensaje Entrante
 
-## 2. Puesta en Marcha
+1.  **Recepción:** Un usuario envía un mensaje al número de WhatsApp vinculado a `waha`.
+2.  **Webhook:** El servicio `waha` recibe el mensaje. Gracias a la configuración en `docker-compose.yml`, `waha` sabe que debe notificar a nuestro agente. Para ello, realiza una petición `POST` a la URL definida en la variable de entorno `WHATSAPP_WEBHOOK_URL` (ej: `http://agent-host:8000/whatsapp/webhook`).
+3.  **Enrutamiento:** El `agent-host` recibe esta petición en su API (definida en `src/api/server.py`) y la enruta internamente al router de WhatsApp (`src/channels/whatsapp/router.py`).
+4.  **Procesamiento en Segundo Plano:** Para asegurar una respuesta rápida y evitar timeouts, el router de WhatsApp valida el mensaje y delega su procesamiento a una **tarea en segundo plano** (`BackgroundTasks` de FastAPI). Esto permite al servidor responder inmediatamente a `waha` con un `200 OK`.
+5.  **Invocación del Agente:** La tarea en segundo plano (`process_message`) invoca el grafo de LangGraph, pasándole el contenido del mensaje del usuario. El agente piensa, genera el SQL, lo ejecuta y formula una respuesta.
+6.  **Respuesta al Usuario:** Una vez que el agente tiene la respuesta final, la misma tarea en segundo plano utiliza la API de `waha` para enviar el mensaje de vuelta al chat del usuario original.
 
-1. Levanta los servicios con Docker Compose:
+## 2. Configuración Simplificada
 
-   ```bash
-   docker compose up -d
-   ```
+La configuración es automática y se gestiona casi en su totalidad a través de variables de entorno en el `docker-compose.yml` y tu archivo `.env`. **Ya no es necesario configurar webhooks manualmente con cURL.**
 
-2. Verifica que WAHA esté corriendo:
-   - Accede a `http://localhost:3001/docs` para la documentación Swagger de WAHA.
-   - Deberías ver endpoints como `/api/sessions` y `/api/sendText`.
+### Archivo `docker-compose.yml`
 
-## 3. Conectar tu Número (QR Code)
+Observa la sección del servicio `waha`. La variable clave es `WHATSAPP_WEBHOOK_URL`:
 
-WAHA usa sesiones para manejar conexiones. Crea una sesión y escanea el QR.
+```yaml
+  # La Boca (WhatsApp HTTP API - WAHA)
+  waha:
+    image: devlikeapro/waha:latest
+    ports:
+      - "3001:3000" # Dashboard en puerto 3001
+    env_file:
+      - .env
+    environment:
+      # URL donde WAHA enviará los mensajes recibidos
+      - WHATSAPP_WEBHOOK_URL=http://agent-host:8000/whatsapp/webhook
+      # ... (otras variables)
+```
+Esta línea le instruye a `waha` que envíe todos los eventos de mensajes entrantes directamente a nuestro `agent-host`.
 
-### Paso A: Crear Sesión
+### Archivo `.env`
 
-Ejecuta este comando (usa Postman, curl o la interfaz web):
+Asegúrate de configurar las credenciales de seguridad para `waha` en tu archivo `.env`, tal como se define en `.env.example`:
 
 ```bash
-curl -X POST http://localhost:3001/api/sessions \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "default",
-    "start": true
-  }'
+# Credenciales para el dashboard y la API de WAHA
+WAHA_API_KEY=tu_clave_secreta
+WHATSAPP_SWAGGER_USERNAME=admin
+WHATSAPP_SWAGGER_PASSWORD=admin
 ```
 
-Esto inicia la sesión "default" y genera un QR.
+## 3. Puesta en Marcha (Conexión por QR)
 
-### Paso B: Escanear QR
+1.  **Levanta los servicios:**
+    ```bash
+    docker-compose up -d
+    ```
+2.  **Accede al Dashboard de WAHA:** Abre tu navegador y ve a `http://localhost:3001`. Podrás ver la interfaz de Swagger para la API de WAHA.
+3.  **Inicia una sesión y escanea el QR:** Utiliza la interfaz de Swagger o una herramienta como Postman para hacer una petición `POST` al endpoint `/api/sessions/start` con el body `{"name": "default"}`. Luego, haz una petición `GET` a `/api/sessions/default/qr` para obtener el código QR. Escanéalo con la app de WhatsApp en tu teléfono (`Dispositivos vinculados` > `Vincular un dispositivo`).
+4.  **Persistencia de Sesión:** La sesión de WhatsApp se guarda en el volumen `waha_sessions` definido en `docker-compose.yml`, por lo que **no necesitarás escanear el QR cada vez** que reinicies los contenedores.
 
-Obtén el QR desde la API:
+## 4. Estado de la Memoria de Conversaciones
 
-```bash
-curl http://localhost:3001/api/sessions/default/qr
-```
+La arquitectura del `agent-host` con LangGraph está diseñada para soportar memoria persistente entre conversaciones. El grafo principal (`agent_core/graph.py`) ya acumula mensajes en su estado.
 
-Te devolverá una imagen en base64 o una URL. Escanéala con tu celular (WhatsApp → Dispositivos Vinculados → Vincular Dispositivo).
+Sin embargo, la implementación actual del canal de WhatsApp en `channels/whatsapp/router.py` inicia una nueva invocación del grafo para cada mensaje entrante, por lo que **no hay memoria a largo plazo entre mensajes distintos del mismo usuario**.
 
-Una vez conectado, el status cambiará a "CONNECTED".
+Habilitar esta funcionalidad es el siguiente paso lógico y requeriría integrar un **Checkpointer** de LangGraph (como `SqliteSaver` o `RedisSaver`) en la función `process_message`, utilizando el `chat_id` como el identificador del hilo de conversación (`thread_id`).
 
-## 4. Configurar el Webhook
+## 5. Troubleshooting (Solución de Problemas)
 
-Configura WAHA para enviar mensajes al bridge del agente:
+Si el agente no responde a los mensajes de WhatsApp:
 
-```bash
-curl -X POST http://localhost:3001/api/webhooks \
-  -H "Content-Type: application/json" \
-  -d '{
-    "url": "http://agent-bridge:8001/webhook",
-    "events": ["message"],
-    "session": "default"
-  }'
-```
-
-El bridge maneja la autenticación y filtra mensajes (e.g., ignora status@broadcast para evitar respuestas a stories).
-
-## 5. Características Avanzadas
-
-### Memoria de Conversaciones
-
-- El agente mantiene contexto entre mensajes usando LangGraph MemorySaver.
-- Soporta resets manuales (e.g., "reinicia conversación") para limpiar estado.
-- Inyecta historial en prompts de SQL para mejorar precisión (e.g., referencias como "y los activos?").
-
-### Indicadores de Escritura (Typing)
-
-- El bridge envía indicadores de "escribiendo..." mientras el agente procesa.
-- Mejora la UX en WhatsApp, simulando respuestas humanas.
-
-### Filtros y Seguridad
-
-- Filtra mensajes de status para evitar respuestas automáticas a updates.
-- Webhook protegido con secrets (configurado en `.env`).
-
-## 6. Configuración en `.env`
-
-Asegúrate de tener estas variables en tu `.env`:
-
-```bash
-WAHA_BASE_URL=http://waha:3001
-WAHA_API_KEY=tu_api_key_aqui  # Si WAHA requiere autenticación
-WEBHOOK_SECRET=tu_secret_seguro
-```
-
-## 7. Troubleshooting
-
-Si el agente no responde:
-
-1. Revisa logs del bridge: `docker compose logs -f agent-bridge`
-2. Revisa logs de WAHA: `docker compose logs -f waha`
-3. Verifica conexión: `curl http://localhost:3001/api/sessions/default/status`
-4. Para issues de memoria: Asegúrate de que `MemorySaver` esté habilitado en `graph.py`.
-5. Si hay loops infinitos: Reinicia contenedores y verifica volúmenes de sesiones.
-
-Para más detalles, consulta la [documentación de WAHA](https://waha.devlike.pro/).
+1.  **Revisa los logs del `agent-host`:** Es el lugar más probable para encontrar errores, ya sea en la recepción del webhook o durante la ejecución del agente.
+    ```bash
+    docker-compose logs -f agent-host
+    ```
+2.  **Revisa los logs de `waha`:** Para ver si `waha` está recibiendo los mensajes de WhatsApp y si está enviando el webhook correctamente al `agent-host`.
+    ```bash
+    docker-compose logs -f waha
+    ```
+3.  **Verifica el estado de la sesión en WAHA:** Asegúrate de que el estado sea `CONNECTED`. Puedes hacerlo desde el dashboard en `http://localhost:3001` con el endpoint `GET /api/sessions/default/status`.
