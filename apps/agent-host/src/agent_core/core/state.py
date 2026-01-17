@@ -11,26 +11,3 @@ class AgentState(TypedDict):
     # Historial de chat: Lista de mensajes (Human, AI, Tool)
     # operator.add significa que cuando un nodo devuelve mensajes, se AGREGAN a la lista
     messages: Annotated[List[BaseMessage], operator.add]
-    
-    # Pregunta original del usuario (para no perder el foco)
-    question: str
-    
-    # El SQL generado por el agente (si ya generó alguno)
-    sql_query: str
-
-    # Resultado de la ejecución SQL (o mensaje de error)
-    sql_result: str
-    
-    # Intención clasificada (DATABASE / API / GENERAL)
-    intent: str
-    
-    # Contador de iteraciones para reintentos (Self-Healing)
-    iterations: int
-    
-    # El resultado de la consulta SQL (filas de la DB)
-    sql_result: str
-    
-    # (Opcional) Conteo de reintentos por si el SQL falla
-    iterations: int
-    
-    intent: str

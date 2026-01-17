@@ -130,7 +130,6 @@ async def on_message(message: cl.Message):
         history.append(HumanMessage(content=message.content))
         
         inputs = {
-            "question": message.content,
             "messages": history
         }
         
