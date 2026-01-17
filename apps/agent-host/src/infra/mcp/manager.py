@@ -6,24 +6,37 @@ from mcp.client.sse import sse_client
 import anyio
 
 class MCPSessionManager:
-    """
-    Wrapper around MCP ClientSession that handles auto-reconnection
-    on network failures or timeouts.
+    """Gestiona la sesión del cliente MCP, incluyendo reconexión automática.
+
+    Esta clase actúa como un wrapper sobre ClientSession de MCP, proporcionando
+    resiliencia ante fallos de red o timeouts. Si una conexión se pierde,
+    intentará reconectar automáticamente antes de fallar.
     """
     def __init__(self, sidecar_url: str):
+        """Inicializa el manager con la URL del sidecar.
+
+        Args:
+            sidecar_url: La URL base del sidecar MCP (ej. "http://mcp-mysql:3000").
+        """
         self.sidecar_url = sidecar_url
         self.session: Optional[ClientSession] = None
         self._exit_stack: Optional[AsyncExitStack] = None
         self._lock = asyncio.Lock()
 
     async def connect(self):
-        """Initial connection."""
+        """Establece la conexión inicial con el sidecar MCP.
+
+        Crea y gestiona la pila de contextos asíncronos para la sesión SSE
+        y la sesión del cliente MCP. Es seguro llamar a esta función múltiples
+        veces; solo se conectará si no existe una sesión activa.
+        """
         async with self._lock:
             if self.session:
                 return
             await self._connect_unsafe()
 
     async def _connect_unsafe(self):
+        """Método interno para establecer la conexión sin bloqueo."""
         print(f"🔄 MCP Manager: Connecting to {self.sidecar_url}...")
         self._exit_stack = AsyncExitStack()
         try:
@@ -41,9 +54,10 @@ class MCPSessionManager:
             raise e
 
     async def close(self):
-        """Explicit cleanup."""
-        # Lock to ensure we don't close while connecting in another task
-        # But for simplicity, we just clean up.
+        """Cierra la sesión MCP y todos los recursos de red asociados.
+
+        Realiza una limpieza explícita de la pila de contextos asíncronos.
+        """
         if self._exit_stack:
             try:
                 await self._exit_stack.aclose()
@@ -53,11 +67,19 @@ class MCPSessionManager:
         self._exit_stack = None
 
     async def ensure_active(self):
-        """Check connection or reconnect if needed."""
+        """Asegura que haya una sesión activa, reconectando si es necesario."""
         if not self.session:
             await self.connect()
 
-    async def list_tools(self):
+    async def list_tools(self) -> list:
+        """Lista las herramientas disponibles en el sidecar.
+
+        Incluye lógica de reintento: si la llamada falla por un problema de
+        conexión, intentará reconectar una vez y reintentar la llamada.
+
+        Returns:
+            Una lista de herramientas disponibles en el sidecar.
+        """
         await self.ensure_active()
         try:
             # We assume session exists after ensure_active
@@ -69,8 +91,22 @@ class MCPSessionManager:
             return await self.session.list_tools()
 
     async def call_tool(self, name: str, arguments: dict) -> Any:
-        """
-        Calls a tool with auto-reconnect logic.
+        """Invoca una herramienta en el sidecar con lógica de reconexión.
+
+        Si la llamada a la herramienta falla debido a un error de conexión,
+        el manager intentará reconectar automáticamente y reintentar la llamada
+        una vez.
+
+        Args:
+            name: El nombre de la herramienta a invocar.
+            arguments: Un diccionario con los argumentos para la herramienta.
+
+        Returns:
+            El resultado de la invocación de la herramienta.
+
+        Raises:
+            Exception: Propaga el error original si el reintento también falla
+                       o si el error no es relacionado con la conexión.
         """
         # Retry loop (max 1 retry for connection issues)
         for attempt in range(2):

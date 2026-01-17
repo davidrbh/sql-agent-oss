@@ -13,9 +13,20 @@ from agent_core.core.state import AgentState
 # No sabe nada de SQL, ni de negocio.
 # Solo recibe herramientas y prompts.
 
-def build_graph(tools: List[BaseTool], system_prompt: str):
-    """
-    Construye el Grafo del Agente inyectando las herramientas dinámicas y el prompt.
+def build_graph(tools: List[BaseTool], system_prompt: str) -> StateGraph:
+    """Construye y compila el grafo principal del agente.
+
+    Esta función toma una lista de herramientas y un prompt de sistema para
+    configurar un grafo de LangGraph con un nodo de agente y un nodo de
+    herramientas, permitiendo un flujo de trabajo cíclico para la
+    auto-corrección.
+
+    Args:
+        tools: Una lista de objetos BaseTool que el agente podrá invocar.
+        system_prompt: El string con las instrucciones base para el LLM.
+
+    Returns:
+        Un grafo de LangGraph compilado y listo para ser invocado.
     """
     # Configurar el LLM con las herramientas reales
     # Habilitar manejo de errores para que el Agente pueda recuperarse de fallos SQL

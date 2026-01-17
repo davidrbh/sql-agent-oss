@@ -1,0 +1,56 @@
+site_name: SQL Agent OSS
+site_description: "Arquitectura Híbrida de Agentes SQL con protocolo MCP"
+repo_url: https://github.com/tu-usuario/sql-agent-oss # Opcional
+repo_name: sql-agent-oss
+
+theme:
+  name: material
+  palette:
+    # Modo Oscuro por defecto (Hacker style)
+    - scheme: slate
+      primary: teal
+      accent: cyan
+    # Toggle para modo claro
+    - scheme: default
+      primary: teal
+      accent: cyan
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+
+# 🔌 CONFIGURACIÓN CRÍTICA PARA TU ÁRBOL
+plugins:
+  - search
+  - autorefs
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [apps/agent-host/src]
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+
+nav:
+  - Inicio: index.md
+  - Arquitectura:
+      - 'Visión General': 01_architecture/overview.md
+      - 'Límites del Proyecto': 01_architecture/project_boundaries.md
+      - 'Stack Tecnológico': 01_architecture/tech_stack_decisions.md
+      - 'Migración MCP': 06_mcp_migration_spec.md
+  - Componentes:
+      - 'Infraestructura': 02_setup_infra/infrastructure_spec.md
+      - 'Capa Semántica': 03_semantic_layer/semantic_spec.md
+      - 'Integración WhatsApp': 05_whatsapp_integration.md
+  - Guías Avanzadas:
+      - 'Extender el Agente': 04_optimization/how_to_extend.md
+      - 'Roadmap de Modernización': 04_optimization/modernization_roadmap.md
+  - Referencia de Código (API):
+      - 'Agent Core': reference/agent_core.md
+      - 'Features (SQL)': reference/features.md
+      - 'Infra (MCP)': reference/infra.md

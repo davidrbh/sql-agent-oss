@@ -1,136 +1,121 @@
-# Especificación Técnica: Migración Enterprise a Ecosistema MCP (V2)
+# Arquitectura de Componentes y Comunicación (MCP)
 
-**Proyecto:** SQL Agent OSS  
-**Versión Objetivo:** v3.0 (Arquitectura Distribuida / Cloud Native)  
-**Estado:** Definición Técnica (V2.1 - Validada para Producción)
+## 1. Introducción
 
-## 1. Resumen Ejecutivo (Revisión V2.1)
+Este documento describe la arquitectura de comunicación interna del proyecto, que se basa en el **Model Context Protocol (MCP)**. MCP es un protocolo estándar que permite que un agente de IA (el "cliente") se comunique de forma segura y estandarizada con sus herramientas (los "servidores"), incluso si estas se ejecutan en procesos, contenedores o máquinas diferentes.
 
-Esta especificación consolida la arquitectura "Enterprise" para la migración a MCP. Ha sido validada como **GO / APROBADO** para implementación.
-El foco central es la robustez en producción: eliminación de "bloatware" en el contenedor principal, aislamiento de fallos mediante **Sidecars**, y seguridad mejorada (Principio de Mínimo Privilegio).
+Gracias a MCP, nuestro `agent-host` (el cerebro) está completamente desacoplado de la lógica y las credenciales de sus herramientas, como la base de datos.
 
-## 2. Decisiones de Arquitectura Críticas
+## 2. Componentes del Ecosistema MCP
 
-| Área                          | V1 (Naive)                   | V2 (Enterprise)                       | Rationale                                                                                   |
-| ----------------------------- | ---------------------------- | ------------------------------------- | ------------------------------------------------------------------------------------------- |
-| **Transporte**                | Stdio (Pipes)                | **SSE (Server-Sent Events)**          | Stdio no escala en K8s/Docker. SSE permite separar contenedores y reinicios independientes. |
-| **Topología**                 | Monolito (Subprocesos hijos) | **Malla de Servicios (Sidecars)**     | Si MySQL crashea, solo reinicia el sidecar, no el agente.                                   |
-| **Gestión de Ciclo de Vida**  | Singleton Global             | **FastAPI Lifespan + AsyncExitStack** | Garantiza conexiones "calientes" y limpieza de recursos.                                    |
-| **Interoperabilidad Node/Py** | `npx` invocado desde Python  | **Contenedores Independientes**       | Evita tener que instalar Node.js dentro de la imagen Docker de Python (bloatware).          |
-| **Seguridad**                 | Credenciales en Agente       | **Credenciales en Sidecar**           | El Agente (Python) desconoce el password de la BD. Solo pide ejecutar herramientas.         |
+La arquitectura actual consta de dos componentes principales que se comunican vía MCP:
 
----
+### 2.1. `agent-host` (El Cliente MCP)
 
-## 3. Arquitectura de Despliegue (Docker Compose / K8s)
+-   **Rol:** Actúa como el **cliente** en la comunicación MCP. Es el orquestador que *consume* las herramientas expuestas por los sidecars.
+-   **Implementación Clave:** La lógica del cliente se encuentra en `apps/agent-host/src/infra/mcp/manager.py`.
+-   **`MCPSessionManager`:** Esta clase es el corazón del cliente. Se encarga de establecer una conexión persistente y resiliente (con reintentos automáticos) a los servidores MCP mediante Server-Sent Events (SSE). No contiene ninguna credencial sensible.
 
-El sistema se dividirá en contenedores especializados (Sidecars). La gran mejora en V2.1 es el movimiento de secretos (DB Credentials) del Agente al Sidecar.
+### 2.2. `mcp-mysql-sidecar` (El Servidor MCP)
 
-### 3.1. Contenedor Principal: `sql-agent-core`
+-   **Rol:** Actúa como el **servidor** en la comunicación MCP. Es un microservicio que *expone* una o más herramientas.
+-   **Implementación Clave:** La lógica del servidor se encuentra en `services/mcp-mysql-sidecar/src/index.ts`.
+-   **Herramienta `query`:** Este servicio expone una única herramienta llamada `query`, que acepta un string SQL como argumento.
+-   **Aislamiento de Secretos:** Este contenedor es el **único** que posee las credenciales de la base de datos (`MYSQL_USER`, `MYSQL_PASSWORD`, etc.). El agente principal no tiene conocimiento alguno de ellas, cumpliendo con el Principio de Mínimo Privilegio.
 
-- **Rol:** Orquestador (LangGraph + FastAPI).
-- **Responsabilidad:** Cliente MCP. Se conecta a los sidecars.
-- **Configuración:**
-  - **SIN Credenciales de BD:** No contiene `MYSQL_PASSWORD` ni `MYSQL_USER`.
-  - **Variables:** Solo URLs de conexión.
-    - `MCP_MYSQL_URL=http://mcp-mysql:3000/sse`
-    - `MCP_FILESYSTEM_URL=http://mcp-fs:3000/sse`
+## 3. Flujo de una Consulta SQL vía MCP
 
-### 3.2. Sidecar A: `mcp-mysql-sidecar`
+Cuando un usuario pide un dato que requiere una consulta a la base de datos, ocurre el siguiente flujo de comunicación:
 
-- **Imagen Base:** Node.js (Alpine).
-- **Wrapper:** `supergateway` (Opción A) o custom bridge (Opción B) envolviendo `@modelcontextprotocol/server-mysql`.
-- **Configuración:** **POSEE** las credenciales de base de datos.
-  - `MYSQL_HOST`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_DATABASE`.
-- **Función:** Expone el servidor oficial vía SSE en el puerto 3000.
+```mermaid
+sequenceDiagram
+    participant Agent as Agent Graph (en agent-host)
+    participant Manager as MCPSessionManager (en agent-host)
+    participant Sidecar as mcp-mysql-sidecar
 
-### 3.3. Sidecar B: `mcp-filesystem-sidecar`
+    Agent->>Manager: Decide usar la herramienta 'query' y la invoca
+    Manager->>Sidecar: Envía una 'CallToolRequest' con el SQL vía SSE
+    activate Sidecar
+    Sidecar->>Sidecar: Recibe la petición, extrae el SQL
+    Sidecar->>MySQL DB: Ejecuta la consulta SQL
+    MySQL DB-->>Sidecar: Devuelve el resultado (filas)
+    Sidecar-->>Manager: Empaqueta el resultado en una 'CallToolResponse' y la envía de vuelta por SSE
+    deactivate Sidecar
+    activate Manager
+    Manager-->>Agent: Devuelve el contenido de la respuesta al grafo
+    deactivate Manager
+    Agent->>Agent: Procesa el resultado y formula una respuesta final para el usuario
 
-- **Rol:** Acceso seguro a logs/contexto.
-- **Seguridad:** Sandbox estricto en el volumen `/data/context`.
+```
 
----
+## 4. Detalles de Implementación Clave
 
-## 4. Estrategia de Implementación (Código)
+### 4.1. Lógica del Cliente (`manager.py`)
 
-### 4.1. Gestión de Recursos (`src/api/lifespan.py`)
-
-La gestión de conexiones MCP debe ser resiliente, incluyendo lógica de **Lazy Reconnect** o **Heartbeat** para manejar reinicios de sidecars sin tumbar el agente.
+El `MCPSessionManager` utiliza `sse_client` del SDK de MCP para establecer la conexión. La gestión de la conexión y su ciclo de vida se maneja con `AsyncExitStack` para asegurar que los recursos de red se liberen correctamente, incluso si hay errores.
 
 ```python
-# src/api/lifespan.py PROTOTIPO
-from contextlib import asynccontextmanager, AsyncExitStack
-from mcp import ClientSession
-from mcp.client.sse import sse_client
+# apps/agent-host/src/infra/mcp/manager.py (Extracto)
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Stack de salida para cerrar conexiones al apagar
-    async with AsyncExitStack() as stack:
-        # Nota: La implementación real debe manejar reconexión ante fallos (Lazy Reconnect)
-        try:
-            # Conectar a MySQL Sidecar
-            mcp_mysql = await stack.enter_async_context(
-                sse_client(url="http://mcp-mysql:3000/sse")
-            )
-            app.state.mcp_mysql = mcp_mysql
-        except Exception as e:
-            print(f"Advertencia: No se pudo conectar a Sidecar MySQL al inicio: {e}")
-            # Lógica de retry o inicialización lazy aquí
-
-        yield
-
-        # Al salir, el stack cierra todas las conexiones automáticamente
+class MCPSessionManager:
+    # ...
+    async def connect(self):
+        """Establece la conexión inicial con el sidecar MCP."""
+        self._exit_stack = AsyncExitStack()
+        # ...
+        sse = sse_client(url=f"{self.sidecar_url}/sse", timeout=None)
+        streams = await self._exit_stack.enter_async_context(sse)
+        
+        self.session = await self._exit_stack.enter_async_context(
+            ClientSession(streams[0], streams[1])
+        )
+        await self.session.initialize()
+    # ...
 ```
 
-### 4.2. Adaptador Proxy para Node.js (Estrategia)
+### 4.2. Lógica del Servidor (`index.ts`)
 
-Para la mayoría de servidores MCP oficiales (stdio), necesitamos un **"Stdio-to-SSE Bridge"**.
+El sidecar de Node.js utiliza el `@modelcontextprotocol/sdk` para crear un servidor MCP. Define la herramienta `query`, su descripción y los parámetros que espera (`inputSchema`). La lógica de ejecución real se maneja dentro del `setRequestHandler`, donde se utiliza un pool de conexiones de MySQL para ejecutar la consulta recibida.
 
-**Opción A (Recomendada): Usar `supergateway`**
-Es una herramienta estándar que expone stdio sobre SSE.
+```typescript
+// services/mcp-mysql-sidecar/src/index.ts (Extracto)
 
-```dockerfile
-# Dockerfile.sidecar (Opción A)
-FROM node:20-alpine
-RUN npm install -g supergateway @modelcontextprotocol/server-mysql
-CMD ["supergateway", "--port", "3000", "--stdio", "mcp-server-mysql"]
+// ...
+const server = new Server(
+    { name: "mysql-sidecar", version: "1.0.0" },
+    { capabilities: { tools: {} } }
+);
+
+// Define la herramienta 'query'
+server.setRequestHandler(ListToolsRequestSchema, async () => {
+    return {
+        tools: [
+            {
+                name: "query",
+                description: "Execute a SQL query",
+                inputSchema: {
+                    type: "object",
+                    properties: { sql: { type: "string" } },
+                    required: ["sql"],
+                },
+            },
+        ],
+    };
+});
+
+// Define cómo se ejecuta la herramienta 'query'
+server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    if (request.params.name === "query") {
+        const sql = request.params.arguments?.sql;
+        // ... validación ...
+        const [rows] = await pool.execute(sql); // Ejecuta el SQL
+        return {
+            content: [{ type: "text", text: JSON.stringify(rows, null, 2) }],
+        };
+    }
+    // ... manejo de errores ...
+});
+// ...
 ```
 
-**Opción B (Robusta): Custom Bridge**
-Si se requiere más control, se puede usar un script `bridge.js` con Express y el SDK de MCP.
-
-```dockerfile
-# Dockerfile.sidecar (Opción B - Custom)
-FROM node:20-alpine
-RUN npm install -g @modelcontextprotocol/server-mysql
-WORKDIR /app
-COPY bridge.js .
-RUN npm install express cors @modelcontextprotocol/sdk
-CMD ["node", "bridge.js", "npx", "@modelcontextprotocol/server-mysql"]
-```
-
----
-
-## 5. Plan de Migración Revisado
-
-1. **Fase 1: Infraestructura (Sidecars)**
-
-   - Crear `Dockerfile.sidecar` genérico para Node.js.
-   - Actualizar `docker-compose.yml` para incluir los servicios satélite.
-   - Validar comunicación `curl` (SSE Handshake) entre contenedores.
-
-2. **Fase 2: Cliente Resiliente**
-
-   - Implementar `src/api/lifespan.py`.
-   - Modificar `app.py` para usar el lifespan.
-   - Eliminar lógica de conexión directa a BD en `src/sql_agent/database`.
-
-3. **Fase 3: Integración LangGraph**
-   - Actualizar el grafo para usar herramientas dinámicas extraídas de `app.state.mcp_client.tools`.
-   - Implementar manejo de errores semántico (si MCP falla, el LLM recibe el error y reintenta).
-
-## 6. Stack Tecnológico Definido
-
-- **Python SDK:** `mcp[sse]` (Soporte nativo cliente SSE).
-- **Node Bridge:** Desarrollo custom o uso de `supergateway` (herramienta existente que expone stdio via HTTP).
-- **Orquestador:** Docker Compose (Dev) / Helm (Prod).
+Esta arquitectura distribuida y basada en un protocolo estándar proporciona una base robusta, segura y escalable para el `SQL Agent OSS`.

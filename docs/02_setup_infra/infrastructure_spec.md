@@ -1,56 +1,44 @@
 # Especificación de Infraestructura y Conectividad
 
-## 1. Diseño del Entorno (Containerization)
+## 1. Orquestación con Docker Compose
 
-El proyecto utiliza **Docker** para orquestar los servicios, garantizando que el entorno de desarrollo sea idéntico en cualquier máquina (Windows, Mac, Linux).
+El proyecto está diseñado para ser ejecutado como un sistema de microservicios orquestado por **Docker Compose**. Esto garantiza un entorno de desarrollo y despliegue consistente, reproducible y aislado.
 
-### Servicios Definidos
+El archivo `docker-compose.yml` en la raíz del proyecto es la única fuente de verdad para definir, configurar y lanzar todos los componentes del ecosistema.
 
-1.  **Base de Datos Principal (MySQL 8.0):**
-    - **Justificación:** Se utiliza MySQL para replicar el entorno de producción del usuario final.
-    - **Configuración:** Puerto expuesto `3306`.
-    - **Inyección de Datos:** Se utiliza el directorio `./mysql_dump/` mapeado a `/docker-entrypoint-initdb.d`. Cualquier archivo `.sql` colocado aquí se ejecutará automáticamente al crear el contenedor por primera vez.
-2.  **Interfaz de Gestión (Adminer):**
-    - Herramienta ligera para inspección visual de datos y depuración de queries sin necesidad de clientes instalados localmente.
-3.  **WhatsApp Integration (WAHA + Agent Bridge):**
-    - **WAHA:** Motor que conecta a WhatsApp via WebJS o Noweb, manejando sesiones y webhooks.
-    - **Agent Bridge:** Servidor FastAPI que recibe mensajes de WhatsApp, maneja memoria de conversaciones y orquesta respuestas del agente. Incluye servicios para WhatsApp via WAHA.
+## 2. Descripción de Servicios
 
-## 2. Estrategia de Conexión de Datos
+El `docker-compose.yml` define los siguientes servicios principales:
 
-La aplicación Python no se conecta directamente mediante drivers bloqueantes.
+### 2.1. `agent-host` (El Cerebro)
 
-### Patrón de Conexión: Singleton Asíncrono
+-   **Rol:** Es el servicio principal que contiene la lógica del agente de IA. Actúa como un orquestador que consume herramientas, pero no las implementa directamente.
+-   **Tecnología:** Python, FastAPI (para exponer APIs), Chainlit (para la interfaz web) y LangGraph (para el grafo de razonamiento).
+-   **Seguridad:** Este contenedor es **agnóstico a las credenciales**. No tiene acceso a contraseñas de bases de datos ni a tokens de servicios externos. Su única configuración son las URLs de los sidecars a los que debe conectarse.
 
-- **Driver:** `aiomysql` + `SQLAlchemy AsyncEngine`.
-- **Gestión de Pool:** Se mantiene un pool de conexiones abiertas (min: 5, max: 20) para evitar la sobrecarga de handshake TCP en cada petición del Agente.
-- **Singleton:** Se garantiza que solo exista una instancia del motor de base de datos en toda la vida de la aplicación.
+### 2.2. `mcp-mysql-sidecar` (El Brazo SQL)
 
-## 3. Seguridad de Credenciales y API
+-   **Rol:** Es un microservicio especializado que actúa como un "puente" seguro hacia la base de datos MySQL. Expone la herramienta `query` a través del protocolo MCP.
+-   **Tecnología:** Node.js, Fastify y el SDK de MCP.
+-   **Seguridad:** Este contenedor es el **único** que posee las credenciales de la base de datos (leídas desde el archivo `.env`). Esto aísla los secretos de la base de datos del resto del sistema.
 
-- **Principio:** Ninguna credencial se almacena en el código fuente.
-- **Implementación:** Se utiliza `python-dotenv` para leer un archivo `.env` local.
-- **Variables Requeridas (Base de Datos):**
-  - `DB_HOST`, `DB_PORT`: Ubicación del servicio.
-  - `DB_USER`, `DB_PASSWORD`: Credenciales de acceso (Limitadas a lectura en producción).
-  - `DB_NAME`: Nombre exacto de la base de datos a consultar.
-- **Variables Requeridas (API Externa):**
-  - `API_BASE_URL`: URL raíz de la API (ej: `https://api.example.com`).
-  - `API_AUTH_HEADER`: Nombre del header de autenticación (ej: `x-api-key`, `Authorization`).
-  - `API_AUTH_VALUE`: Valor secreto del token/key.
+### 2.3. `waha` (La Boca)
 
-## 4. Documentación de API (Swagger)
+-   **Rol:** Es un gateway de terceros que se conecta a la API de WhatsApp.
+-   **Función:** Recibe los mensajes de los usuarios y los reenvía al `agent-host` a través de un webhook. También se utiliza para enviar las respuestas del agente de vuelta al usuario.
 
-Para que el agente pueda interactuar con la API Externa, se requiere:
+## 3. Configuración Centralizada con `.env`
 
-1. Una especificación **OpenAPI 3.0+** en formato JSON.
-2. El archivo debe ubicarse en `docs/swagger.json`.
-3. El sistema cargará automáticamente este archivo al inicio para generar el "Mapa Mental" de endpoints disponibles.
+Toda la configuración del sistema (credenciales, URLs, claves de API) se gestiona de forma centralizada en un único archivo `.env` ubicado en la raíz del proyecto.
 
-## 5. Modalidad de Desarrollo "Local Nativa"
+-   El archivo `.env.example` sirve como plantilla.
+-   `docker-compose.yml` es el responsable de leer este archivo y pasar las variables de entorno apropiadas a cada contenedor en el momento del arranque. Por ejemplo, pasa `DB_PASSWORD` solo al sidecar, pero no al `agent-host`.
 
-Para desarrolladores que ya poseen una instancia de MySQL corriendo localmente:
+## 4. Conectividad de Red en Docker
 
-1. No es necesario iniciar el contenedor `mysql_db` vía Docker Compose.
-2. Se debe configurar el archivo `.env` apuntando a `DB_HOST=127.0.0.1`.
-3. Se recomienda usar MySQL versión 8.0+ para compatibilidad total con las funciones de fecha y JSON que podría generar el agente.
+Dentro del entorno de Docker Compose, los servicios pueden comunicarse entre sí utilizando sus nombres de servicio como si fueran nombres de host (hostnames).
+
+-   Docker gestiona una red virtual interna para los contenedores.
+-   **Ejemplo:** El `agent-host` se conecta al sidecar de MySQL utilizando la URL `http://mcp-mysql:3000`, donde `mcp-mysql` es el nombre del servicio definido en `docker-compose.yml`.
+
+Esta configuración de red simplifica enormemente la comunicación entre los microservicios del sistema.

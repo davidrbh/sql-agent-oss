@@ -1,26 +1,23 @@
 import os
 import yaml
 from pathlib import Path
-from langchain_core.messages import SystemMessage
-from infra.mcp.loader import get_agent_tools as get_mcp_tools # Reusing existing generic MCP loader if possible
-# Assuming infra/mcp/loader.py is generic enough. Let's verify that first.
+from typing import List
+from langchain_core.tools import BaseTool
+from infra.mcp.loader import get_agent_tools as get_mcp_tools
+from infra.mcp.manager import MCPSessionManager
 
-# We need to calculate paths relative to this feature
-# apps/agent-host/src/features/sql_analysis/loader.py
-
-# Detección inteligente del entorno (Docker vs Local)
-# En Docker, WORKDIR es /app, así que config suele estar en /app/config
+# --- Lógica de Detección de Rutas ---
+# Detección inteligente del entorno (Docker vs Local) para encontrar la carpeta 'config'.
+# En Docker, el WORKDIR suele ser /app.
 DOCKER_CONFIG_PATH = Path("/app/config")
-
 if DOCKER_CONFIG_PATH.exists():
     CONFIG_DIR = DOCKER_CONFIG_PATH
 else:
-    # Fallback para entorno local (Monorepo)
-    # Subimos niveles hasta encontrar la carpeta config en la raíz del proyecto
-    # src/features/sql_analysis/loader.py -> ... -> sql-agent-oss/config
+    # En un entorno local, se navega hacia arriba desde este archivo para encontrar la raíz del monorepo.
     BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
     CONFIG_DIR = BASE_DIR / "config"
 
+# --- Plantilla Base para el Prompt del Sistema ---
 SYSTEM_PROMPT_TEMPLATE = """Eres un experto Agente SQL.
 
 ⚠️ REGLAS CRÍTICAS DE SEGURIDAD ⚠️
@@ -36,7 +33,12 @@ SYSTEM_PROMPT_TEMPLATE = """Eres un experto Agente SQL.
 """
 
 def load_business_context() -> str:
-    """Loads business context from YAML"""
+    """Carga el contexto de negocio desde el archivo business_context.yaml.
+
+    Returns:
+        Un string con el contenido completo del archivo YAML del contexto de negocio.
+        Retorna un mensaje de advertencia si el archivo no se encuentra.
+    """
     path = CONFIG_DIR / "business_context.yaml"
     try:
         with open(path, "r", encoding="utf-8") as f:
@@ -46,7 +48,15 @@ def load_business_context() -> str:
         return "Sin contexto definido."
 
 def get_sql_system_prompt() -> str:
-    """Generates the full system prompt for SQL Analysis"""
+    """Construye el prompt de sistema completo para la feature de análisis SQL.
+
+    Combina una plantilla de prompt base con reglas de seguridad y estilo,
+    e inyecta el contexto de negocio completo cargado desde el archivo YAML.
+    Este es el "manual de instrucciones" principal para el LLM.
+
+    Returns:
+        Un string que contiene el prompt de sistema final y listo para usar.
+    """
     context = load_business_context()
     return f"""{SYSTEM_PROMPT_TEMPLATE}
 
@@ -58,12 +68,23 @@ A continuación se definen las entidades, sinónimos y reglas de negocio. ÚSALO
 ```
 """
 
-async def get_sql_tools(mcp_manager):
-    """Facade to get tools for this specific feature"""
-    # In the future, this could filter specific tools from the MCP session if needed
+async def get_sql_tools(mcp_manager: MCPSessionManager) -> List[BaseTool]:
+    """Obtiene y combina todas las herramientas necesarias para la feature de SQL.
+
+    Esta función actúa como una fachada que ensambla las herramientas de diferentes
+    fuentes. Actualmente, combina las herramientas obtenidas del sidecar MCP
+    (como la ejecución de consultas SQL) y las herramientas para invocar APIs
+    (como la consulta de APIs REST externas).
+
+    Args:
+        mcp_manager: Una instancia de MCPSessionManager para comunicarse con el sidecar.
+
+    Returns:
+        Una lista combinada de objetos BaseTool que el agente podrá utilizar.
+    """
     from agent_core.api.loader import load_api_tools
     
     mcp_tools = await get_mcp_tools(mcp_manager)
-    api_tools = load_api_tools() # Reads config from env
+    api_tools = load_api_tools() # Lee la configuración desde el entorno
     
     return mcp_tools + api_tools

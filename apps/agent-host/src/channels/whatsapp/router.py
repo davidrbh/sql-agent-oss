@@ -15,12 +15,21 @@ WAHA_API_KEY = os.getenv("WAHA_API_KEY")
 SIDECAR_URL = os.getenv("SIDECAR_URL", "http://mcp-mysql:3000")
 
 async def process_message(chat_id: str, message_text: str):
-    """
-    Proceso background: 
-    1. Conecta infraestructura (MCP)
-    2. Carga funcionalidades (SQL Feature)
-    3. Ejecuta pensamiento (Agent Core)
-    4. Envía respuesta (WhatsApp API)
+    """Procesa un mensaje de WhatsApp en segundo plano.
+
+    Esta función realiza el ciclo completo de vida de una consulta del usuario:
+    1. Establece la infraestructura de conexión (MCP Manager).
+    2. Carga las "features" del agente (herramientas y prompts).
+    3. Construye el grafo del agente.
+    4. Invoca el agente con el mensaje del usuario.
+    5. Envía la respuesta final de vuelta al usuario a través de la API de WAHA.
+    
+    Toda la lógica se encapsula en un bloque try/finally para asegurar que
+    la conexión MCP se cierre correctamente al finalizar.
+
+    Args:
+        chat_id: El ID del chat de WhatsApp del que proviene el mensaje.
+        message_text: El contenido del mensaje del usuario.
     """
     mcp_manager = MCPSessionManager(SIDECAR_URL)
     
@@ -71,8 +80,19 @@ async def process_message(chat_id: str, message_text: str):
 
 @router.post("/webhook")
 async def whatsapp_webhook(request: Request, background_tasks: BackgroundTasks):
-    """
-    Entrypoint ligero. Recibe el evento, valida y delega a background tasks.
+    """Endpoint para recibir webhooks de WAHA (WhatsApp HTTP API).
+
+    Este es el punto de entrada principal para los mensajes de WhatsApp.
+    Valida que el evento sea un mensaje entrante, que no provenga del propio
+    agente (para evitar bucles), y delega el procesamiento pesado a una tarea
+    en segundo plano (`process_message`) para responder inmediatamente a WAHA.
+
+    Args:
+        request: El objeto de la petición FastAPI.
+        background_tasks: El gestor de tareas en segundo plano de FastAPI.
+
+    Returns:
+        Un diccionario con el estado del procesamiento.
     """
     try:
         data = await request.json()
