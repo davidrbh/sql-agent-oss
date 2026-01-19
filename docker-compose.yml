@@ -58,3 +58,15 @@ services:
     volumes:
       - .waha_sessions:/app/sessions # Persistencia de sesión (QR)
     restart: on-failure
+
+  docs:
+    build:
+      context: .
+      dockerfile: docs.Dockerfile
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./docs:/app/docs
+      - ./mkdocs.yml:/app/mkdocs.yml
+      # Montar el código fuente para que los cambios en docstrings se reflejen en tiempo real
+      - ./apps/agent-host/src:/app/apps/agent-host/src
