@@ -2,7 +2,7 @@
 __pycache__/
 *.py[cod]
 .env
-.venv
+apps/*/.venv/
 env/
 venv/
 .idea/
@@ -35,7 +35,11 @@ yarn-error.log
 # Monorepo / Services artifacts
 services/*/dist/
 services/*/coverage/
+apps/*/.chainlit/
 apps/*/pt_cache/
 
 # New Logs structure
 data/logs/
+
+# MkDocs output
+site/
