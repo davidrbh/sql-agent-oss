@@ -11,3 +11,6 @@ class AgentState(TypedDict):
     # Historial de chat: Lista de mensajes (Human, AI, Tool)
     # operator.add significa que cuando un nodo devuelve mensajes, se AGREGAN a la lista
     messages: Annotated[List[BaseMessage], operator.add]
+    
+    # La intención clasificada del usuario (ej. 'DATABASE', 'API', 'GENERAL')
+    intent: str

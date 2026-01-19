@@ -13,8 +13,8 @@ DOCKER_CONFIG_PATH = Path("/app/config")
 if DOCKER_CONFIG_PATH.exists():
     CONFIG_DIR = DOCKER_CONFIG_PATH
 else:
-    # En un entorno local, se navega hacia arriba desde este archivo para encontrar la raíz del monorepo.
-    BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
+    # Fallback para entorno local, se navega 6 niveles hacia arriba para encontrar la raíz
+    BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent.parent
     CONFIG_DIR = BASE_DIR / "config"
 
 # --- Plantilla Base para el Prompt del Sistema ---

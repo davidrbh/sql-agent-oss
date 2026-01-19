@@ -1,6 +1,17 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "pipeline": {
+  "globalEnv": [
+    "DEEPSEEK_API_KEY",
+    "DB_HOST",
+    "DB_USER",
+    "DB_PASSWORD",
+    "DB_NAME",
+    "DB_PORT",
+    "SIDECAR_URL",
+    "WAHA_API_KEY",
+    "WHATSAPP_WEBHOOK_URL"
+  ],
+  "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
@@ -13,6 +24,9 @@
     "start": {
       "dependsOn": ["build"],
       "persistent": true
+    },
+    "install": {
+      "cache": false
     }
   }
 }

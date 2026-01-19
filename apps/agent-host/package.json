@@ -1,0 +1,12 @@
+{
+  "name": "agent-host",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "install": "poetry install",
+    "dev": "PYTHONPATH=src poetry run uvicorn api.server:app --host 0.0.0.0 --port 8000 --reload",
+    "lint": "poetry run ruff check src",
+    "build": "echo 'Build step not needed for this Python app' && exit 0",
+    "test": "poetry run pytest"
+  }
+}
