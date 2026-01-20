@@ -3,9 +3,8 @@ import yaml
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Definimos la raíz del proyecto basándonos en la ubicación de este archivo
-# src/sql_agent/config/loader.py -> ... -> root
-BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
+# src/agent_core/config/loader.py -> ... -> root (5 niveles de padres)
+BASE_DIR = Path(__file__).resolve().parents[5]
 CONFIG_DIR = BASE_DIR / "config"
 load_dotenv(BASE_DIR / ".env")
 
@@ -36,7 +35,7 @@ class ConfigLoader:
         # src/agent_core/config/loader.py -> ... -> root
         current_dir = os.path.dirname(os.path.abspath(__file__))
         
-        # Subir 4 niveles para llegar a la raíz del monorepo (desde src/agent_core/config)
-        # apps/agent-host/src/agent_core/config -> apps/agent-host/src/agent_core -> apps/agent-host/src -> apps/agent-host -> root
+        # Subir 5 niveles para llegar a la raíz del monorepo (desde src/agent_core/config)
+        # apps/agent-host/src/agent_core/config -> apps/agent-host/src/agent_core -> apps/agent-host/src -> apps/agent-host -> apps -> root
         # Ajustar según estructura real
-        return os.path.abspath(os.path.join(current_dir, "../../../../"))
+        return os.path.abspath(os.path.join(current_dir, "../../../../../"))

@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "bootstrap": "pnpm install && turbo run install",
+    "bootstrap": "pnpm install && turbo run install && turbo run generate-dictionary",
     "build": "turbo run build",
     "dev": "turbo run dev --parallel",
     "lint": "turbo run lint",

@@ -1,960 +1,612 @@
 tables:
 - name: users
   friendly_name: Usuarios
-  description: Tabla maestra de usuarios del sistema. Contiene la información de registro,
-    estado, límites de crédito y deuda actual de cada usuario. Es la fuente principal
-    para análisis de clientes, riesgo crediticio y estado de cuentas.
+  description: Tabla maestra de usuarios/clientes del sistema. Contiene información
+    de registro, perfil, estado, límites de crédito y deuda actual.
   columns:
   - name: id
-    description: Identificador único interno del usuario.
-    is_active: true
+    description: 'Identificador único interno del usuario. Ejemplos: ''57'', ''58'',
+      ''59''.'
   - name: uuid
-    description: Identificador único universal (UUID) del usuario.
-    is_active: true
-  - name: email
-    description: Dirección de correo electrónico del usuario. Dimensión principal
-      para identificación y contacto.
-    is_active: true
-  - name: status
-    description: 'Estado de la cuenta del usuario. Valores permitidos: 1=Activo, 0=Inactivo.'
-    is_active: true
-  - name: created_at
-    description: Fecha y hora de creación del registro del usuario. Dimensión temporal
-      para análisis de crecimiento.
-    is_active: true
-  - name: balance
-    description: FUENTE DE VERDAD para la deuda. Representa la deuda total pendiente
-      del usuario. Un valor POSITIVO significa que el usuario DEBE dinero. NO calcular
-      sumando otras transacciones; usar siempre este valor directamente.
-    is_active: true
-  - name: credit_limit
-    description: Límite de crédito asignado al usuario. Medida clave para análisis
-      de riesgo y capacidad de compra.
-    is_active: true
-  - name: current_debt
-    description: 'COLUMNA VIRTUAL (Medida Semántica). Representa la deuda total pendiente.
-      Se deriva directamente de la columna ''balance'', que es la FUENTE DE VERDAD.
-      Un valor positivo indica deuda. Fórmula: current_debt = balance.'
-    is_active: true
-  - name: fullname
-    description: Nombre completo del usuario (nombre + apellido).
-    is_active: true
+    description: 'Identificador único universal (UUID) del usuario. Ejemplo: ''5af8877d-e684-445a-91d8-b66562de57b4''.'
   - name: doc
-    description: Documento de identificación del usuario.
-    is_active: true
+    description: 'Documento de identificación del usuario. Ejemplos: ''18.813.275'',
+      ''36.893.471''.'
   - name: nationality
-    description: 'Nacionalidad del usuario (ej: ''V'' para Venezolano).'
-    is_active: true
-  - name: level
-    description: Nivel o categoría asignada al usuario en el sistema.
-    is_active: true
-  - name: origin_credit_limit
-    description: Límite de crédito original asignado al momento del registro o aprobación.
-    is_active: true
-  - name: is_mail_confirmed
-    description: Indica si el correo electrónico del usuario ha sido confirmado (1=Sí,
-      0=No).
-    is_active: true
-  - name: is_phone_confirmed
-    description: Indica si el teléfono del usuario ha sido confirmado (1=Sí, 0=No).
-    is_active: true
-  - name: birth
-    description: Fecha de nacimiento del usuario.
-    is_active: true
-  - name: sex
-    description: 'Género del usuario (ej: ''hombre'', ''mujer'').'
-    is_active: true
-  - name: updated_at
-    description: Fecha y hora de la última actualización del registro.
-    is_active: true
+    description: 'Nacionalidad del usuario. Ejemplo: ''V'' (Venezolano).'
+  - name: email
+    description: 'Correo electrónico del usuario. Es un atributo clave para la identificación.
+      Ejemplos: ''ibanezmariaisabel89@gmail.com'', ''lor082456@gmail.com''.'
   - name: name
-    description: Nombre(s) del usuario.
-    is_active: true
+    description: 'Nombre(s) del usuario. Ejemplo: ''MARIA ISABEL'', ''LORENZO''.'
   - name: lastname
-    description: Apellido(s) del usuario.
-    is_active: true
-  - name: manual_registration
-    description: Indica si el registro fue manual (1) o automático (0).
-    is_active: true
-  - name: merchant_level
-    description: Nivel del usuario como comerciante (si aplica).
-    is_active: true
-  - name: Credit_Auth
-    description: Autorización de crédito (puede ser 'None' si no aplica).
-    is_active: true
-  - name: amount_favor_usd
-    description: Monto a favor del usuario en dólares.
-    is_active: true
-  - name: amount_favor_bs
-    description: Monto a favor del usuario en bolívares.
-    is_active: true
-  - name: tab
-    description: Pestaña o sección asociada al usuario en la interfaz.
-    is_active: true
-  - name: subscription_complete
-    description: Indica si el proceso de suscripción está completo (1=Sí, 0=No).
-    is_active: true
-  - name: ref_id
-    description: Identificador de referencia (puede ser 'None').
-    is_active: true
-  - name: ref_by
-    description: Usuario que refirió a este usuario (puede ser 'None').
-    is_active: true
-  - name: created_on_time
-    description: Marca de tiempo de creación específica (puede ser 'None').
-    is_active: true
-  - name: sms
-    description: Preferencia de notificación por SMS (1=Activado, 0=Desactivado).
-    is_active: true
-  - name: ref_made
-    description: Indica si el usuario ha realizado referidos (1=Sí, 0=No).
-    is_active: true
-  - name: mail
-    description: Preferencia de notificación por correo (1=Activado, 0=Desactivado).
-    is_active: true
-  - name: push
-    description: Preferencia de notificaciones push (1=Activado, 0=Desactivado).
-    is_active: true
-  - name: push_token
-    description: Token para notificaciones push (puede ser 'None').
-    is_active: true
-  - name: is_merchant_related
-    description: Indica si el usuario está relacionado con un comercio (1=Sí, 0=No).
-    is_active: true
-  - name: merchant_id
-    description: ID del comercio asociado (si aplica, puede ser 'None').
-    is_active: true
-  - name: doc_photo
-    description: Ruta o referencia a la foto del documento (puede ser 'None').
-    is_active: true
-  - name: selfie_photo
-    description: Ruta o referencia a la selfie del usuario (puede ser 'None').
-    is_active: true
-  - name: ref_links
-    description: Número o lista de enlaces de referencia generados.
-    is_active: true
-  - name: deleted_at
-    description: Fecha y hora de eliminación (soft delete). 'None' indica que no está
-      eliminado.
-    is_active: true
-  - name: password
-    description: Hash de la contraseña del usuario (solo para contexto, no para análisis).
-    is_active: true
-- name: users_profile
-  friendly_name: Perfil de Usuarios
-  description: Tabla maestra que contiene la información de perfil de los usuarios
-    del sistema. Esta tabla es la FUENTE DE VERDAD para los datos personales de contacto
-    e identificación de los usuarios. Incluye nombre, apellido, teléfono y documento
-    de identidad.
-  columns:
-  - name: id
-    description: Identificador único interno (clave primaria) del registro del perfil.
-      Es un número secuencial generado por la base de datos.
-    is_active: true
-  - name: uuid
-    description: Identificador único universal (UUID) del registro del perfil. Se
-      utiliza para referencias externas y APIs.
-    is_active: true
-  - name: users_id
-    description: Clave foránea que referencia al usuario principal en el sistema (tabla
-      'users'). Relaciona el perfil con la cuenta de usuario.
-    is_active: true
-  - name: name
-    description: 'Nombre(s) del usuario. REGLA DE NEGOCIO: Este campo es la FUENTE
-      DE VERDAD para el nombre del usuario en el sistema. Los datos se almacenan en
-      mayúsculas.'
-    is_active: true
-  - name: lastname
-    description: 'Apellido(s) del usuario. REGLA DE NEGOCIO: Este campo es la FUENTE
-      DE VERDAD para el apellido del usuario en el sistema. Los datos se almacenan
-      en mayúsculas.'
-    is_active: true
-  - name: phone
-    description: 'Número de teléfono móvil del usuario. REGLA DE NEGOCIO: Este campo
-      es la FUENTE DE VERDAD para el teléfono de contacto principal. El formato esperado
-      es un número de teléfono venezolano que comienza con ''0412'', ''0414'', ''0424'',
-      etc.'
-    is_active: true
-  - name: document
-    description: 'Número de documento de identidad del usuario. REGLA DE NEGOCIO:
-      Este campo es la FUENTE DE VERDAD para la identificación oficial del usuario.
-      El formato observado es el de cédula de identidad venezolana con puntos separadores
-      (ej: ''18.813.275'').'
-    is_active: true
-  - name: address_1
-    description: 'Línea principal de la dirección del usuario (ej: calle, avenida,
-      urbanización).'
-    is_active: true
-  - name: address_2
-    description: 'Línea secundaria de la dirección del usuario (ej: edificio, piso,
-      apartamento, referencia).'
-    is_active: true
-  - name: zip
-    description: Código postal de la dirección del usuario.
-    is_active: true
-  - name: city
-    description: Ciudad de residencia del usuario.
-    is_active: true
-  - name: state
-    description: Estado o provincia de residencia del usuario.
-    is_active: true
-  - name: created_at
-    description: Marca de tiempo (timestamp) que indica la fecha y hora exacta en
-      UTC en la que se creó el registro del perfil.
-    is_active: true
-  - name: updated_at
-    description: Marca de tiempo (timestamp) que indica la última fecha y hora en
-      UTC en la que se actualizó el registro del perfil. Valor 'None' indica que nunca
-      ha sido modificado.
-    is_active: true
-  - name: deleted_at
-    description: Marca de tiempo (timestamp) que indica la fecha y hora en UTC en
-      la que se realizó un borrado lógico (soft delete) del registro. Valor 'None'
-      indica que el registro está activo y no ha sido eliminado.
-    is_active: true
-  - name: full_name
-    description: 'COLUMNA VIRTUAL (SQL): Nombre completo del usuario. Se genera concatenando
-      ''name'' y ''lastname'' con un espacio. Fórmula: `name || '' '' || lastname`.
-      REGLA DE NEGOCIO: Esta es la representación canónica del nombre del usuario
-      para mostrar en interfaces.'
-    is_active: true
-  - name: document_clean
-    description: 'COLUMNA VIRTUAL (SQL): Número de documento sin puntos ni caracteres
-      especiales. Fórmula: `REPLACE(document, ''.'', '''')`. Útil para búsquedas y
-      comparaciones.'
-    is_active: true
-  - name: is_active_profile
-    description: 'COLUMNA VIRTUAL (SQL): Indicador booleano que muestra si el perfil
-      está activo (no eliminado lógicamente). Fórmula: `deleted_at IS NULL`. VALORES:
-      TRUE=Perfil Activo, FALSE=Perfil Eliminado.'
-    is_active: true
-- name: users_score
-  friendly_name: Puntaje de Crédito de Usuarios
-  description: Tabla que almacena el puntaje de crédito interno (score) asignado a
-    cada usuario del sistema. Contiene el valor numérico del score junto con metadatos
-    sobre su estado, tipo de usuario (B2B/B2C) y fechas de creación/actualización.
-    Esta tabla es la FUENTE DE VERDAD para el puntaje de crédito de los usuarios.
-  columns:
-  - name: id
-    description: Identificador único numérico de la fila en la tabla (clave primaria).
-    is_active: true
-  - name: uuid
-    description: Identificador único universal (UUID) del registro del score.
-    is_active: true
-  - name: users_id
-    description: Clave foránea que referencia al usuario (UUID) al que pertenece este
-      puntaje. Relación con la tabla de usuarios.
-    is_active: true
-  - name: score
-    description: Puntaje de crédito interno del usuario. Valor numérico que representa
-      la evaluación crediticia. Esta columna es la FUENTE DE VERDAD para el score
-      del usuario. En la muestra de datos se observan valores '0', lo que podría indicar
-      un score inicial o pendiente de cálculo.
-    is_active: true
+    description: 'Apellido(s) del usuario. Ejemplo: ''IBAÑEZ ARCILA'', ''ANTONELLI''.'
+  - name: fullname
+    description: 'Nombre completo del usuario (concatenación de nombre y apellido).
+      Ejemplo: ''MARIA ISABEL IBAÑEZ ARCILA''.'
   - name: status
-    description: 'Estado del registro del score. Valores permitidos (según muestra
-      de datos): 1=Activo.'
-    is_active: true
-  - name: is_b2b
-    description: 'Indica si el score pertenece a un usuario de tipo Business-to-Business
-      (B2B) o Business-to-Consumer (B2C). Valores permitidos (según muestra de datos):
-      0=B2C (No es B2B), 1=B2B.'
-    is_active: true
+    description: 'Estado del usuario en el sistema. 1: Activo, 0: Inactivo. Ejemplos
+      en la muestra: todos son ''1'' (Activos).'
+  - name: credit_limit
+    description: 'Límite de crédito asignado al usuario. Es una medida numérica. Ejemplos:
+      ''1000.0'', ''168.0''.'
+  - name: balance
+    description: 'Deuda total pendiente del usuario (FUENTE DE VERDAD). Un valor positivo
+      significa que el usuario DEBE dinero. NO se debe calcular sumando otras transacciones.
+      Ejemplos: ''0.0'', ''13.74''.'
   - name: created_at
-    description: Marca de tiempo (timestamp) que indica cuándo se creó el registro
-      del score para el usuario.
-    is_active: true
+    description: 'Fecha y hora de creación del registro del usuario. Es una dimensión
+      temporal. Ejemplos: ''2025-09-24T17:38:09.748Z'', ''2025-09-25T13:38:13.628Z''.'
   - name: updated_at
-    description: Marca de tiempo (timestamp) que indica la última actualización del
-      registro. En la muestra aparece como 'None', lo que sugiere que aún no ha sido
-      modificado desde su creación.
-    is_active: true
+    description: 'Fecha y hora de la última actualización del registro. Ejemplos:
+      ''2025-11-04 06:28:18'', ''None'' (si nunca se actualizó).'
+- name: users_profile
+  friendly_name: Perfiles de Usuarios
+  description: Tabla que almacena la información de perfil personal de los usuarios
+    del sistema, incluyendo datos de identificación y contacto.
+  columns:
+  - name: id
+    description: 'Identificador único numérico interno del perfil. Ej: ''1'', ''2'',
+      ''3''.'
+  - name: uuid
+    description: 'Identificador único universal (UUID) del registro del perfil. Ej:
+      ''c2ebfda8-e1cd-4db2-8b68-9e2f082c253b''.'
+  - name: users_id
+    description: 'Identificador único (UUID) del usuario al que pertenece este perfil.
+      Relaciona con la tabla de usuarios. Ej: ''5af8877d-e684-445a-91d8-b66562de57b4''.'
+  - name: name
+    description: 'Nombre(s) de la persona. Puede contener uno o más nombres. Ej: ''MARIA
+      ISABEL'', ''LORENZO'', ''RICARDO ANDRES''.'
+  - name: lastname
+    description: 'Apellido(s) de la persona. Ej: ''IBAÑEZ ARCILA'', ''ANTONELLI'',
+      ''URQUIA PATERNINA''.'
+  - name: phone
+    description: 'Número de teléfono de contacto. Formato de ejemplo: ''04126119197'',
+      ''04120983452''.'
+  - name: document
+    description: 'Número de documento de identificación. Formato con puntos: ''18.813.275'',
+      ''36.893.471'', ''26.489.298''.'
+  - name: address_1
+    description: Dirección principal de residencia. En los datos de muestra aparece
+      como 'None' (vacío).
+  - name: address_2
+    description: Dirección secundaria o complementaria (apto, piso, etc.). En los
+      datos de muestra aparece como 'None' (vacío).
+  - name: zip
+    description: Código postal. En los datos de muestra aparece como 'None' (vacío).
+  - name: city
+    description: Ciudad de residencia. En los datos de muestra aparece como 'None'
+      (vacío).
+  - name: state
+    description: Estado o departamento de residencia. En los datos de muestra aparece
+      como 'None' (vacío).
+  - name: created_at
+    description: 'Fecha y hora de creación del registro del perfil en formato UTC.
+      Ej: ''2025-09-24T17:38:09.748Z''.'
+  - name: updated_at
+    description: Fecha y hora de la última actualización del perfil. En los datos
+      de muestra aparece como 'None' (sin actualizaciones registradas).
   - name: deleted_at
-    description: Marca de tiempo (timestamp) que indica cuándo se eliminó (soft delete)
-      el registro. Un valor 'None' o NULL significa que el registro está activo y
-      no ha sido eliminado.
-    is_active: true
+    description: Fecha y hora de eliminación lógica (soft delete) del perfil. En los
+      datos de muestra aparece como 'None' (registros activos).
+- name: users_score
+  friendly_name: Puntajes de Crédito de Usuarios
+  description: Tabla que almacena el puntaje de crédito interno asignado a cada usuario
+    del sistema. Contiene el valor del score, su estado de vigencia, y si corresponde
+    a un usuario B2B (empresa) o B2C (individual).
+  columns:
+  - name: id
+    description: 'Identificador único numérico de la fila en la tabla. Ejemplos: 1,
+      2, 3.'
+  - name: uuid
+    description: 'Identificador único universal (UUID) del registro. Ejemplos: bbb09999-2fbb-4ef3-a51d-7abbff130234,
+      11bed729-e83f-4733-abd4-9e994d1ab15f.'
+  - name: users_id
+    description: 'Identificador único (UUID) del usuario al que pertenece este puntaje.
+      Ejemplos: 5af8877d-e684-445a-91d8-b66562de57b4, 44de97f2-01e4-451f-8500-42cd79843f07.'
+  - name: score
+    description: 'Puntaje de crédito interno (Score). Valor numérico que representa
+      la evaluación crediticia. En los datos de muestra, todos los valores son ''0''.
+      Ejemplos: 0.'
+  - name: status
+    description: 'Estado de vigencia del registro del score. ''1'' indica activo en
+      los datos de muestra. Ejemplos: 1.'
+  - name: is_b2b
+    description: 'Indica si el score pertenece a un usuario de tipo empresa (B2B).
+      ''0'' indica que no es B2B (es B2C o individual) en los datos de muestra. Ejemplos:
+      0.'
+  - name: created_at
+    description: 'Marca de tiempo de creación del registro. Ejemplos: 2025-09-24T17:38:09.748Z,
+      2025-09-24T22:05:22.223Z.'
+  - name: updated_at
+    description: 'Marca de tiempo de la última actualización del registro. En los
+      datos de muestra aparece como ''None'', indicando que no ha sido modificado.
+      Ejemplos: None.'
+  - name: deleted_at
+    description: 'Marca de tiempo de eliminación lógica (soft delete). ''None'' indica
+      que el registro no está eliminado. Ejemplos: None.'
 - name: credit_evaluations
   friendly_name: Evaluaciones de Crédito
   description: Tabla que almacena los resultados de las evaluaciones de crédito para
-    usuarios. Contiene el límite de crédito final asignado, el resultado detallado
-    de la evaluación en formato JSON, y metadatos de creación. La métrica principal
-    'limit_granted' se deriva directamente del límite final aprobado.
+    usuarios. Contiene el límite de crédito final asignado y un objeto JSON detallado
+    con el resultado completo de la evaluación, incluyendo el nivel de crédito, puntuación
+    total y desglose por factores.
   columns:
   - name: id
-    description: Identificador único de la evaluación de crédito.
-    is_active: true
+    description: 'Identificador único de la evaluación. Ejemplos: ''22'', ''23'',
+      ''24''.'
   - name: user_id
-    description: Identificador del usuario evaluado. Relación con la tabla de usuarios.
-    is_active: true
+    description: 'Identificador del usuario evaluado. Ejemplos: ''57'', ''58'', ''59''.'
   - name: evaluation_result
-    description: 'Resultado detallado de la evaluación en formato JSON. Contiene:
-      status (booleano de aprobación), nivel_de_credito (objeto con id, descripción,
-      código, unidad, rango min/max, valor y monto_inicial), total (puntuación total
-      de la evaluación), monto_desacelerado (monto ajustado por factores de riesgo),
-      y detalles (desglose de puntuaciones por categoría: sexo, edad, nacionalidad,
-      teléfono, hora, ubicación).'
-    is_active: true
+    description: 'Resultado detallado de la evaluación en formato JSON. Incluye estado,
+      nivel de crédito (ej: Nivel 3 con monto inicial 168 USD), puntuación total (ej:
+      0.70), monto desacelerado y detalles por factores (sexo, edad, nacionalidad,
+      etc.).'
   - name: final_credit_limit
-    description: Límite de crédito final aprobado para el usuario en USD. Es la FUENTE
-      DE VERDAD para la medida 'limit_granted'. Valor numérico con dos decimales.
-    is_active: true
+    description: 'Límite de crédito final asignado al usuario después de la evaluación.
+      Es la medida principal ''limit_granted''. Ejemplos: ''168.00'', ''184.00'' (en
+      USD).'
   - name: created_at
-    description: Fecha y hora en que se realizó y registró la evaluación de crédito.
-    is_active: true
-  - name: limit_granted
-    description: 'MEDIDA PRINCIPAL: Representa el monto de crédito otorgado. Se calcula
-      directamente a partir de la columna ''final_credit_limit''. FÓRMULA: limit_granted
-      = final_credit_limit.'
-    is_active: true
-  - name: evaluation_status
-    description: 'Dimensión virtual que extrae el estado de aprobación del campo JSON
-      ''evaluation_result''. VALORES PERMITIDOS: true=Aprobado, false=Rechazado.'
-    is_active: true
-  - name: credit_level
-    description: 'Dimensión virtual que extrae el nivel de crédito asignado del campo
-      JSON ''evaluation_result''. Ejemplos de valores observados: ''Nivel 3'' (monto_inicial:
-      168 USD), ''Nivel 2'' (monto_inicial: 184 USD).'
-    is_active: true
-  - name: evaluation_score
-    description: 'Dimensión virtual que extrae la puntuación total de la evaluación
-      del campo JSON ''evaluation_result''. Valor numérico entre 0 y 1 (ej: 0.70,
-      0.60).'
-    is_active: true
+    description: 'Fecha y hora en que se realizó la evaluación. Ejemplos: ''2025-09-24
+      17:38:09'', ''2025-09-25 13:38:13''.'
 - name: merchant
-  friendly_name: Comercios (Merchants)
-  description: Tabla maestra de comercios afiliados al sistema BNPL (Buy Now Pay Later).
-    Contiene la información comercial, las reglas de financiamiento específicas de
-    cada comercio (monto mínimo, porcentajes de inicial, cuotas permitidas) y su tarifa
-    mensual. Esta tabla es la FUENTE DE VERDAD para las configuraciones de financiamiento
-    por comercio.
+  friendly_name: Comercios / Merchants
+  description: Tabla maestra que contiene la información de los comercios afiliados
+    al sistema BNPL (Buy Now, Pay Later). Define las reglas de financiamiento específicas
+    de cada comercio, como el monto mínimo de venta, porcentajes de pago inicial permitidos
+    y plazos de cuotas. También almacena datos de identificación, comisiones y estado
+    operativo.
   columns:
   - name: id
-    description: Identificador único numérico del comercio (clave primaria).
-    is_active: true
+    description: 'Identificador único numérico interno del comercio. Ejemplos: 8,
+      10, 11.'
   - name: uuid
-    description: Identificador único universal (UUID) del comercio, utilizado para
-      referencias externas o APIs.
-    is_active: true
+    description: 'Identificador único universal (UUID) del comercio. Ejemplo: ''91fb8a53-7b87-46b0-b384-89db0b365eb6''.'
   - name: listed
-    description: 'Indica si el comercio está listado y visible en el catálogo público.
-      Valores permitidos: 1=Listado/Visible, 0=No listado/Oculto.'
-    is_active: true
+    description: 'Indica si el comercio está listado/visible en la plataforma (1)
+      o no. Valor booleano representado como string. Ejemplo: ''1''.'
   - name: status
-    description: 'Estado operativo del comercio en el sistema. Valores permitidos:
-      1=Activo, 0=Inactivo.'
-    is_active: true
+    description: 'Estado operativo o de aprobación del comercio. Valor numérico como
+      string. Ejemplo: ''1'' (activo).'
   - name: name
-    description: 'Nombre legal o razón social del comercio (Dimensión de Negocio:
-      ''name'').'
-    is_active: true
+    description: 'Nombre legal o formal del comercio. Ejemplos: ''FusFit'', ''test'',
+      ''Casa Pan''.'
   - name: trade_name
-    description: 'Nombre comercial o marca bajo la cual opera el negocio (Dimensión
-      de Negocio: ''trade_name'').'
-    is_active: true
+    description: 'Nombre comercial o marca bajo la que opera el negocio. Puede ser
+      igual al nombre legal. Ejemplos: ''FusFit'', ''example'', ''Casa Pan''.'
   - name: logo
-    description: URL del logotipo del comercio.
-    is_active: true
+    description: 'URL de la imagen del logo del comercio. Ejemplo: ''https://bnpl.site/api/adm/public/uploads/logos/logo_6908d362ac6c0.png''.'
   - name: rif
-    description: Registro de Información Fiscal (RIF) del comercio.
-    is_active: true
+    description: 'Registro de Información Fiscal (RIF) del comercio en Venezuela.
+      Ejemplo: ''J-505869639''.'
   - name: monthly_fee
-    description: Tarifa mensual que el comercio paga por el servicio. Esta es una
-      MEDIDA clave del negocio. Representa un porcentaje. FUENTE DE VERDAD para el
-      cálculo de comisiones.
-    is_active: true
+    description: 'Comisión mensual (%) que el comercio paga por el servicio de financiamiento.
+      Es una métrica clave. Ejemplos: ''3.00'', ''3.50'', ''8.00''.'
   - name: description
-    description: Descripción breve de la actividad o giro del comercio.
-    is_active: true
+    description: 'Breve descripción del giro o actividad del comercio. Ejemplos: ''Empresa
+      de suplementos y comida saludable'', ''test'', ''Panaderia''.'
   - name: policies
-    description: 'Políticas específicas del comercio (ej: cambios, devoluciones).'
-    is_active: true
+    description: 'Políticas o términos específicos del comercio. Ejemplos: ''Ninguna'',
+      ''politica'', ''.''.'
   - name: montoMinimo
-    description: 'Dimensión de Negocio: ''montoMinimo''. Monto mínimo de venta (en
-      la moneda base) requerido para que una transacción sea elegible para financiamiento.
-      Regla: Transacciones por debajo de este monto no pueden ser financiadas.'
-    is_active: true
+    description: 'Monto mínimo de venta (en la moneda local) requerido para que una
+      transacción sea elegible para financiamiento. Regla de negocio crítica. Ejemplos:
+      ''25.0'', ''15.0'', ''8.0''.'
   - name: porcentajesInicial
-    description: 'Dimensión de Negocio: ''porcentajesInicial''. JSON que contiene
-      los porcentajes de pago inicial permitidos para financiar una compra. Regla:
-      El cliente debe elegir uno de estos porcentajes al momento de la financiación.
-      Ejemplo de valores en datos reales: ["40"], ["5"], ["60","40"].'
-    is_active: true
+    description: 'JSON que define los porcentajes de pago inicial permitidos para
+      las transacciones financiadas. Regla de negocio clave. Ejemplos: ''["40"]''
+      (solo 40%), ''["5"]'' (solo 5%), ''["60","40"]'' (60% o 40%).'
   - name: cuotasPermitidas
-    description: 'Dimensión de Negocio: ''cuotasPermitidas''. JSON que contiene los
-      plazos (en número de cuotas) permitidos para el financiamiento. Regla: El cliente
-      debe elegir uno de estos plazos. Ejemplo de valores en datos reales: ["3"],
-      ["1","2"].'
-    is_active: true
+    description: 'JSON que define los plazos (en número de cuotas) permitidos para
+      el financiamiento. Regla de negocio clave. Ejemplos: ''["3"]'' (solo 3 cuotas),
+      ''["1","2"]'' (1 o 2 cuotas).'
   - name: created_at
-    description: Marca de tiempo de creación del registro del comercio en el sistema.
-    is_active: true
+    description: 'Fecha y hora de creación del registro. Puede estar en formato datetime
+      o timestamp. Ejemplos: ''2025-09-26 14:33:29'', ''1761937632'' (timestamp).'
   - name: updated_at
-    description: Marca de tiempo de la última actualización del registro del comercio.
-    is_active: true
+    description: 'Fecha y hora de la última actualización del registro. Generalmente
+      un timestamp. Ejemplos: ''1768427555'', ''1762804331''.'
   - name: deleted_at
-    description: Marca de tiempo de eliminación (soft delete). Valor 'None' indica
-      que el registro no está eliminado.
-    is_active: true
-  - name: config_financiamiento_valida
-    description: 'COLUMNA VIRTUAL (SQL). Evalúa si la configuración de financiamiento
-      del comercio es válida y completa. Fórmula lógica: `montoMinimo` > 0 AND `porcentajesInicial`
-      IS NOT NULL AND JSON_LENGTH(`porcentajesInicial`) > 0 AND `cuotasPermitidas`
-      IS NOT NULL AND JSON_LENGTH(`cuotasPermitidas`) > 0.'
-    is_active: true
+    description: 'Fecha de eliminación lógica (soft delete). Valor ''None'' indica
+      que el registro no está eliminado. Ejemplo: ''None''.'
 - name: merchant_branches
   friendly_name: Sucursales de Comercios
-  description: Tabla maestra que contiene todas las sucursales o puntos de venta asociados
-    a los comercios registrados en el sistema. Incluye información de ubicación geográfica
-    (estado, municipio, parroquia), datos de contacto y configuraciones operativas
-    específicas de cada sucursal.
+  description: Tabla que almacena las sucursales o puntos de venta asociados a cada
+    comercio. Contiene información de ubicación geográfica (estado, municipio, parroquia),
+    datos de contacto y configuraciones específicas de la sucursal.
   columns:
   - name: id
-    description: Identificador único numérico de la sucursal. Clave primaria de la
-      tabla.
-    is_active: true
+    description: 'Identificador único numérico de la sucursal. Ejemplos: 2, 3, 4.'
   - name: uuid
-    description: Identificador único universal (UUID) de la sucursal. Utilizado para
-      referencias externas y APIs.
-    is_active: true
+    description: 'Identificador único universal (UUID) de la sucursal. Ejemplo: ''1dc5e184-06bf-4576-9e60-f3930a1fc131''.'
   - name: merchant_id
-    description: ID del comercio al que pertenece esta sucursal. Relación con la tabla
-      de comercios (merchants).
-    is_active: true
+    description: 'ID del comercio al que pertenece esta sucursal. Ejemplos: 10, 8,
+      11.'
   - name: name
-    description: 'Nombre de la sucursal. DIMENSIÓN DEFINIDA POR NEGOCIO. Ejemplos
-      de datos reales: ''test-1'', ''Fusfit'', ''Casa Pan''.'
-    is_active: true
+    description: 'Nombre de la sucursal, según definición del negocio. Ejemplos: ''test-1'',
+      ''Fusfit'', ''Casa Pan''.'
   - name: nickname
-    description: Alias o correo electrónico asociado a la sucursal, comúnmente usado
-      para identificarla en el sistema.
-    is_active: true
+    description: 'Alias o correo asociado a la sucursal. Ejemplos: ''test@gmail.com'',
+      ''vibesuser@fusfit.com''.'
   - name: is_main
-    description: 'Indica si esta sucursal es la principal o matriz del comercio. REGLA
-      DE NEGOCIO: 1=Sí (Principal), 0=No.'
-    is_active: true
+    description: Indica si esta sucursal es la principal del comercio (1=Sí, 0=No).
+      En la muestra, todas son principales (valor '1').
   - name: can_configure_quotes
-    description: 'Indica si la sucursal tiene permisos para configurar cotizaciones.
-      REGLA DE NEGOCIO: 1=Sí (Puede configurar), 0=No.'
-    is_active: true
+    description: Indica si la sucursal puede configurar cotizaciones (1=Sí, 0=No).
+      En la muestra, todas pueden (valor '1').
   - name: address_1
-    description: Dirección física principal de la sucursal.
-    is_active: true
+    description: 'Dirección física principal de la sucursal. Ejemplo: ''Edificio Reveron,
+      Esquina Av Caroni con, Piso PB Avenida Caura, Caracas 1050, Miranda''.'
   - name: estado
-    description: 'Estado o región donde se encuentra la sucursal. DIMENSIÓN DEFINIDA
-      POR NEGOCIO. Ejemplos de datos reales: ''Distrito Capital'', ''Miranda''. FUENTE
-      DE VERDAD para la ubicación geográfica a nivel estatal.'
-    is_active: true
+    description: 'Estado donde se encuentra la sucursal, según definición del negocio.
+      Ejemplos: ''Distrito Capital'', ''Miranda''.'
   - name: municipio
-    description: 'Municipio donde se encuentra la sucursal. Ejemplos: ''Libertador'',
-      ''Baruta''.'
-    is_active: true
+    description: 'Municipio de la sucursal. Ejemplos: ''Libertador'', ''Baruta''.'
   - name: parroquia
-    description: 'Parroquia donde se encuentra la sucursal. Ejemplos: ''Candelaria'',
-      ''Nuestra Señora del Rosario''.'
-    is_active: true
+    description: 'Parroquia de la sucursal. Ejemplos: ''Candelaria'', ''Nuestra Señora
+      del Rosario''.'
   - name: whatsapp
-    description: Número de teléfono para contacto vía WhatsApp de la sucursal.
-    is_active: true
+    description: 'Número de teléfono para contacto por WhatsApp. Ejemplos: ''04125412025'',
+      ''04123873489'', ''...''.'
   - name: address
-    description: Campo de dirección alternativo. Según los datos de muestra, actualmente
-      no se utiliza (valor 'None').
-    is_active: true
+    description: Campo de dirección alternativo (en la muestra aparece siempre como
+      'None').
   - name: phone
-    description: Número de teléfono fijo o principal de la sucursal.
-    is_active: true
+    description: 'Número de teléfono fijo de la sucursal. Ejemplos: ''04125402021'',
+      ''04123873489'', ''....''.'
   - name: is_active
-    description: 'Estado de actividad de la sucursal en el sistema. REGLA DE NEGOCIO:
-      1=Activa, 0=Inactiva.'
-    is_active: true
+    description: Indica si la sucursal está activa (1=Activa, 0=Inactiva). En la muestra,
+      todas están activas (valor '1').
   - name: created_at
-    description: Marca de tiempo (timestamp) que indica la fecha y hora de creación
-      del registro.
-    is_active: true
+    description: 'Fecha y hora de creación del registro. Formato: ''YYYY-MM-DD HH:MM:SS''.
+      Ejemplo: ''2025-10-31 15:07:12''.'
   - name: updated_at
-    description: Marca de tiempo (timestamp) que indica la última fecha y hora de
-      actualización del registro.
-    is_active: true
+    description: 'Fecha y hora de la última actualización del registro. Ejemplo: ''2026-01-14
+      17:52:35''.'
   - name: deleted_at
-    description: Marca de tiempo (timestamp) que indica la fecha y hora de eliminación
-      lógica (soft delete). Valor 'None' indica que el registro no está eliminado.
-    is_active: true
-  - name: full_address
-    description: 'COLUMNA VIRTUAL (SQL). Dirección completa formateada concatenando
-      address_1, municipio, estado. Ejemplo de SQL: CONCAT(address_1, '', '', municipio,
-      '', '', estado)'
-    is_active: true
-  - name: status
-    description: 'COLUMNA VIRTUAL (SQL). Estado legible derivado de `is_active` y
-      `deleted_at`. REGLA DE NEGOCIO: Si `deleted_at` IS NOT NULL -> ''Eliminada''.
-      Si `is_active` = 1 -> ''Activa'', si = 0 -> ''Inactiva''. Ejemplo de SQL: CASE
-      WHEN deleted_at IS NOT NULL THEN ''Eliminada'' WHEN is_active = 1 THEN ''Activa''
-      ELSE ''Inactiva'' END'
-    is_active: true
+    description: Fecha y hora de eliminación (soft delete). Si es 'None', el registro
+      no está eliminado. En la muestra, todos son 'None'.
 - name: merchant_users
   friendly_name: Usuarios del Comercio
-  description: Tabla maestra que contiene todos los usuarios registrados en el sistema
-    de comercios. Incluye información de autenticación, datos personales, rol asignado
-    y estado de la cuenta. Esta tabla es la FUENTE DE VERDAD para la gestión de acceso
-    y permisos de usuarios dentro de la plataforma de comercios.
+  description: Tabla que almacena los usuarios asociados a un comercio específico.
+    Contiene información de autenticación (nickname/email y contraseña), datos personales,
+    rol asignado y estado de la cuenta.
   columns:
   - name: id
-    description: Identificador único numérico del usuario (clave primaria).
-    is_active: true
+    description: 'Identificador único numérico interno del usuario. Ej: 207, 208,
+      210.'
   - name: uuid
-    description: Identificador único universal (UUID) del usuario para referencias
-      externas y APIs.
-    is_active: true
+    description: 'Identificador único universal (UUID) del usuario. Ej: ''0f772700-2d8f-49c8-a6bd-023320b1efac''.'
   - name: merchant_id
-    description: UUID del comercio al que pertenece el usuario. Relación con la tabla
-      de comercios.
-    is_active: true
+    description: 'UUID del comercio al que pertenece el usuario. Ej: ''91fb8a53-7b87-46b0-b384-89db0b365eb6''.'
   - name: nickname
-    description: 'Nombre de usuario o correo electrónico utilizado para iniciar sesión.
-      REGLA DE NEGOCIO: Este campo se mapea semánticamente como ''username''.'
-    is_active: true
+    description: 'Nombre de usuario o correo electrónico para iniciar sesión. Ej:
+      ''vibes@fusfit.com'', ''fusfit@gmail.com''.'
   - name: password
-    description: Hash de la contraseña del usuario (algoritmo bcrypt).
-    is_active: true
+    description: 'Contraseña del usuario, almacenada de forma segura (hash). Ej: ''$2y$10$OcwSE/vHzci065uNoM9eOu5CV.sClMzsIJ0XqbrK21OUSzIGVID/W''.'
   - name: name
-    description: Nombre(s) del usuario.
-    is_active: true
+    description: 'Nombre real del usuario. Ej: ''Jhonny'', ''Sede Principal'', ''david''.'
   - name: lastname
-    description: Apellido(s) del usuario. Puede contener el valor 'None'.
-    is_active: true
+    description: 'Apellido del usuario. Puede ser ''None'' si no aplica. Ej: ''Ferreira'',
+      ''None'', ''barrera''.'
   - name: role
-    description: 'Identificador (UUID) del rol asignado al usuario. REGLA DE NEGOCIO:
-      Este campo define los permisos y acceso del usuario dentro del sistema. Valores
-      observados en datos reales: ''e7d47c40-8f73-4af1-a994-0b8e7e3a4f53'', ''0541b9ec-0325-46f3-8db7-a9147c7f6d11''.
-      Se debe cruzar con una tabla de roles para obtener el nombre descriptivo.'
-    is_active: true
+    description: 'Identificador del rol asignado al usuario (almacenado como UUID).
+      Define los permisos del usuario en el sistema. Ej: ''e7d47c40-8f73-4af1-a994-0b8e7e3a4f53'',
+      ''0541b9ec-0325-46f3-8db7-a9147c7f6d11''.'
   - name: phone
-    description: Número de teléfono del usuario. Puede incluir código de país.
-    is_active: true
+    description: 'Número de teléfono del usuario. Ej: ''+584123873489'', ''+584124945304'',
+      ''04242029800''.'
   - name: status
-    description: 'Estado de la cuenta del usuario. REGLA DE NEGOCIO: 1=Activo, 0=Inactivo
-      (inferido). Valor observado en datos reales: ''1''.'
-    is_active: true
+    description: 'Estado de la cuenta del usuario. ''1'' indica activo. Ej: ''1''.'
   - name: created_at
-    description: Marca de tiempo de creación del registro del usuario.
-    is_active: true
+    description: 'Fecha y hora de creación del registro. Ej: ''2025-09-26 14:33:29''.'
   - name: updated_at
-    description: Marca de tiempo de la última actualización del registro del usuario.
-    is_active: true
+    description: 'Fecha y hora de la última actualización del registro. Ej: ''2026-01-14
+      17:52:35''.'
   - name: deleted_at
-    description: Marca de tiempo de eliminación (soft delete). Contiene 'None' si
-      el registro no está eliminado.
-    is_active: true
-  - name: full_name
-    description: 'COLUMNA VIRTUAL: Nombre completo del usuario. FÓRMULA: CONCAT(name,
-      '' '', lastname). Nota: Maneja el caso donde lastname es ''None''.'
-    is_active: true
-  - name: username
-    description: 'COLUMNA VIRTUAL / ALIAS SEMÁNTICO: Nombre de usuario para el negocio.
-      Se obtiene directamente del campo físico ''nickname''. REGLA DE NEGOCIO: Este
-      es el campo que debe usarse en consultas y reportes cuando se requiera el ''username''
-      del usuario.'
-    is_active: true
+    description: 'Fecha y hora de eliminación (soft delete). ''None'' indica que el
+      registro no está eliminado. Ej: ''None''.'
 - name: merchant_user_branches
-  friendly_name: Asignación de Usuarios a Sucursales
-  description: Tabla de asociación que vincula a los usuarios del sistema (merchant_users)
-    con las sucursales (branches) a las que tienen acceso. Esta tabla define los permisos
-    de acceso a nivel de sucursal para cada usuario, permitiendo controlar qué usuarios
-    pueden operar en qué sucursales específicas. Es fundamental para la seguridad
-    y segmentación de datos en sistemas multi-sucursal.
+  friendly_name: Asignaciones de Usuarios a Sucursales
+  description: Tabla de relación que asocia usuarios del sistema (merchant_user) con
+    sucursales específicas (branch) donde tienen permisos o están asignados para operar.
+    Registra cuándo se creó cada asignación.
   columns:
   - name: id
-    description: Identificador único de la asignación. Clave primaria de la tabla.
-      Es un campo autoincremental que garantiza la unicidad de cada registro de asociación
-      usuario-sucursal.
-    is_active: true
+    description: 'Identificador único de la asignación. Ejemplos: 1, 2, 4.'
   - name: merchant_user_id
-    description: ID del usuario del sistema (merchant_user) que se asocia a una sucursal.
-      Este campo es una clave foránea que referencia la tabla de usuarios. Representa
-      la entidad a la que se le otorgan permisos de acceso.
-    is_active: true
+    description: 'ID del usuario del sistema (merchant_user) que es asignado a una
+      sucursal. Ejemplos: 211, 212, 215.'
   - name: branch_id
-    description: ID de la sucursal (branch) a la que el usuario tiene acceso. Este
-      campo es una clave foránea que referencia la tabla de sucursales. Define el
-      alcance operativo del usuario dentro de la organización.
-    is_active: true
+    description: 'ID de la sucursal (branch) a la que se asigna el usuario. Ejemplos:
+      2, 3, 4.'
   - name: created_at
-    description: 'Marca de tiempo que indica CUÁNDO se creó la asignación del usuario
-      a la sucursal. FUENTE DE VERDAD para auditoría y trazabilidad de permisos. Formato:
-      ''YYYY-MM-DD HH:MM:SS''.'
-    is_active: true
-  - name: is_active_assignment
-    description: 'COLUMNA VIRTUAL (SQL lógico). Indica si la asignación usuario-sucursal
-      está actualmente vigente. Se deriva de la lógica de negocio que considera activas
-      las asignaciones creadas en los últimos 30 días o según otros flags en tablas
-      relacionadas. Fórmula implícita: `CASE WHEN DATEDIFF(day, created_at, GETDATE())
-      <= 30 THEN ''Activa'' ELSE ''Inactiva'' END` o similar basado en reglas del
-      sistema.'
-    is_active: true
+    description: 'Fecha y hora en que se creó el registro de la asignación. Ejemplos:
+      2025-10-31 15:07:12, 2025-11-03 12:08:02.'
 - name: purchase
   friendly_name: Compras
-  description: Tabla maestra de compras o ventas realizadas en el sistema. Contiene
-    información sobre transacciones completadas, en progreso o anuladas, incluyendo
-    montos financiados, cuotas iniciales y estado de pago. Esta tabla es la FUENTE
-    DE VERDAD para las métricas de venta total y monto financiado.
+  description: Tabla principal de compras o pedidos. Registra las transacciones de
+    venta, incluyendo su estado, monto total, monto financiado y detalles de la transacción.
   columns:
   - name: id
-    description: ID numérico interno de la compra.
-    is_active: true
+    description: 'Identificador único interno de la compra. Ejemplos: ''1'', ''2'',
+      ''3''.'
   - name: uuid
-    description: 'Identificador único universal (UUID) de la compra. Se utiliza como
-      clave de relación con otras tablas (ej: purchase_payment).'
-    is_active: true
+    description: 'Identificador único universal (UUID) de la compra. Ejemplos: ''f919beee-e82b-4b16-9507-d887be88e3b7'',
+      ''92c870b5-4c9a-4ac5-a902-b4d39a71f837''.'
   - name: status
-    description: 'Estado de la compra según reglas de negocio. Valores permitidos:
-      0=Progreso, 1=Completado, 2=Anulado.'
-    is_active: true
+    description: 'Estado de la compra según reglas de negocio. Valores: ''0'' (Progreso),
+      ''1'' (Completado), ''2'' (Anulado). Ejemplos en datos: ''1'' (Completado),
+      ''0'' (Progreso).'
   - name: transaction_id
-    description: 'Identificador único legible de la transacción, generado para referencia
-      comercial (ej: ''291C-20251103-01'').'
-    is_active: true
-  - name: created_at
-    description: Fecha y hora de creación del registro de la compra.
-    is_active: true
+    description: 'Identificador único de la transacción, generado por el sistema.
+      Ejemplos: ''291C-20251103-01'', ''C592-20251103-01''.'
   - name: total
-    description: Monto total facturado de la compra. Es la FUENTE DE VERDAD para la
-      medida 'total_billed' (Monto Venta Total). Incluye principal, intereses y cuota
-      inicial.
-    is_active: true
+    description: 'Monto Venta Total (Principal + Intereses + Inicial). Corresponde
+      a la métrica de negocio ''total_billed''. Ejemplos: ''76.39'', ''11.0'', ''8.2''.'
   - name: initial_fee
-    description: Monto de la cuota inicial pagada al momento de la compra.
-    is_active: true
-  - name: subtotal
-    description: Monto base de la compra antes de impuestos.
-    is_active: true
-  - name: iva
-    description: Porcentaje de IVA aplicado a la compra.
-    is_active: true
-  - name: users_id
-    description: UUID del cliente (usuario) que realizó la compra.
-    is_active: true
-  - name: merchant_id
-    description: UUID del comercio donde se realizó la compra.
-    is_active: true
-  - name: merchant_branches_id
-    description: UUID de la sucursal específica del comercio.
-    is_active: true
-  - name: merchant_user_id
-    description: UUID del usuario del sistema (vendedor/empleado) que atendió la compra.
-    is_active: true
-  - name: purchase_intent_id
-    description: UUID de la intención de compra que originó esta transacción.
-    is_active: true
-  - name: modality
-    description: 'Modalidad de la compra (ej: ''store'' para tienda física).'
-    is_active: true
-  - name: invoice
-    description: Ruta o referencia al archivo de la factura asociada.
-    is_active: true
-  - name: invoice_num
-    description: Número de factura asignado a la compra.
-    is_active: true
-  - name: observation
-    description: Notas u observaciones adicionales sobre la compra.
-    is_active: true
+    description: 'Cuota inicial pagada en la compra. Se utiliza para calcular el monto
+      financiado. Ejemplos: ''40.0'', ''60.0''.'
+  - name: created_at
+    description: 'Fecha y hora de creación del registro de la compra. Ejemplos: ''2025-11-03
+      17:54:12'', ''2025-11-04 16:42:23''.'
   - name: updated_at
-    description: Fecha y hora de la última actualización del registro.
-    is_active: true
-  - name: total_billed
-    description: 'COLUMNA VIRTUAL - Medida: Monto Venta Total. Se deriva directamente
-      de la columna ''total''. Representa el monto total facturado (Principal + Intereses
-      + Inicial). Esta es la FUENTE DE VERDAD para esta métrica.'
-    is_active: true
-  - name: financed_amount
-    description: 'COLUMNA VIRTUAL - Medida: Monto Financiado (Deuda neta inicial).
-      Se calcula con la fórmula SQL: `purchase.total - purchase.initial_fee`. Representa
-      la porción del total que se financia.'
-    is_active: true
-  - name: is_overdue
-    description: 'COLUMNA VIRTUAL - Dimensión: Indica si la compra tiene cuotas vencidas.
-      Lógica SQL: `EXISTS (SELECT 1 FROM purchase_payment pp WHERE pp.purchase_id
-      = purchase.uuid AND pp.type = ''quote'' AND pp.status != 1 AND pp.valid_until_time
-      < UNIX_TIMESTAMP(NOW()))`. Devuelve verdadero si existe al menos un pago de
-      tipo ''cuota'' con estado diferente a 1 (¿Pagado?) y cuya fecha límite haya
-      pasado.'
-    is_active: true
+    description: 'Fecha y hora de la última actualización del registro. Ejemplos:
+      ''2025-11-03 17:54:30'', ''2025-11-04 16:46:28''.'
+  - name: subtotal
+    description: 'Monto de la compra antes de impuestos. Ejemplos: ''65.85'', ''9.48''.'
+  - name: iva
+    description: 'Porcentaje de Impuesto al Valor Agregado (IVA) aplicado. Ejemplos:
+      ''16.0''.'
+  - name: invoice_num
+    description: 'Número de factura asociado a la compra. Ejemplos: ''6590'', ''123456'',
+      ''299236''.'
+  - name: modality
+    description: 'Modalidad de la compra. Ejemplo en datos: ''store'' (tienda física).'
+  - name: observation
+    description: 'Observaciones o notas adicionales sobre la compra. Ejemplos: '''',
+      ''no hay ''.'
+  - name: users_id
+    description: 'Identificador (UUID) del usuario/cliente que realizó la compra.
+      Ejemplos: ''d2095976-8f25-46d1-87fb-cb788d9057df''.'
+  - name: merchant_id
+    description: 'Identificador (UUID) del comercio donde se realizó la compra. Ejemplos:
+      ''91fb8a53-7b87-46b0-b384-89db0b365eb6''.'
+  - name: merchant_branches_id
+    description: 'Identificador (UUID) de la sucursal específica del comercio. Ejemplos:
+      ''e726b06a-a9ed-4517-9524-f4eeb73bc3d5''.'
 - name: purchase_intent
   friendly_name: Intenciones de Compra
   description: Tabla que registra las solicitudes de financiamiento de compras realizadas
-    por usuarios. Contiene el estado del proceso, el monto solicitado, información
-    de las partes involucradas (comercio, sucursal, vendedor, usuario) y los detalles
-    del plan de pago estructurado. Es la FUENTE DE VERDAD para las métricas de monto
-    solicitado en intenciones de compra.
+    por usuarios en comercios. Cada registro representa una intención de compra que
+    puede estar pendiente, aprobada o rechazada. Incluye detalles del plan de pago,
+    monto total y estado del proceso.
   columns:
   - name: id
-    description: Identificador único numérico de la intención de compra.
-    is_active: true
+    description: 'Identificador único numérico de la intención de compra. Ej: ''1'',
+      ''2'', ''3''.'
   - name: uuid
-    description: Identificador único universal (UUID) de la intención de compra.
-    is_active: true
+    description: 'Identificador único universal (UUID) de la intención de compra.
+      Ej: ''c06dc3ae-ba04-4efa-b272-c2e33c279e20''.'
   - name: merchant_id
-    description: UUID del comercio donde se originó la intención de compra.
-    is_active: true
+    description: 'UUID del comercio donde se realizó la compra. Ej: ''91fb8a53-7b87-46b0-b384-89db0b365eb6''.'
   - name: merchant_branches_id
-    description: UUID de la sucursal específica del comercio.
-    is_active: true
+    description: 'UUID de la sucursal específica del comercio. Ej: ''e726b06a-a9ed-4517-9524-f4eeb73bc3d5''.'
   - name: merchant_users_id
-    description: UUID del usuario administrador del comercio que gestionó la solicitud.
-    is_active: true
+    description: 'UUID del usuario del sistema del comercio asociado a la transacción.
+      Ej: ''0f772700-2d8f-49c8-a6bd-023320b1efac''.'
   - name: users_id
-    description: UUID del cliente/usuario final que solicitó el financiamiento.
-    is_active: true
+    description: 'UUID del cliente/usuario final que realiza la compra. Ej: ''d2095976-8f25-46d1-87fb-cb788d9057df''.'
   - name: merchant_seller_id
-    description: UUID del vendedor asignado (si aplica). Valor 'None' indica que no
-      hay vendedor asignado.
-    is_active: true
+    description: 'UUID del vendedor asignado (si aplica). Valor ''None'' indica que
+      no hay vendedor asignado. Ej: ''None''.'
   - name: plan
-    description: Estructura JSON que detalla el plan de pagos acordado. Incluye cuota
-      inicial, monto financiado, número de cuotas, valor de cada cuota y calendario
-      de pagos con fechas y timestamps.
-    is_active: true
+    description: 'Estructura JSON que detalla el plan de financiamiento: cuota inicial,
+      financiamiento, número de cuotas, valor de cuota y calendario de pagos. Ej:
+      Contiene ''initial_fee'', ''quotes'', ''quote_value'', y un array ''description''
+      con fechas y montos de cada cuota.'
   - name: status
-    description: 'Estado actual de la intención de compra. REGLA DE NEGOCIO: Valores
-      permitidos: 0=Pendiente, 1=Aprobado, 2=Rechazado.'
-    is_active: true
+    description: 'Estado de la intención de compra según reglas de negocio. Valores:
+      0: Pendiente, 1: Aprobado, 2: Rechazado. En los datos de muestra todos están
+      en ''0'' (Pendiente).'
   - name: total
-    description: 'Monto total solicitado en la intención de compra. REGLA DE NEGOCIO:
-      Esta columna es la base para la medida ''amount_requested''. Es la FUENTE DE
-      VERDAD para el monto solicitado.'
-    is_active: true
-  - name: amount_requested
-    description: MEDIDA (VIRTUAL). Representa el monto total solicitado. Se deriva
-      directamente de la columna 'total'. Es la FUENTE DE VERDAD para análisis de
-      montos solicitados.
-    is_active: true
+    description: 'Monto total de la solicitud de financiamiento (amount_requested).
+      Es la métrica principal numérica. Ej: ''76.39'', ''2.0''.'
   - name: delete_reason
-    description: Motivo por el cual la intención de compra fue eliminada/cancelada.
-    is_active: true
+    description: 'Razón por la cual la intención de compra fue eliminada/cancelada.
+      Puede estar vacía o contener texto como ''Error de prueba''. Ej: ''Error de
+      prueba'', '''', ''None''.'
   - name: deleted_by
-    description: UUID del usuario (merchant_users_id) que eliminó la intención de
-      compra. Valor 'None' si no ha sido eliminada.
-    is_active: true
+    description: 'UUID del usuario del sistema que eliminó/canceló la intención de
+      compra. Valor ''None'' si no ha sido eliminada. Ej: ''0f772700-2d8f-49c8-a6bd-023320b1efac'',
+      ''None''.'
   - name: modality
-    description: 'Modalidad en la que se realizó la solicitud (ej: ''store'' para
-      tienda física).'
-    is_active: true
+    description: Modalidad en la que se realizó la compra. En los datos de muestra
+      todos son 'store' (tienda física).
   - name: cart
-    description: Información del carrito de compras asociado (si aplica). Valor 'None'
-      si no hay carrito.
-    is_active: true
+    description: Información del carrito de compras asociado (si aplica). En los datos
+      de muestra todos son 'None'.
   - name: rate
-    description: Tasa de interés aplicada al financiamiento.
-    is_active: true
+    description: Tasa de interés aplicada al financiamiento. En los datos de muestra
+      es '0.0'.
   - name: expire
-    description: Indicador o timestamp de expiración de la solicitud. '0' puede indicar
-      que no ha expirado.
-    is_active: true
+    description: Indicador de expiración (posiblemente timestamp o flag). En los datos
+      de muestra es '0'.
   - name: created_at
-    description: Fecha y hora de creación del registro. DIMENSIÓN de tiempo para análisis.
-    is_active: true
+    description: 'Fecha y hora de creación del registro. Atributo de dimensión temporal.
+      Ej: ''2025-11-03 17:06:25''.'
   - name: updated_at
-    description: Fecha y hora de la última actualización del registro.
-    is_active: true
+    description: 'Fecha y hora de la última actualización del registro. Ej: ''2025-11-03
+      17:17:13''.'
   - name: deleted_at
-    description: Fecha y hora de eliminación del registro. Valor 'None' si el registro
-      está activo.
-    is_active: true
+    description: 'Fecha y hora en que el registro fue marcado como eliminado. Valor
+      ''None'' si no está eliminado. Ej: ''2025-11-03 17:17:13'', ''None''.'
 - name: purchase_payment
   friendly_name: Pagos de Compras
-  description: Tabla que registra los pagos asociados a compras, incluyendo cuotas
-    y pagos iniciales. Contiene el estado, monto adeudado, monto pagado y fechas de
-    vencimiento de cada pago. Permite el seguimiento del ciclo de pago de una compra.
+  description: Tabla que registra los pagos programados o realizados asociados a una
+    compra. Incluye pagos iniciales y cuotas, con su monto, estado y fechas de vencimiento.
   columns:
   - name: id
-    description: Identificador único del registro de pago.
-    is_active: true
+    description: 'Identificador único interno del registro de pago. Ej: ''1'', ''2'',
+      ''3''.'
   - name: uuid
-    description: Identificador único universal (UUID) del pago.
-    is_active: true
+    description: 'Identificador único universal (UUID) del pago. Ej: ''34734fbb-d7ae-4490-924b-e175e739d8d9''.'
   - name: purchase_id
-    description: Identificador de la compra a la que pertenece este pago.
-    is_active: true
+    description: 'Identificador de la compra a la que pertenece este pago. Ej: ''f919beee-e82b-4b16-9507-d887be88e3b7''.'
   - name: status
-    description: 'Estado del pago. Reglas de negocio: 0=Pendiente, 1=Pagado, 2=Anulado,
-      5=Parcial. Valores permitidos: [''0'', ''1'', ''2'', ''5''].'
-    is_active: true
+    description: 'Estado del pago según reglas de negocio. Valores: 0: Pendiente,
+      1: Pagado, 2: Anulado, 5: Parcial. En los datos de muestra todos están ''1''
+      (Pagado).'
   - name: amount
-    description: Monto total adeudado para este pago. Es la FUENTE DE VERDAD para
-      la medida 'amount_due'.
-    is_active: true
+    description: 'Monto total adeudado para este pago/cuota. Corresponde a la medida
+      ''amount_due'' del modelo lógico. Ej: ''30.56'', ''15.28''.'
   - name: amount_payed
-    description: Monto que ya ha sido pagado para este registro. Es la FUENTE DE VERDAD
-      para la medida 'amount_paid'.
-    is_active: true
+    description: 'Monto que ya ha sido pagado para este registro. Corresponde a la
+      medida ''amount_paid'' del modelo lógico. Ej: ''0.0'', ''15.28''.'
   - name: valid_until
-    description: 'Fecha de vencimiento del pago en formato legible (ej: ''03 Nov'').'
-    is_active: true
+    description: 'Fecha de vencimiento del pago en formato legible. Corresponde a
+      la dimensión ''due_date'' del modelo lógico. Ej: ''03 Nov'', ''15 nov''.'
   - name: valid_until_time
-    description: Fecha de vencimiento del pago en formato timestamp Unix.
-    is_active: true
-  - name: due_date
-    description: 'COLUMNA VIRTUAL. Fecha de vencimiento del pago en formato datetime,
-      derivada de ''valid_until_time''. Lógica SQL: FROM_UNIXTIME(valid_until_time).'
-    is_active: true
+    description: 'Fecha de vencimiento del pago en formato timestamp (epoch). Ej:
+      ''1762207752''.'
   - name: payment_method
-    description: Método de pago utilizado.
-    is_active: true
+    description: Método de pago utilizado. En los datos de muestra aparece como 'None'.
   - name: details
-    description: Detalles adicionales sobre el pago.
-    is_active: true
+    description: Detalles adicionales del pago. En los datos de muestra aparece como
+      'None'.
   - name: paid_on
-    description: Fecha en la que se realizó el pago.
-    is_active: true
+    description: Fecha en la que se realizó el pago. En los datos de muestra aparece
+      como 'None'.
   - name: type
-    description: 'Tipo de pago. Reglas de negocio: Valores permitidos: [''quote''
-      (cuota), ''initial_fee'' (pago inicial)]. NOTA: En los datos reales se observa
-      el valor ''initial'', que debe mapearse a ''initial_fee'' para cumplir con la
-      definición semántica.'
-    is_active: true
+    description: 'Tipo de pago según reglas de negocio. En los datos de muestra: ''initial''
+      (pago inicial) y ''quote'' (cuota).'
   - name: difference
-    description: Diferencia entre el monto adeudado y el pagado.
-    is_active: true
+    description: 'Diferencia entre el monto adeudado y el pagado. Ej: ''0.0''.'
   - name: diff_type
-    description: Tipo de diferencia calculada.
-    is_active: true
+    description: 'Tipo de diferencia. Ej: ''0''.'
   - name: merchant_id
-    description: Identificador del comercio asociado.
-    is_active: true
+    description: 'Identificador del comercio. Ej: ''91fb8a53-7b87-46b0-b384-89db0b365eb6''.'
   - name: merchant_branches_id
-    description: Identificador de la sucursal del comercio.
-    is_active: true
+    description: 'Identificador de la sucursal del comercio. Ej: ''e726b06a-a9ed-4517-9524-f4eeb73bc3d5''.'
   - name: users_id
-    description: Identificador del usuario.
-    is_active: true
+    description: 'Identificador del usuario. Ej: ''d2095976-8f25-46d1-87fb-cb788d9057df''.'
   - name: sanctioned
-    description: Indica si el pago ha sido sancionado.
-    is_active: true
+    description: 'Indica si el pago está sancionado. Valores: ''0'' (No sancionado),
+      ''1'' (Sancionado).'
   - name: merchant_user_id
-    description: Identificador del usuario del comercio.
-    is_active: true
+    description: 'Identificador del usuario del comercio. Ej: ''0f772700-2d8f-49c8-a6bd-023320b1efac''.'
   - name: last_sms
-    description: Registro del último SMS enviado relacionado con este pago.
-    is_active: true
+    description: 'Registro relacionado con el último SMS enviado. Ej: ''0''.'
   - name: last_mail
-    description: Registro del último correo electrónico enviado relacionado con este
-      pago.
-    is_active: true
+    description: Registro relacionado con el último correo enviado. En los datos de
+      muestra aparece como 'None'.
   - name: sanctioned_with_partial_payment
-    description: Indica si fue sancionado con un pago parcial.
-    is_active: true
+    description: 'Indica si está sancionado con pago parcial. Valores: ''0'' (No),
+      ''1'' (Sí).'
   - name: partial_payment_sanctioned
-    description: Monto sancionado en caso de pago parcial.
-    is_active: true
+    description: 'Monto sancionado por pago parcial. Ej: ''0.0''.'
   - name: created_at
-    description: Fecha y hora de creación del registro.
-    is_active: true
+    description: 'Fecha y hora de creación del registro. Ej: ''2025-11-03 17:54:12''.'
   - name: updated_at
-    description: Fecha y hora de la última actualización del registro.
-    is_active: true
+    description: 'Fecha y hora de la última actualización del registro. Ej: ''2025-11-03
+      17:54:30''.'
   - name: deleted_at
-    description: Fecha y hora de eliminación (soft delete) del registro.
-    is_active: true
+    description: Fecha y hora de eliminación (soft delete). En los datos de muestra
+      aparece como 'None' (no eliminado).
 - name: payment_checked
   friendly_name: Pagos Verificados
-  description: Tabla que contiene los pagos verificados por el sistema, con información
-    sobre el método de pago, referencia, banco, montos en moneda local (VES) y USD,
-    y tasas de cambio aplicadas. Esta tabla es la FUENTE DE VERDAD para los pagos
-    confirmados en el sistema.
+  description: Tabla que registra los pagos verificados de compras realizadas por
+    usuarios en comercios. Contiene el detalle del método de pago, referencia, monto
+    en moneda local (VES) y su conversión a USD, así como información temporal y de
+    identificación de las partes involucradas (comercio, sucursal, usuario).
   columns:
-  - name: method
-    description: 'Método de pago utilizado. Columna física: ''type''. Valores permitidos
-      definidos por negocio: [''mobile'', ''transfer'', ''c2p'', ''cash'']. NOTA:
-      En los datos reales se observa el valor ''INT'' que no está en la lista permitida,
-      lo que indica una discrepancia entre definición semántica y datos.'
-    is_active: true
-  - name: reference
-    description: 'Referencia del pago. Columna física: ''reference''. En los datos
-      reales se observa el valor ''Reportado por el comercio'' como referencia estándar.'
-    is_active: true
-  - name: bank_code
-    description: 'Código del banco asociado al pago. Columna física: ''bank_code''.
-      En los datos reales se observa ''None'' para los registros de muestra.'
-    is_active: true
-  - name: created_at
-    description: 'Fecha y hora de creación del registro del pago verificado. Columna
-      física: ''created_at''.'
-    is_active: true
-  - name: amount_ves
-    description: 'Monto del pago en Moneda Local (VES). Columna física: ''amount''.
-      Esta es la medida base para cálculos.'
-    is_active: true
-  - name: exchange_rate
-    description: 'Tasa de cambio aplicada para la conversión a USD. Columna física:
-      ''convertion_rate''.'
-    is_active: true
-  - name: amount_usd
-    description: 'COLUMNA VIRTUAL - Monto calculado en USD. Fórmula SQL: payment_checked.amount
-      / payment_checked.convertion_rate. Esta medida es derivada y depende de amount_ves
-      y exchange_rate.'
-    is_active: true
   - name: id
-    description: Identificador único del registro en la tabla física.
-    is_active: true
+    description: 'Identificador único numérico del registro de pago. Ej: 1, 2, 3'
   - name: uuid
-    description: Identificador único universal del pago verificado.
-    is_active: true
+    description: 'Identificador único universal (UUID) del registro. Ej: f742b6b8-c694-11f0-bd07-0affc1aca243'
   - name: purchase_id
-    description: Identificador de la compra asociada al pago.
-    is_active: true
+    description: 'Identificador único (UUID) de la compra asociada a este pago. Ej:
+      f919beee-e82b-4b16-9507-d887be88e3b7'
   - name: merchant_id
-    description: Identificador del comercio que recibió el pago.
-    is_active: true
+    description: 'Identificador único (UUID) del comercio donde se realizó la compra.
+      Ej: 91fb8a53-7b87-46b0-b384-89db0b365eb6'
   - name: merchant_branches_id
-    description: Identificador de la sucursal del comercio donde se realizó el pago.
-    is_active: true
+    description: 'Identificador único (UUID) de la sucursal específica del comercio.
+      Ej: e726b06a-a9ed-4517-9524-f4eeb73bc3d5'
   - name: users_id
-    description: Identificador del usuario que realizó o reportó el pago.
-    is_active: true
-  - name: date
-    description: Fecha del pago en formato DD-MM-YYYY. Diferente de created_at que
-      es la fecha de registro en el sistema.
-    is_active: true
+    description: 'Identificador único (UUID) del usuario que realizó el pago. Ej:
+      d2095976-8f25-46d1-87fb-cb788d9057df'
+  - name: payment_id
+    description: Identificador del pago principal (si aplica). Valor por defecto 'None'
+      en los ejemplos.
+  - name: fees_covered_by_payment_id
+    description: Identificador del pago que cubre las comisiones (si aplica). Valor
+      por defecto 'None' en los ejemplos.
+  - name: admin_id
+    description: Identificador del administrador que procesó el pago (si aplica).
+      Valor por defecto 'None' en los ejemplos.
   - name: sanctioned_payment_received_by_merchant
-    description: Indicador binario (0/1) que señala si el pago sancionado fue recibido
-      por el comercio. Valor '0' en datos de muestra.
-    is_active: true
+    description: Indicador binario (0/1) de si el pago sancionado fue recibido por
+      el comercio. En los ejemplos siempre es '0'.
+  - name: reference
+    description: 'Referencia del pago proporcionada por el usuario o sistema. Según
+      reglas de negocio, es una dimensión clave. En los ejemplos: ''Reportado por
+      el comercio''.'
+  - name: phone
+    description: Número de teléfono asociado al pago (si aplica). Valor por defecto
+      'None' en los ejemplos.
+  - name: doc
+    description: Documento de identificación asociado al pago (si aplica). Valor por
+      defecto 'None' en los ejemplos.
+  - name: bank_code
+    description: 'Código del banco utilizado para el pago. Según reglas de negocio,
+      es una dimensión clave. En los ejemplos: ''None''.'
+  - name: date
+    description: 'Fecha del pago en formato DD-MM-YYYY. Ej: 03-11-2025'
+  - name: type
+    description: 'Método o tipo de pago. Según reglas de negocio, es la dimensión
+      ''method''. En los ejemplos: ''INT''.'
+  - name: amount
+    description: 'Monto del pago en moneda local (VES). Según reglas de negocio, es
+      la medida ''amount_ves''. Ej: 684422.0, 147814.0'
+  - name: convertion_rate
+    description: 'Tasa de cambio utilizada para la conversión a USD. Según reglas
+      de negocio, es la medida ''exchange_rate''. Ej: 223.96, 224.37'
+  - name: api_response
+    description: 'Respuesta cruda en formato JSON de la API de pago (si aplica). En
+      los ejemplos: ''[]''.'
+  - name: receipt
+    description: Comprobante o recibo del pago (si aplica). Valor por defecto 'None'
+      en los ejemplos.
+  - name: created_at
+    description: 'Marca de tiempo de creación del registro en la base de datos. Según
+      reglas de negocio, es una dimensión temporal. Formato: YYYY-MM-DD HH:MM:SS.
+      Ej: 2025-11-03 17:54:30'
+  - name: updated_at
+    description: 'Marca de tiempo de la última actualización del registro. Formato:
+      YYYY-MM-DD HH:MM:SS. Ej: 2025-11-03 17:54:30'
+  - name: deleted_at
+    description: Marca de tiempo de eliminación lógica del registro (soft delete).
+      Valor por defecto 'None' en los ejemplos (registros activos).
 - name: bank_payment_notifications
   friendly_name: Notificaciones Bancarias
-  description: Tabla que registra las notificaciones de transacciones recibidas desde
-    bancos. Contiene la información cruda de la referencia bancaria, datos del pagador,
-    estado del procesamiento interno, marca temporal y el monto en Bolívares (VES)
-    reportado por la entidad financiera. Esta tabla es la FUENTE DE VERDAD para los
-    montos en moneda local (VES) reportados por los bancos.
+  description: Tabla que registra las notificaciones de transacciones bancarias recibidas.
+    Contiene la información cruda de referencia del banco, datos del pagador, estado
+    de la notificación y el monto en Bolívares (VES).
   columns:
   - name: originating_bank_reference
-    description: Referencia bancaria única proporcionada por la entidad financiera
-      origen. Este es el identificador crudo de la transacción en el sistema del banco.
-    is_active: true
+    description: 'Referencia bancaria cruda que identifica la transacción en el sistema
+      del banco origen. (Ejemplos de datos reales: No disponibles en la muestra proporcionada).'
   - name: payer_phone
-    description: Número de teléfono asociado al pagador de la transacción, según lo
-      reportado por el banco.
-    is_active: true
+    description: 'Número de teléfono de la persona o entidad que realizó el pago.
+      (Ejemplos de datos reales: No disponibles en la muestra proporcionada).'
   - name: status
-    description: 'Estado interno de procesamiento de la notificación. Valores permitidos:
-      ''received'' (Recibida) = La notificación ha sido recibida del banco y está
-      pendiente de procesar; ''processed'' (Procesada) = La notificación ha sido procesada
-      por el sistema interno.'
-    is_active: true
+    description: 'Estado actual de la notificación bancaria. (Ejemplos de datos reales:
+      No disponibles en la muestra proporcionada).'
   - name: created_at
-    description: Marca temporal (timestamp) que indica la fecha y hora en que se registró
-      la notificación en este sistema.
-    is_active: true
+    description: 'Fecha y hora en que se registró la notificación en el sistema. (Ejemplos
+      de datos reales: No disponibles en la muestra proporcionada).'
   - name: amount_ves
-    description: Monto de la transacción en Bolívares Soberanos (VES). Este campo
-      representa la FUENTE DE VERDAD del monto en moneda local reportado directamente
-      por el banco.
-    is_active: true
-  - name: bank_ref
-    description: COLUMNA VIRTUAL / ALIAS. Es un alias directo para 'originating_bank_reference'.
-      Representa la referencia bancaria según la definición de la capa semántica.
-    is_active: true
-  - name: sender_phone
-    description: COLUMNA VIRTUAL / ALIAS. Es un alias directo para 'payer_phone'.
-      Representa el teléfono del remitente/pagador según la definición de la capa
-      semántica.
-    is_active: true
+    description: 'Monto de la transacción reportado por el banco, expresado siempre
+      en Bolívares Soberanos (VES). Es la métrica principal de valor. (Ejemplos de
+      datos reales: No disponibles en la muestra proporcionada).'

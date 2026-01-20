@@ -5,15 +5,16 @@ WORKDIR /app
 # Install poetry
 RUN pip install poetry
 
-# Copy configuration
-COPY pyproject.toml ./
+# Copy project definition and lock file
+COPY pyproject.toml poetry.lock ./
 
-# Create dummy readme to satisfy poetry
-RUN touch README.md
-
-# Install dependencies
+# Install dependencies using the lock file for deterministic builds
 RUN poetry config virtualenvs.create false \
-    && poetry install --no-interaction --no-ansi --no-root
+    && poetry install --no-interaction --no-ansi
+
+# Copy the entrypoint script and make it executable
+COPY docker-entrypoint.sh .
+RUN chmod +x ./docker-entrypoint.sh
 
 # Copy source code
 COPY src ./src

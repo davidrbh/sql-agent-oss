@@ -27,6 +27,10 @@
     },
     "install": {
       "cache": false
+    },
+    "generate-dictionary": {
+      "cache": false,
+      "persistent": false
     }
   }
 }

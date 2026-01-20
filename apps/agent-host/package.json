@@ -7,6 +7,7 @@
     "dev": "PYTHONPATH=src poetry run uvicorn api.server:app --host 0.0.0.0 --port 8000 --reload",
     "lint": "poetry run ruff check src",
     "build": "echo 'Build step not needed for this Python app' && exit 0",
-    "test": "poetry run pytest"
+    "test": "poetry run pytest",
+    "generate-dictionary": "PYTHONPATH=src poetry run python ../../scripts/generate_dictionary.py"
   }
 }

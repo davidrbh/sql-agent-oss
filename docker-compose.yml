@@ -23,7 +23,8 @@ services:
       context: ./apps/agent-host
     ports:
       - "8000:8000"
-    # CAMBIO: Usamos uvicorn para correr server.py (Multicanal) en lugar de chainlit directo
+    entrypoint: ./apps/agent-host/docker-entrypoint.sh
+    # El comando uvicorn ahora se pasa al entrypoint, que lo ejecuta con 'exec "$@"'
     command: uvicorn src.api.server:app --host 0.0.0.0 --port 8000 --reload
     depends_on:
       - mcp-mysql
@@ -36,6 +37,10 @@ services:
       - ./config:/app/config
       - ./data:/app/data
       - ./docs:/app/docs # DOCUMENTACIÓN (Swagger.json)
+      # Montamos el script de entrypoint para poder modificarlo sin reconstruir la imagen
+      - ./apps/agent-host/docker-entrypoint.sh:/app/docker-entrypoint.sh
+      # Montamos los scripts para que el entrypoint pueda ejecutar la generación del diccionario
+      - ./scripts:/app/scripts
 
   # La Boca (WhatsApp HTTP API - WAHA)
   waha:
