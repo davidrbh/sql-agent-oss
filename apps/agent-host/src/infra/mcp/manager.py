@@ -49,7 +49,13 @@ class MCPSessionManager:
             await self.session.initialize()
             print("✅ MCP Manager: Connected and Initialized.")
         except Exception as e:
-            print(f"❌ MCP Manager Connection Failed: {e}")
+            import traceback
+            print(f"❌ MCP Manager Connection Failed to {self.sidecar_url}/sse")
+            print(f"   Error Type: {type(e).__name__}")
+            print(f"   Error Details: {str(e)}")
+            # If it's a TaskGroup error, we want to see the sub-exceptions
+            if "TaskGroup" in str(e):
+                 traceback.print_exc()
             await self.close()
             raise e
 

@@ -95,8 +95,8 @@ def load_api_tools() -> List:
         
         if not env_base_url:
             # Fallback inteligente para desarrollo local
-            env_base_url = "http://localhost:3000"
-            print("   ⚠️ No se encontró API_BASE_URL. Usando default: http://localhost:3000")
+            env_base_url = "http://localhost:3002"
+            print("   ⚠️ No se encontró API_BASE_URL. Usando default: http://localhost:3002")
         
         # Limpiamos la URL (quitamos /sse si viene de SIDECAR_URL)
         if "/sse" in env_base_url:
