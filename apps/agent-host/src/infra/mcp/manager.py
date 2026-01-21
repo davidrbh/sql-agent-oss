@@ -16,7 +16,7 @@ class MCPSessionManager:
         """Inicializa el manager con la URL del sidecar.
 
         Args:
-            sidecar_url: La URL base del sidecar MCP (ej. "http://mcp-mysql:3000").
+            sidecar_url: La URL base del sidecar MCP (ej. "http://mcp-mysql:3002").
         """
         self.sidecar_url = sidecar_url
         self.session: Optional[ClientSession] = None

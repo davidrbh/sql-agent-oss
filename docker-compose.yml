@@ -13,7 +13,7 @@ services:
       - MYSQL_DATABASE=${DB_NAME}
       - MYSQL_PORT=3306
     ports:
-      - "3000:3000"
+      - "3002:3002"
     extra_hosts:
       - "host.docker.internal:host-gateway" # Para conectar a BD en localhost
 
@@ -31,7 +31,7 @@ services:
     env_file:
       - .env
     environment:
-      - SIDECAR_URL=http://mcp-mysql:3000
+      - SIDECAR_URL=http://mcp-mysql:3002
     volumes:
       - ./apps/agent-host/src:/app/src # Hot reload logic support
       - ./config:/app/config
@@ -55,7 +55,7 @@ services:
     env_file:
       - .env
     environment:
-      - SIDECAR_URL=http://mcp-mysql:3000
+      - SIDECAR_URL=http://mcp-mysql:3002
       - PYTHONPATH=src
     volumes:
       - ./apps/agent-host/src:/app/src

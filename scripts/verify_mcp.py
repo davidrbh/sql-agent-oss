@@ -4,7 +4,7 @@ import json
 import threading
 import time
 
-BASE_URL = "http://localhost:3000"
+BASE_URL = "http://localhost:3002"
 
 session_endpoint = None
 

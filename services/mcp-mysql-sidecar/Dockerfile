@@ -37,7 +37,7 @@ RUN pnpm install --prod
 # Copia crítica: del builder al runtime
 COPY --from=builder /app/dist ./dist
 
-ENV PORT=3000
-EXPOSE 3000
+ENV PORT=3002
+EXPOSE 3002
 
 CMD ["node", "dist/src/index.js"]
