@@ -57,6 +57,17 @@ def load_swagger_summary() -> str:
     except Exception as e:
         return f"Error leyendo spec: {e}"
 
+# --- HERRAMIENTAS ADICIONALES ---
+from langchain_core.tools import Tool
+
+def get_read_swagger_tool():
+    """Retorna una herramienta para que el agente lea la documentación."""
+    return Tool(
+        name="read_api_documentation",
+        func=lambda x: load_swagger_summary(),
+        description="Útil para saber qué endpoints existen en la API, sus métodos (GET, POST) y qué hacen. Úsala cuando no sepas qué URL llamar."
+    )
+
 def load_api_tools() -> List:
     """
     Cargador Ligero (RequestsToolkit).
@@ -129,7 +140,10 @@ def load_api_tools() -> List:
                     tool.description += f" (Note: Base URL '{env_base_url}' is AUTOMATICALLY prepended. Use relative paths like '/users'.)"
                 final_tools.append(tool)
         
-        print(f"   ✅ Herramientas ligeras cargadas: {len(final_tools)} (Solo GET - Read Only).")
+        # Agregamos la herramienta de lectura de documentación
+        final_tools.append(get_read_swagger_tool())
+        
+        print(f"   ✅ Herramientas ligeras cargadas: {len(final_tools)} (include read_api_documentation).")
         return final_tools
 
     except Exception as e:
