@@ -1,93 +1,97 @@
 ### **Generando radiografía de: /home/davidrbh/Documents/projects/sql-agent-oss**
 
 #### === 1. ESTRUCTURA DEL PROYECTO (TREE) ===
+
 ```
-. 
+.
 ├───.dockerignore
 ├───.env.example
 ├───.eslintrc.json
 ├───.gitignore
 ├───.prettierrc
-├───.chainlit/ 
+├───.chainlit/
 │   ├───config.toml
-│   └───translations/ 
+│   └───translations/
 │       ├───en-US.json
 │       └───... (19 more files)
-├───apps/ 
-│   └───agent-host/ 
+├───apps/
+│   └───agent-host/
 │       ├───Dockerfile
 │       ├───poetry.lock
 │       ├───pyproject.toml
-│       └───src/ 
+│       └───src/
 │           ├───main.py
 │           ├───ui.py
-│           ├───agent_core/ 
+│           ├───agent_core/
 │           │   ├───__init__.py
 │           │   ├───graph.py
-│           │   ├───api/ 
-│           │   ├───config/ 
-│           │   ├───core/ 
+│           │   ├───api/
+│           │   ├───config/
+│           │   ├───core/
 │           │   │   └───state.py
-│           │   ├───llm/ 
-│           │   └───utils/ 
-│           ├───api/ 
+│           │   ├───llm/
+│           │   └───utils/
+│           ├───api/
 │           │   └───server.py
-│           ├───channels/ 
-│           │   └───whatsapp/ 
+│           ├───channels/
+│           │   ├───whatsapp/
+│           │   │   ├───__init__.py
+│           │   │   └───router.py
+│           │   └───telegram/
 │           │       ├───__init__.py
-│           │       └───router.py
-│           ├───core/ 
-│           ├───features/ 
-│           │   └───sql_analysis/ 
+│           │       └───entry.py
+│           ├───core/
+│           ├───features/
+│           │   └───sql_analysis/
 │           │       ├───loader.py
-│           ├───infra/ 
-│           │   └───mcp/ 
+│           ├───infra/
+│           │   └───mcp/
 │           │       ├───__init__.py
 │           │       ├───loader.py
 │           │       └───manager.py
-│           └───old_sql_agent_trash/ 
+│           └───old_sql_agent_trash/
 ├───audit_project.py
 ├───chainlit.md
 ├───CHANGELOG.md
-├───config/ 
+├───config/
 │   ├───business_context.yaml
 │   ├───prompts.yaml
 │   └───settings.yaml
 ├───CONTRIBUTING.md
-├───data/ 
+├───data/
 │   ├───dictionary.yaml
-│   └───logs/ 
+│   └───logs/
 ├───debug_requests.py
-├───deploy/ 
-│   └───docker/ 
+├───deploy/
+│   └───docker/
 ├───docker-compose.yml
-├───docs/ 
-│   ├───01_architecture/ 
-│   ├───02_setup_infra/ 
-│   ├───03_semantic_layer/ 
-│   ├───04_optimization/ 
+├───docs/
+│   ├───01_architecture/
+│   ├───02_setup_infra/
+│   ├───03_semantic_layer/
+│   ├───04_optimization/
 │   ├───05_whatsapp_integration.md
 │   ├───06_mcp_migration_spec.md
 │   └───swagger.json
-├───mysql_dump/ 
+├───mysql_dump/
 ├───package.json
 ├───pnpm-lock.yaml
 ├───pnpm-workspace.yaml
 ├───README.md
 ├───reporte_arquitectura.txt
-├───scripts/ 
+├───scripts/
 │   ├───generate_dictionary.py
 │   ├───list_models.py
 │   ├───run_agent.py
 │   ├───validator.py
 │   └───verify_mcp.py
-├───services/ 
-│   └───mcp-mysql-sidecar/ 
+├───services/
+│   └───mcp-mysql-sidecar/
 │       ├───.swcrc
 │       ├───Dockerfile
 │       ├───package.json
 │       ├───pnpm-lock.yaml
-│       ├───src/ 
+│       ├───src/
 │       │   └───index.ts
 │       └───tsconfig.json
 ├───tsconfig.json
@@ -98,7 +102,9 @@
 #### === 2. CONTENIDO DE ARCHIVOS CRÍTICOS ===
 
 ---
+
 ##### FILE: `/home/davidrbh/Documents/projects/sql-agent-oss/docker-compose.yml`
+
 ```yaml
 services:
   # El Brazo (MySQL Sidecar)
@@ -125,7 +131,8 @@ services:
       context: ./apps/agent-host
     ports:
       - "8000:8000"
-    # CAMBIO: Usamos uvicorn para correr server.py (Multicanal) en lugar de chainlit directo
+    entrypoint: /app/docker-entrypoint.sh
+    # El comando uvicorn ahora se pasa al entrypoint, que lo ejecuta con 'exec "$@"'
     command: uvicorn src.api.server:app --host 0.0.0.0 --port 8000 --reload
     depends_on:
       - mcp-mysql
@@ -138,6 +145,33 @@ services:
       - ./config:/app/config
       - ./data:/app/data
       - ./docs:/app/docs # DOCUMENTACIÓN (Swagger.json)
+      # Montamos el script de entrypoint para poder modificarlo sin reconstruir la imagen
+      - ./apps/agent-host/docker-entrypoint.sh:/app/docker-entrypoint.sh
+      # Montamos los scripts para que el entrypoint pueda ejecutar la generación del diccionario
+      - ./scripts:/app/scripts
+
+  # El Oído (Telegram Bot)
+  telegram-bot:
+    build:
+      context: ./apps/agent-host
+    # Sobrescribimos el comando por defecto para ejecutar el bot de Telegram
+    entrypoint: /app/docker-entrypoint.sh
+    command: python src/channels/telegram/entry.py
+    depends_on:
+      - mcp-mysql
+      - agent-host # Opcional: si queremos asegurar que el host esté listo
+    env_file:
+      - .env
+    environment:
+      - SIDECAR_URL=http://mcp-mysql:3000
+      - PYTHONPATH=src
+    volumes:
+      - ./apps/agent-host/src:/app/src
+      - ./config:/app/config
+      - ./data:/app/data
+      - ./docs:/app/docs
+      - ./apps/agent-host/docker-entrypoint.sh:/app/docker-entrypoint.sh
+      - ./scripts:/app/scripts
 
   # La Boca (WhatsApp HTTP API - WAHA)
   waha:
@@ -163,7 +197,9 @@ services:
 ```
 
 ---
+
 ##### FILE: `/home/davidrbh/Documents/projects/sql-agent-oss/config/business_context.yaml`
+
 ```yaml
 version: "2.5"
 project: "credivibes_ai_context"
@@ -764,397 +800,4 @@ usage_examples:
 
   - question: "Calcular la tasa de aprobación de solicitudes de crédito de la última semana."
     sql: "SELECT COUNT(CASE WHEN status = 1 THEN 1 END) * 100.0 / COUNT(*) as approval_rate FROM purchase_intent WHERE created_at >= DATE_SUB(NOW(), INTERVAL 1 WEEK)"
-```
-
----
-##### FILE: `/home/davidrbh/Documents/projects/sql-agent-oss/apps/agent-host/src/api/server.py`
-```python
-import os
-from fastapi import FastAPI
-from contextlib import asynccontextmanager
-from chainlit.utils import mount_chainlit
-
-# --- CANALES (Channels) ---
-from channels.whatsapp.router import router as whatsapp_router
-from dotenv import load_dotenv
-
-load_dotenv()
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup logic if any
-    print("🚀 Server starting...")
-    yield
-    print("🛑 Server shutting down...")
-
-app = FastAPI(lifespan=lifespan)
-
-# --- 1. Canal WhatsApp (Webhook) ---
-app.include_router(whatsapp_router, prefix="/whatsapp")
-
-# --- 2. Health Check ---
-@app.get("/health")
-async def health_check():
-    return {"status": "ok", "architecture": "hybrid-slice"}
-
-# --- 3. Canal UI (Chainlit) ---
-# Montamos la UI en la raíz.
-# Chainlit tomará el control de "/" y socket.io
-# IMPORTANTE: target es relativo al directorio de ejecución (root del repo en docker)
-# En docker: WORKDIR /app
-# src está en /app/src
-# main.py está en /app/src/main.py
-mount_chainlit(app=app, target="src/main.py", path="/")
-```
-
----
-##### FILE: `/home/davidrbh/Documents/projects/sql-agent-oss/apps/agent-host/src/main.py`
-```python
-import sys
-import os
-import chainlit as cl
-from langchain_core.messages import HumanMessage
-
-# --- MCP Imports ---
-from mcp import ClientSession
-from mcp.client.sse import sse_client
-from infra.mcp.manager import MCPSessionManager
-
-# --- FEATURE Imports (Arquitectura Híbrida) ---
-# Cargamos la "feature" de Análisis SQL específicamente.
-from features.sql_analysis.loader import get_sql_tools, get_sql_system_prompt
-
-# --- CONFIGURACIÓN DE PATH ---
-# Aseguramos que el sistema pueda encontrar el paquete 'src'
-current_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.join(current_dir, 'src'))
-
-# Importamos el cerebro del agente
-from agent_core.graph import build_graph
-
-# URL interna de Docker
-SIDECAR_URL = os.getenv("SIDECAR_URL", "http://mcp-mysql:3000")
-
-# --- EVENTOS DE CHAINLIT ---
-
-@cl.on_chat_start
-async def on_chat_start():
-    """
-    Se ejecuta cuando un nuevo usuario inicia una sesión.
-    Aquí inicializamos la conexión MCP, cargamos herramientas y construimos el grafo.
-    """
-    
-    # 1. Feedback inicial
-    msg = cl.Message(content="🔌 Conectando con el Sidecar MySQL (MCP Protocol)...")
-    await msg.send()
-
-    try:
-        # 2. Inicializar Conexión MCP Persistente (Auto-Reconnect)
-        # Usamos MCPSessionManager para manejar reconexiones automáticas si el socket se cierra.
-        mcp_manager = MCPSessionManager(SIDECAR_URL)
-        await mcp_manager.connect()
-        
-        cl.user_session.set("mcp_manager", mcp_manager)
-        
-        msg.content = "✅ Conexión MCP Establecida. Cargando herramientas..."
-        await msg.update()
-
-        # 3. Cargar Herramientas y Contexto (Feature SQL)
-        # Usamos el loader específico de la feature SQL
-        tools = await get_sql_tools(mcp_manager)
-        system_prompt = get_sql_system_prompt()
-        
-        tool_names = [t.name for t in tools]
-        msg.content = f"🔧 Herramientas cargadas: {tool_names}. Construyendo Cerebro..."
-        await msg.update()
-
-        # 4. Construir Grafo
-        # Ahora inyectamos explícitamente el prompt y las herramientas
-        graph = build_graph(tools, system_prompt)
-        cl.user_session.set("graph", graph)
-        cl.user_session.set("history", [])
-
-        # 5. Bienvenida Final
-        msg.content = "👋 **¡Hola! Soy SQL Agent v2.1**
-        
-Estoy conectado a tu entorno híbrido (Base de Datos + APIs).
-Puedo ayudarte a:
-* 📊 Consultar datos históricos SQL.
-* 🔌 Verificar estados en tiempo real vía API.
-* 🔄 Corregir mis propios errores si algo falla.
-
-_¿Qué necesitas saber hoy?_"
-        await msg.update()
-
-    except Exception as e:
-        msg.content = f"❌ **Error Fatal:** No se pudo conectar al Sidecar.\n\nError: {e}"
-        await msg.update()
-
-@cl.on_chat_end
-async def on_chat_end():
-    """Limpieza de recursos al cerrar la pestaña"""
-    # 1. Cerrar Cliente MCP
-    manager = cl.user_session.get("mcp_manager")
-    if manager:
-        await manager.close()
-        try:
-            await client.__aexit__(None, None, None)
-        except Exception as e:
-            print(f"Error cerrando Cliente MCP: {e}")
-
-    # 2. Cerrar Transporte SSE
-    sse_ctx = cl.user_session.get("sse_ctx")
-    if sse_ctx:
-        print("🛑 Cerrando conexión MCP...")
-        try:
-            await sse_ctx.__aexit__(None, None, None)
-        except Exception as e:
-            print(f"Error cerrando SSE: {e}")
-
-@cl.on_message
-async def on_message(message: cl.Message):
-    """
-    Manejador principal de mensajes.
-    Recibe el input del usuario e invoca al agente.
-    """
-    # Recuperar estado
-    graph = cl.user_session.get("graph")
-    history = cl.user_session.get("history")
-    
-    # Placeholder de carga
-    msg = cl.Message(content="")
-    await msg.send()
-    
-    try:
-        # Añadir mensaje de usuario al historial local (LangGraph espera esto)
-        history.append(HumanMessage(content=message.content))
-        
-        inputs = {
-            "messages": history
-        }
-        
-        # Feedback visual
-        msg.content = "🔄 _Analizando intención y ejecutando herramientas..._"
-        await msg.update()
-        
-        # Ejecución del Grafo (Async)
-        config = {"recursion_limit": 150} # Límite de seguridad aumentado
-        result = await graph.ainvoke(inputs, config=config)
-        
-        # Actualizar historial con lo que devolvió el agente (incluye ToolMessages, AIMessages, etc)
-        new_history = result["messages"]
-        cl.user_session.set("history", new_history)
-        
-        # Extraer última respuesta del asistente
-        # LangGraph devuelve toda la lista, el último debe ser AIMessage
-        final_response_content = new_history[-1].content
-        
-        # Enviar respuesta final
-        msg.content = final_response_content
-        await msg.update()
-        
-    except Exception as e:
-        error_msg = f"❌ **Error Crítico:**\n\n```\n{str(e)}\n```"
-        msg.content = error_msg
-        await msg.update()
-        print(f"Error en Chainlit handler: {e}")
-```
-
----
-##### FILE: `/home/davidrbh/Documents/projects/sql-agent-oss/apps/agent-host/src/agent_core/core/state.py`
-```python
-from typing import TypedDict, Annotated, List, Dict, Any
-import operator
-from langchain_core.messages import BaseMessage
-
-class AgentState(TypedDict):
-    """
-    Representa la 'Memoria de Trabajo' del Agente durante una conversación.
-    LangGraph pasará este objeto entre los nodos.
-    """
-    
-    # Historial de chat: Lista de mensajes (Human, AI, Tool)
-    # operator.add significa que cuando un nodo devuelve mensajes, se AGREGAN a la lista
-    messages: Annotated[List[BaseMessage], operator.add]
-```
-
----
-##### FILE: `/home/davidrbh/Documents/projects/sql-agent-oss/apps/agent-host/src/agent_core/graph.py`
-```python
-import os
-from typing import List
-from langchain_openai import ChatOpenAI
-from langchain_core.tools import BaseTool
-from langchain_core.messages import ToolMessage, SystemMessage
-from langgraph.graph import StateGraph, END
-from langgraph.prebuilt import ToolNode
-
-# Importa tu estado (asegúrate de que coincida con tu archivo actual)
-from agent_core.core.state import AgentState 
-
-# --- La lógica del core es GENÉRICA ---
-# No sabe nada de SQL, ni de negocio.
-# Solo recibe herramientas y prompts.
-
-def build_graph(tools: List[BaseTool], system_prompt: str):
-    """
-    Construye el Grafo del Agente inyectando las herramientas dinámicas y el prompt.
-    """
-    # Configurar el LLM con las herramientas reales
-    # Habilitar manejo de errores para que el Agente pueda recuperarse de fallos SQL
-    for tool in tools:
-        tool.handle_tool_error = True
-
-    # Usamos DeepSeek como LLM principal
-    llm = ChatOpenAI(
-        model="deepseek-chat",
-        temperature=0,
-        api_key=os.getenv("DEEPSEEK_API_KEY"),
-        base_url="https://api.deepseek.com"
-    )
-    llm_with_tools = llm.bind_tools(tools)
-
-    # 2. Nodo del Agente (El Cerebro)
-    def agent_node(state: AgentState):
-        messages = state["messages"]
-        
-        # Inyectar System Prompt si no existe
-        if not isinstance(messages[0], SystemMessage):
-            # Usamos el prompt pasado por argumento
-            messages = [SystemMessage(content=system_prompt)] + messages
-            
-        print(f"DEBUG MESSAGES: {messages}") 
-
-        # --- SANITIZATION FOR DEEPSEEK ---
-        # DeepSeek API (OpenAI compat) falla si el contenido de ToolMessage es una lista de dicts.
-        # LangChain ToolNode a veces devuelve bloques de contenido multimodal. Lo aplanamos a texto.
-        sanitized_messages = []
-        for m in messages:
-            if isinstance(m, ToolMessage) and isinstance(m.content, list):
-                # Unir todos los bloques de texto
-                text_content = "".join([
-                    block.get("text", "") for block in m.content 
-                    if isinstance(block, dict) and block.get("type") == "text"
-                ])
-                # Crear nueva copia con contenido string
-                new_m = ToolMessage(
-                    content=text_content, 
-                    tool_call_id=m.tool_call_id, 
-                    name=m.name,
-                    artifact=m.artifact
-                )
-                sanitized_messages.append(new_m)
-            else:
-                sanitized_messages.append(m)
-
-        response = llm_with_tools.invoke(sanitized_messages)
-        return {"messages": [response]}
-
-    # 3. Nodo de Herramientas (El Brazo)
-    # ToolNode de LangGraph ejecuta automáticamente la herramienta que el LLM pida
-    # handle_tool_errors=True permite que el nodo capture excepciones y devuelva un mensaje de error al LLM
-    tool_node = ToolNode(tools, handle_tool_errors=True)
-
-    # 4. Definición del Flujo (Workflow)
-    workflow = StateGraph(AgentState)
-
-    workflow.add_node("agent", agent_node)
-    workflow.add_node("tools", tool_node)
-
-    workflow.set_entry_point("agent")
-
-    # Lógica condicional: ¿El LLM quiere usar una herramienta o responder al usuario?
-    def should_continue(state):
-        last_message = state["messages"][-1]
-        if last_message.tool_calls:
-            return "tools"
-        return END
-
-    workflow.add_conditional_edges(
-        "agent",
-        should_continue,
-        {
-            "tools": "tools",
-            END: END
-        }
-    )
-
-    # El agente vuelve a pensar después de usar una herramienta
-    workflow.add_edge("tools", "agent")
-
-    return workflow.compile()
-```
-
----
-##### FILE: `/home/davidrbh/Documents/projects/sql-agent-oss/apps/agent-host/src/features/sql_analysis/loader.py`
-```python
-import os
-import yaml
-from pathlib import Path
-from langchain_core.messages import SystemMessage
-from infra.mcp.loader import get_agent_tools as get_mcp_tools # Reusing existing generic MCP loader if possible
-# Assuming infra/mcp/loader.py is generic enough. Let's verify that first.
-
-# We need to calculate paths relative to this feature
-# apps/agent-host/src/features/sql_analysis/loader.py
-
-# Detección inteligente del entorno (Docker vs Local)
-# En Docker, WORKDIR es /app, así que config suele estar en /app/config
-DOCKER_CONFIG_PATH = Path("/app/config")
-
-if DOCKER_CONFIG_PATH.exists():
-    CONFIG_DIR = DOCKER_CONFIG_PATH
-else:
-    # Fallback para entorno local (Monorepo)
-    # Subimos niveles hasta encontrar la carpeta config en la raíz del proyecto
-    # src/features/sql_analysis/loader.py -> ... -> sql-agent-oss/config
-    BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
-    CONFIG_DIR = BASE_DIR / "config"
-
-SYSTEM_PROMPT_TEMPLATE = """Eres un experto Agente SQL.
-
-⚠️ REGLAS CRÍTICAS DE SEGURIDAD ⚠️
-1. PROHIBIDO ejecutar `SELECT *` en la tabla `users`. Contiene columnas de imágenes Base64 (doc_photo, selfie_photo) que rompen la conexión.
-2. ANTES de consultar `users`, SIEMPRE ejecuta `DESCRIBE users` para ver las columnas disponibles.
-3. Selecciona SIEMPRE columnas específicas (ej. `SELECT id, name, email FROM users...`).
-4. Para otras tablas, inspecciona primero el esquema igualmente.
-
-🎨 ESTILO DE RESPUESTA:
-- Sé amable y conciso.
-- EVITA el uso excesivo de saltos de línea (\n).
-- Cuando listes datos simples (como nombres), úsalos separados por comas.
-"""
-
-def load_business_context() -> str:
-    """Loads business context from YAML"""
-    path = CONFIG_DIR / "business_context.yaml"
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            return f.read()
-    except FileNotFoundError:
-        print(f"⚠️ Alerta: No se encontró {path}")
-        return "Sin contexto definido."
-
-def get_sql_system_prompt() -> str:
-    """Generates the full system prompt for SQL Analysis"""
-    context = load_business_context()
-    return f"""{SYSTEM_PROMPT_TEMPLATE}
-
-📘 CONTEXTO DE NEGOCIO Y DICCIONARIO DE DATOS:
-A continuación se definen las entidades, sinónimos y reglas de negocio. ÚSALO para entender qué tabla consultar según los términos del usuario.
-
-```yaml
-{context}
-```
-"""
-
-async def get_sql_tools(mcp_manager):
-    """Facade to get tools for this specific feature"""
-    # In the future, this could filter specific tools from the MCP session if needed
-    from agent_core.api.loader import load_api_tools
-    
-    mcp_tools = await get_mcp_tools(mcp_manager)
-    api_tools = load_api_tools() # Reads config from env
-    
-    return mcp_tools + api_tools
 ```
