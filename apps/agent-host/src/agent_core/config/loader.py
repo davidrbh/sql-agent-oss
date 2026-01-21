@@ -3,9 +3,35 @@ import yaml
 from pathlib import Path
 from dotenv import load_dotenv
 
-# src/agent_core/config/loader.py -> ... -> root (5 niveles de padres)
-BASE_DIR = Path(__file__).resolve().parents[5]
-CONFIG_DIR = BASE_DIR / "config"
+# src/agent_core/config/loader.py
+
+# Detección inteligente del entorno (Docker vs Local)
+# En Docker, la carpeta config suele estar montada en /app/config
+DOCKER_CONFIG_PATH = Path("/app/config")
+DOCKER_ENV_PATH = Path("/app/.env")
+
+if DOCKER_CONFIG_PATH.exists():
+    BASE_DIR = Path("/app")
+    CONFIG_DIR = DOCKER_CONFIG_PATH
+    # Intentamos cargar .env si existe en Docker
+    if DOCKER_ENV_PATH.exists():
+        load_dotenv(DOCKER_ENV_PATH)
+    else:
+        # Si no hay .env en /app, quizás las variables ya están en el entorno del sistema
+        pass 
+else:
+    # Fallback para entorno local (5 niveles hacia arriba desde src/agent_core/config/loader.py)
+    # Ajuste: Si estamos ejecutando desde ./apps/agent-host, la lógica relativa puede variar.
+    # El previous setup usaba parents[5] para llegar a la raíz del monorepo.
+    try:
+        BASE_DIR = Path(__file__).resolve().parents[5]
+        CONFIG_DIR = BASE_DIR / "config"
+        load_dotenv(BASE_DIR / ".env")
+    except IndexError:
+        # Fallback extremo para desarrollo local si la estructura cambia
+        print("⚠️ [Config Loader] IndexError al calcular root. Usando ruta relativa fallback.")
+        BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
+        CONFIG_DIR = BASE_DIR / "config"
 load_dotenv(BASE_DIR / ".env")
 
 class ConfigLoader:
