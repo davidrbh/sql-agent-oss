@@ -41,7 +41,7 @@ class SemanticHydrator:
         """Carga y valida el archivo de contexto de negocio."""
         print(f"   📂 Buscando contexto de negocio en: {self.context_path}")
         if not self.context_path.is_file():
-            print(f"❌ Error Crítico: El archivo '{self.context_path.name}' NO EXISTE en la ruta esperada.")
+            print(f"❌ Error Crítico: El archivo '{self.context_path.name}' NO EXISTE en la ruta esperada ({self.context_path}).")
             sys.exit(1)
         
         try:
@@ -116,7 +116,14 @@ class SemanticHydrator:
 
     async def run(self):
         """Ejecuta el proceso completo de hidratación."""
-        print("\n🚀 Iniciando Hidratación Semántica...")
+        print(f"\n🚀 Iniciando Hidratación Semántica...")
+
+        # Validación 1: Verificar si el diccionario ya existe
+        if self.output_path.is_file():
+            print(f"✅ El diccionario ya existe en: {self.output_path}")
+            print("   ⏩ Saltando generación (Optimization).")
+            return
+
         await self._create_db_pool()
 
         models = self.context.get('models', [])
