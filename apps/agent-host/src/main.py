@@ -22,7 +22,7 @@ sys.path.append(os.path.join(current_dir, 'src'))
 from agent_core.graph import build_graph
 
 # URL interna de Docker
-SIDECAR_URL = os.getenv("SIDECAR_URL", "http://mcp-mysql:3000")
+SIDECAR_URL = os.getenv("SIDECAR_URL", "http://mcp-mysql:3002")
 
 # --- EVENTOS DE CHAINLIT ---
 

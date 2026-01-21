@@ -16,7 +16,7 @@ async def build_context():
     
     # 0. Obtener URL del Sidecar (Resolución Runtime)
     # IMPORTANTE: Se lee aquí y no arriba para asegurar que load_dotenv() ya corrió.
-    SIDECAR_URL = os.getenv("SIDECAR_URL", "http://mcp-mysql:3000")
+    SIDECAR_URL = os.getenv("SIDECAR_URL", "http://mcp-mysql:3002")
     print(f"🔗 [Core] Sidecar URL: {SIDECAR_URL}")
     
     # 1. Inicializar Conexión MCP
