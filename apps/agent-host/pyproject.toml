@@ -53,6 +53,7 @@ mcp = "^1.25.0"
 # ACTUALIZADO: httpx debe ser >=0.28.1 para compatibilidad con google-genai
 httpx = "^0.28.1"
 langchain-mcp-adapters = "^0.2.1"
+python-telegram-bot = "^22.5"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.1.14"

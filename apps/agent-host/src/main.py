@@ -1,7 +1,8 @@
 import sys
 import os
 import chainlit as cl
-from langchain_core.messages import HumanMessage
+import asyncio
+from langchain_core.messages import HumanMessage, AIMessage
 
 # --- MCP Imports ---
 from mcp import ClientSession
@@ -102,47 +103,100 @@ async def on_chat_end():
 @cl.on_message
 async def on_message(message: cl.Message):
     """
-    Manejador principal de mensajes.
-    Recibe el input del usuario e invoca al agente.
+    Manejador con UI "Status Bar Efímero".
+    - Feedback Visual: Un mensaje que cambia dinámicamente ("🔄...", "💾...").
+    - Limpieza: El mensaje de estado SE BORRA antes de mostrar la respuesta final.
     """
-    # Recuperar estado
     graph = cl.user_session.get("graph")
     history = cl.user_session.get("history")
     
-    # Placeholder de carga
-    msg = cl.Message(content="")
-    await msg.send()
-    
+    # 1. Mensaje de Estado (Ephemeral Status Bar)
+    status_msg = cl.Message(content="🔄 _Iniciando..._")
+    await status_msg.send()
+
+    # Contenedor para respuesta final
+    final_response_msg = cl.Message(content="")
+    final_answer_started = False
+    full_response_text = ""
+
     try:
-        # Añadir mensaje de usuario al historial local (LangGraph espera esto)
+        # Añadir mensaje del usuario al historial
         history.append(HumanMessage(content=message.content))
+        inputs = {"messages": history}
+        config = {"configurable": {"thread_id": cl.context.session.id}}
         
-        inputs = {
-            "messages": history
-        }
+        async for event in graph.astream_events(inputs, config=config, version="v2"):
+            kind = event["event"]
+            name = event.get("name", "")
+            data = event.get("data", {})
+            
+            # --- 2. FEEDBACK VISUAL (Status Bar) ---
+            if kind == "on_chain_start":
+                if name == "intent_classifier_node":
+                    status_msg.content = "🚦 _Clasificando Intención..._"
+                    await status_msg.update()
+                    await asyncio.sleep(0.7) # Smooth transition
+                elif name == "sql_validator_node":
+                    status_msg.content = "🛡️ _Validando Seguridad SQL..._"
+                    await status_msg.update()
+                    await asyncio.sleep(0.7) # Smooth transition
+                elif name == "agent": # FIX: Nombre real del nodo es 'agent'
+                    status_msg.content = "🧠 _Generando Respuesta..._"
+                    await status_msg.update()
+                    await asyncio.sleep(0.7) # Smooth transition
+                    
+            elif kind == "on_tool_start":
+                status_msg.content = f"🛠️ _Ejecutando Herramienta: {name}..._"
+                await status_msg.update()
+                await asyncio.sleep(0.7) # Smooth transition
+                
+            elif kind == "on_tool_end":
+                status_msg.content = "✅ _Datos obtenidos. Procesando..._"
+                await status_msg.update()
+                await asyncio.sleep(0.7) # Smooth transition
+
+            # --- 3. STREAMING RESPUESTA FINAL ---
+            elif kind == "on_chat_model_stream":
+                # Verificamos origen. Metadata suele tener 'langgraph_node'
+                node_name = event.get("metadata", {}).get("langgraph_node", "")
+                
+                # 'agent' es el nodo que habla con el usuario final.
+                # 'intent_classifier' tambien usa LLM pero es interno.
+                if node_name == "agent" or not node_name:
+                    chunk_content = data["chunk"].content
+                    if chunk_content:
+                        if not final_answer_started:
+                            # Primer token: borramos status y mostramos respuesta
+                            await status_msg.remove()
+                            final_answer_started = True
+                            await final_response_msg.send()
+                        
+                        await final_response_msg.stream_token(chunk_content)
+                        full_response_text += chunk_content
+
+        # --- 4. FINALIZACIÓN ---
         
-        # Feedback visual
-        msg.content = "🔄 _Analizando intención y ejecutando herramientas..._"
-        await msg.update()
+        if not final_answer_started:
+            # Fallback: Si no hubo streaming (ej. respuesta muy corta o error en stream),
+            # verificamos si el grafo devolvió algo en el último estado.
+            # Como astream_events iteró, el último estado está 'implícito'.
+            # Para simplificar, si no hubo stream, borramos status y enviamos mensaje genérico o error.
+            await status_msg.remove()
+            if not full_response_text:
+                await cl.Message(content="✅ Proceso completado (Sin respuesta de texto generada).").send()
+        else:
+            await final_response_msg.update()
         
-        # Ejecución del Grafo (Async)
-        config = {"recursion_limit": 150} # Límite de seguridad aumentado
-        result = await graph.ainvoke(inputs, config=config)
-        
-        # Actualizar historial con lo que devolvió el agente (incluye ToolMessages, AIMessages, etc)
-        new_history = result["messages"]
-        cl.user_session.set("history", new_history)
-        
-        # Extraer última respuesta del asistente
-        # LangGraph devuelve toda la lista, el último debe ser AIMessage
-        final_response_content = new_history[-1].content
-        
-        # Enviar respuesta final
-        msg.content = final_response_content
-        await msg.update()
-        
+        # Guardar en historial la respuesta completa del asistente
+        if full_response_text:
+            history.append(AIMessage(content=full_response_text))
+            cl.user_session.set("history", history)
+            
     except Exception as e:
-        error_msg = f"❌ **Error Crítico:**\n\n```\n{str(e)}\n```"
-        msg.content = error_msg
-        await msg.update()
-        print(f"Error en Chainlit handler: {e}")
+        # Error handling
+        if not final_answer_started:
+            status_msg.content = f"❌ **Error:** {str(e)}"
+            await status_msg.update()
+        else:
+            await cl.Message(content=f"❌ **Error ocurrido durante la respuesta:** {str(e)}").send()
+        print(f"Error en on_message: {e}")

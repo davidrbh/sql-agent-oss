@@ -23,14 +23,24 @@ def intent_classifier_node(state: AgentState):
     print("🚦 [Node: Intent Classifier] Clasificando intención...")
     
     # Usamos el LLM para una clasificación rápida
-    prompt = ChatPromptTemplate.from_template(
-        """Eres un router de intenciones. Clasifica la pregunta del usuario en una de estas tres categorías:
-        
-        - DATABASE: Si la pregunta implica consultar, contar, agregar o analizar datos de negocio como usuarios, compras, créditos, etc.
-        - API: Si la pregunta es sobre el estado de un servicio, un endpoint, o una acción técnica no relacionada con datos de negocio.
-        - GENERAL: Para saludos, preguntas conversacionales o cualquier otra cosa.
+    # Tomamos los últimos 3 mensajes para dar contexto
+    conversation_history = []
+    for msg in state["messages"][-3:]: 
+        role = "User" if isinstance(msg, HumanMessage) else "AI"
+        content = str(msg.content)[:200] # Truncar por seguridad
+        conversation_history.append(f"{role}: {content}")
+    
+    context_str = "\n".join(conversation_history)
 
-        Pregunta del usuario: "{question}"
+    prompt = ChatPromptTemplate.from_template(
+        """Eres un router de intenciones. Clasifica la ÚLTIMA interacción del usuario en una de estas categorías:
+        
+        - DATABASE: Consultar datos de negocio (usuarios, compras, créditos, etc.).
+        - API: Consultar estado de servicios técnicos o endpoints externos.
+        - GENERAL: Saludos, agradecimientos o charla casual.
+
+        Historial reciente:
+        {context}
         
         Responde con una sola palabra: DATABASE, API, o GENERAL.
         """
@@ -38,15 +48,8 @@ def intent_classifier_node(state: AgentState):
     # Usamos un LLM simple y rápido para la clasificación
     llm = ChatOpenAI(model="deepseek-chat", temperature=0, api_key=os.getenv("DEEPSEEK_API_KEY"), base_url="https://api.deepseek.com")
     
-    # Extraemos la última pregunta humana del historial
-    question = ""
-    for msg in reversed(state["messages"]):
-        if isinstance(msg, HumanMessage):
-            question = msg.content
-            break
-
     chain = prompt | llm
-    intent_raw = chain.invoke({"question": question}).content
+    intent_raw = chain.invoke({"context": context_str}).content
     
     # Limpieza de la respuesta del LLM
     if "DATABASE" in intent_raw.upper():
@@ -61,6 +64,39 @@ def intent_classifier_node(state: AgentState):
 
 
 # --- NODO 2: AGENTE DINÁMICO ---
+
+import re
+import uuid
+
+# --- PARSER DEEPSEEK (PATCH) ---
+def parse_deepseek_xml(content: str):
+    """
+    Parsea llamadas a herramientas en formato XML raw de DeepSeek (DSML).
+    Ejemplo: <|DSML|invoke name="query">...params...</|DSML|invoke>
+    """
+    tool_calls = []
+    # Regex para bloques invoke
+    invoke_pattern = r"<\|DSML\|invoke name=\"(.*?)\">(.*?)</\|DSML\|invoke>"
+    invokes = re.findall(invoke_pattern, content, re.DOTALL)
+    
+    for name, body in invokes:
+        args = {}
+        # Regex para parámetros
+        # Capturamos el nombre y el valor. Ignoramos atributos extra como string="true"
+        param_pattern = r"<\|DSML\|parameter name=\"(.*?)\".*?>(.*?)</\|DSML\|parameter>"
+        params = re.findall(param_pattern, body, re.DOTALL)
+        
+        for param_name, param_value in params:
+            args[param_name] = param_value.strip()
+            
+        tool_calls.append({
+            "id": str(uuid.uuid4()),
+            "name": name,
+            "args": args,
+            "type": "tool_call"
+        })
+        
+    return tool_calls
 
 def agent_node(state: AgentState, llm_with_tools: dict, system_prompt: str):
     """
@@ -94,6 +130,18 @@ def agent_node(state: AgentState, llm_with_tools: dict, system_prompt: str):
             sanitized_messages.append(m)
     
     response = llm_runnable.invoke(sanitized_messages)
+    
+    # PATCH: DeepSeek XML Recovery
+    # Si el modelo devolvió XML raw en el contenido en vez de tool_calls nativos
+    if not response.tool_calls and "<|DSML|" in str(response.content):
+        print("⚠️ [Agent] Detectado formato XML raw de DeepSeek. Intentando parsear...")
+        parsed_tools = parse_deepseek_xml(response.content)
+        if parsed_tools:
+            print(f"✅ [Agent] Tool calls recuperados: {len(parsed_tools)}")
+            response.tool_calls = parsed_tools
+            # Limpiamos el content para que no se muestre como texto al usuario
+            response.content = "" 
+            
     return {"messages": [response]}
 
 
@@ -180,11 +228,28 @@ def build_graph(tools: List[BaseTool], system_prompt: str) -> StateGraph:
     # Después del agente, o vamos al validador (si hay tool calls) o terminamos
     def should_continue_from_agent(state: AgentState):
         last_message = state["messages"][-1]
-        if isinstance(last_message, AIMessage) and last_message.tool_calls:
+        
+        # Si no hay tool calls, terminamos (es una respuesta de texto)
+        if not isinstance(last_message, AIMessage) or not last_message.tool_calls:
+            return END
+        
+        # Si hay tool calls, decidimos según la INTENCIÓN
+        # Si la intención era DATABASE, pasamos por el filtro de seguridad
+        if state["intent"] == "DATABASE":
             return "sql_validator"
-        return END
+        
+        # Si es API o cualquier otra cosa, vamos directo a ejecutar (Skip Validator)
+        return "tools"
 
-    workflow.add_conditional_edges("agent", should_continue_from_agent, {"sql_validator": "sql_validator", END: END})
+    workflow.add_conditional_edges(
+        "agent", 
+        should_continue_from_agent, 
+        {
+            "sql_validator": "sql_validator",
+            "tools": "tools",
+            END: END
+        }
+    )
     
     # Después del validador, o vamos a ejecutar herramientas o volvemos al agente con el error
     def should_continue_from_validator(state: AgentState):

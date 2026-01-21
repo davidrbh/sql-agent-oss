@@ -8,6 +8,7 @@
     "lint": "poetry run ruff check src",
     "build": "echo 'Build step not needed for this Python app' && exit 0",
     "test": "poetry run pytest",
+    "telegram": "PYTHONPATH=src poetry run python src/channels/telegram/entry.py",
     "generate-dictionary": "PYTHONPATH=src poetry run python ../../scripts/generate_dictionary.py"
   }
 }
