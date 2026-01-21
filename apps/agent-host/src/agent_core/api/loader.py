@@ -18,23 +18,29 @@ def _get_swagger_path():
     """
     # 1. Intentar cargar desde variable de entorno (Configuración robusta)
     env_path = os.getenv("SWAGGER_JSON_PATH")
-    if env_path:
-        if os.path.exists(env_path):
-            return env_path
-        else:
-            print(f"⚠️ [API Loader] La ruta en SWAGGER_JSON_PATH no existe: {env_path}")
+    if env_path and os.path.exists(env_path):
+        return env_path
 
-    # 2. Fallback: Cálculo relativo robusto usando pathlib
-    # Sube 6 niveles desde la ubicación actual para llegar a la raíz del monorepo
-    # .../src/agent_core/api/loader.py -> ... -> raíz
+    # 2. Estrategia Híbrida: Docker vs Local
+    from pathlib import Path
+    
+    # En Docker, los archivos suelen estar en /app/docs/
+    docker_path = Path("/app/docs/swagger.json")
+    if docker_path.exists():
+        return str(docker_path)
+
+    # Fallback: Cálculo relativo (5 niveles desde src/agent_core/api/loader.py)
+    # apps/agent-host/src/agent_core/api/loader.py (parents[0..3]) -> apps/agent-host (parents[4]) -> root (parents[5])
     try:
-        from pathlib import Path
         project_root = Path(__file__).resolve().parents[5]
-        return str(project_root / "docs" / "swagger.json")
+        local_path = project_root / "docs" / "swagger.json"
+        if local_path.exists():
+            return str(local_path)
     except IndexError:
-        print("❌ [API Loader] No se pudo calcular la ruta raíz del proyecto.")
-        # Fallback a una ruta por defecto si todo falla
-        return "docs/swagger.json"
+        pass
+
+    print("⚠️ [API Loader] No se pudo encontrar swagger.json automáticamente.")
+    return "docs/swagger.json"
 
 def load_swagger_summary() -> str:
     """Genera un resumen ligero de la API para el prompt del sistema."""

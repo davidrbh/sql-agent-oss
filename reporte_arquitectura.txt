@@ -171,7 +171,7 @@ services:
     env_file:
       - .env
     environment:
-      - SIDECAR_URL=http://mcp-mysql:3000
+      - SIDECAR_URL=http://mcp-mysql:3002
     volumes:
       - ./apps/agent-host/src:/app/src # Hot reload logic support
       - ./config:/app/config
