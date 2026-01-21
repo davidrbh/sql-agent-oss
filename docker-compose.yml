@@ -1,8 +1,11 @@
 services:
   # El Brazo (MySQL Sidecar)
   mcp-mysql:
+    container_name: mcp-mysql
     build:
       context: ./services/mcp-mysql-sidecar
+    networks:
+      - sql-agent-network
     env_file:
       - .env
     environment:
@@ -19,8 +22,11 @@ services:
 
   # El Cerebro (Agent Host)
   agent-host:
+    container_name: agent-host
     build:
       context: ./apps/agent-host
+    networks:
+      - sql-agent-network
     ports:
       - "8000:8000"
     entrypoint: /app/docker-entrypoint.sh
@@ -44,8 +50,11 @@ services:
 
   # El Oído (Telegram Bot)
   telegram-bot:
+    container_name: telegram-bot
     build:
       context: ./apps/agent-host
+    networks:
+      - sql-agent-network
     # Sobrescribimos el comando por defecto para ejecutar el bot de Telegram
     entrypoint: /app/docker-entrypoint.sh
     command: python src/channels/telegram/entry.py
@@ -67,7 +76,10 @@ services:
 
   # La Boca (WhatsApp HTTP API - WAHA)
   waha:
+    container_name: waha
     image: devlikeapro/waha:latest
+    networks:
+      - sql-agent-network
     ports:
       - "3001:3000" # Dashboard en puerto 3001
     env_file:
@@ -88,9 +100,12 @@ services:
     restart: on-failure
 
   docs:
+    container_name: docs
     build:
       context: .
       dockerfile: docs.Dockerfile
+    networks:
+      - sql-agent-network
     ports:
       - "8001:8001"
     volumes:
@@ -98,3 +113,7 @@ services:
       - ./mkdocs.yml:/app/mkdocs.yml
       # Montar el código fuente para que los cambios en docstrings se reflejen en tiempo real
       - ./apps/agent-host/src:/app/apps/agent-host/src
+
+networks:
+  sql-agent-network:
+    driver: bridge

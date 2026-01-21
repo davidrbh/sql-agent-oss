@@ -110,6 +110,10 @@ async def on_message(message: cl.Message):
     graph = cl.user_session.get("graph")
     history = cl.user_session.get("history")
     
+    if graph is None or history is None:
+        await cl.Message(content="⚠️ No se puede procesar el mensaje porque la conexión inicial con el Sidecar falló. Por favor, revisa los logs y reinicia el chat.").send()
+        return
+
     # 1. Mensaje de Estado (Ephemeral Status Bar)
     status_msg = cl.Message(content="🔄 _Iniciando..._")
     await status_msg.send()
