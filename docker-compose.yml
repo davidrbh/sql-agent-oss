@@ -1,104 +1,103 @@
 services:
-  # El Brazo (MySQL Sidecar)
+  # -------------------------------------------------------
+  # 1. SIDECAR: MySQL (Node.js)
+  # -------------------------------------------------------
   mcp-mysql:
     container_name: mcp-mysql
     build:
-      context: ./services/mcp-mysql-sidecar
+      context: . # Contexto Raíz
+      dockerfile: services/mcp-mysql-sidecar/Dockerfile
     networks:
       - sql-agent-network
     env_file:
       - .env
     environment:
-      # Mapeo de variables del .env (DB_*) a las esperadas por el Sidecar (MYSQL_*)
       - MYSQL_HOST=${DB_HOST}
       - MYSQL_USER=${DB_USER}
       - MYSQL_PASSWORD=${DB_PASSWORD}
       - MYSQL_DATABASE=${DB_NAME}
       - MYSQL_PORT=3306
+      - PORT=3002
     ports:
       - "3002:3002"
     extra_hosts:
-      - "host.docker.internal:host-gateway" # Para conectar a BD en localhost
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
 
-  # El Cerebro (Agent Host)
-  agent-host:
+  # -------------------------------------------------------
+  # 2. CEREBRO: Agent Host (Python API)
+  # -------------------------------------------------------
+  agent-host: &agent-base # Anchor para reutilizar configuración
     container_name: agent-host
     build:
-      context: ./apps/agent-host
+      context: . # Contexto Raíz
+      dockerfile: apps/agent-host/Dockerfile
     networks:
       - sql-agent-network
-    ports:
-      - "8000:8000"
-    entrypoint: /app/docker-entrypoint.sh
-    # El comando uvicorn ahora se pasa al entrypoint, que lo ejecuta con 'exec "$@"'
-    command: uvicorn src.api.server:app --host 0.0.0.0 --port 8000 --reload
-    depends_on:
-      - mcp-mysql
     env_file:
       - .env
     environment:
       - SIDECAR_URL=http://mcp-mysql:3002
+      - PYTHONPATH=/app/src
+      - SWAGGER_JSON_PATH=/app/docs/swagger.json
+      - BUSINESS_CONTEXT_PATH=/app/config/business_context.yaml
     volumes:
-      - ./apps/agent-host/src:/app/src # Hot reload logic support
-      - ./config:/app/config
-      - ./data:/app/data
-      - ./docs:/app/docs # DOCUMENTACIÓN (Swagger.json)
-      # Montamos el script de entrypoint para poder modificarlo sin reconstruir la imagen
-      - ./apps/agent-host/docker-entrypoint.sh:/app/docker-entrypoint.sh
-      # Montamos los scripts para que el entrypoint pueda ejecutar la generación del diccionario
-      - ./scripts:/app/scripts
-
-  # El Oído (Telegram Bot)
-  telegram-bot:
-    container_name: telegram-bot
-    build:
-      context: ./apps/agent-host
-    networks:
-      - sql-agent-network
-    # Sobrescribimos el comando por defecto para ejecutar el bot de Telegram
-    entrypoint: /app/docker-entrypoint.sh
-    command: python src/channels/telegram/entry.py
-    depends_on:
-      - mcp-mysql
-      - agent-host # Opcional: si queremos asegurar que el host esté listo
-    env_file:
-      - .env
-    environment:
-      - SIDECAR_URL=http://mcp-mysql:3002
-      - PYTHONPATH=src
-    volumes:
+      # Volúmenes mapeados según tu Tree real
       - ./apps/agent-host/src:/app/src
       - ./config:/app/config
-      - ./data:/app/data
       - ./docs:/app/docs
-      - ./apps/agent-host/docker-entrypoint.sh:/app/docker-entrypoint.sh
       - ./scripts:/app/scripts
+      - ./apps/agent-host/docker-entrypoint.sh:/app/docker-entrypoint.sh
+      - ./data:/app/data
+    depends_on:
+      - mcp-mysql
+    ports:
+      - "8000:8000"
+    # Comando ajustado al PYTHONPATH=/app/src
+    command: uvicorn src.api.server:app --host 0.0.0.0 --port 8000 --reload
 
-  # La Boca (WhatsApp HTTP API - WAHA)
+  # -------------------------------------------------------
+  # 3. CANAL: Telegram Bot
+  # -------------------------------------------------------
+  telegram-bot:
+    <<: *agent-base # Hereda todo de agent-host
+    container_name: telegram-bot
+    ports: [] # No expone puertos
+    # Ruta ajustada: src/... es relativo a /app
+    command: python src/channels/telegram/entry.py
+    restart: unless-stopped
+    environment:
+      - SIDECAR_URL=http://mcp-mysql:3002
+      - PYTHONPATH=/app/src
+      - SWAGGER_JSON_PATH=/app/docs/swagger.json
+      - BUSINESS_CONTEXT_PATH=/app/config/business_context.yaml
+      - SKIP_GENERATION=true
+
+  # -------------------------------------------------------
+  # 4. CANAL: WhatsApp (WAHA)
+  # -------------------------------------------------------
   waha:
     container_name: waha
     image: devlikeapro/waha:latest
     networks:
       - sql-agent-network
     ports:
-      - "3001:3000" # Dashboard en puerto 3001
+      - "3001:3000"
     env_file:
       - .env
     environment:
-      # URL donde WAHA enviará los mensajes recibidos
-      - WHATSAPP_WEBHOOK_URL=http://agent-host:8000/whatsapp/webhook
-      # Eventos que queremos recibir
+      - WHATSAPP_WEBHOOK_URL=http://agent-host:8000/api/webhook
       - WHATSAPP_WEBHOOK_EVENTS=message
-      # Puerto interno
-      - PORT=3000
-      # Seguridad (Mapeo desde .env)
       - WHATSAPP_API_KEY=${WAHA_API_KEY}
       - WHATSAPP_SWAGGER_USERNAME=${WHATSAPP_SWAGGER_USERNAME}
       - WHATSAPP_SWAGGER_PASSWORD=${WHATSAPP_SWAGGER_PASSWORD}
     volumes:
-      - .waha_sessions:/app/sessions # Persistencia de sesión (QR)
+      - ./waha_sessions:/app/sessions
     restart: on-failure
 
+  # -------------------------------------------------------
+  # 5. DOCUMENTACIÓN
+  # -------------------------------------------------------
   docs:
     container_name: docs
     build:
@@ -111,8 +110,6 @@ services:
     volumes:
       - ./docs:/app/docs
       - ./mkdocs.yml:/app/mkdocs.yml
-      # Montar el código fuente para que los cambios en docstrings se reflejen en tiempo real
-      - ./apps/agent-host/src:/app/apps/agent-host/src
 
 networks:
   sql-agent-network:

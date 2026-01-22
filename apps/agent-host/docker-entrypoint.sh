@@ -1,23 +1,49 @@
 #!/bin/bash
 set -e
 
-echo "🚀 Entrypoint: Iniciando configuración del contenedor agent-host..."
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+RED='\033[0;31m'
+NC='\033[0m'
 
-# Paso 1: Verificar que el contexto de negocio exista.
-# La ruta /app/config se mapea desde el volumen en docker-compose.yml
-if [ ! -f "/app/config/business_context.yaml" ]; then
-    echo "❌ Error Crítico: No se encontró el archivo 'config/business_context.yaml'."
-    echo "   Por favor, asegúrate de que el archivo existe y está montado correctamente en el volumen."
-    exit 1
+echo -e "${GREEN}🚀 [Entrypoint] Iniciando contenedor...${NC}"
+
+# 1. Validación de Configuración
+if [ ! -f "$BUSINESS_CONTEXT_PATH" ]; then
+    echo "⚠️  [Warning] No se encontró business_context.yaml"
+else
+    echo -e "${GREEN}✅ Configuración de negocio encontrada.${NC}"
 fi
 
-# Paso 2: Generar el diccionario usando Poetry.
-# Esto asegura que el diccionario siempre esté sincronizado con el contexto de negocio al iniciar.
-echo "📖 Generando diccionario desde business_context.yaml..."
-poetry run python scripts/generate_dictionary.py
-echo "✅ Diccionario generado con éxito."
+# 2. Generación de Diccionario
+# USAMOS RUTA ABSOLUTA PARA EVITAR ERRORES
+DICT_PATH="/app/data"
+DICT_FILE="$DICT_PATH/dictionary.yaml"
 
-# Paso 3: Ejecutar el comando principal pasado al contenedor (CMD en Dockerfile o command en docker-compose).
-# El 'exec "$@"' ejecuta el comando que se pasó al entrypoint. En nuestro caso, será 'uvicorn...'.
-echo "🚀 Iniciando el servidor Uvicorn..."
+if [ "$SKIP_GENERATION" = "true" ]; then
+    echo -e "${BLUE}⏭️  Consumer Mode: Telegram Bot (No genera nada).${NC}"
+else
+    echo -e "${YELLOW}🔍 Producer Mode: Verificando diccionario en: $DICT_FILE${NC}"
+    
+    # --- DEBUGGING: MUESTRA QUÉ HAY EN LA CARPETA ---
+    echo "📂 Contenido actual de $DICT_PATH:"
+    ls -la $DICT_PATH || echo "❌ No se pudo listar la carpeta data"
+    # ------------------------------------------------
+
+    if [ -f "$DICT_FILE" ] && [ "$FORCE_REGEN_DICT" != "true" ]; then
+        echo -e "${GREEN}✅ El diccionario YA EXISTE. Saltando regeneración.${NC}"
+    else
+        echo -e "${YELLOW}📖 El diccionario no existe (o FORCE_REGEN_DICT=true). Generando...${NC}"
+        
+        if [ -f "scripts/generate_dictionary.py" ]; then
+            python scripts/generate_dictionary.py
+            echo -e "${GREEN}✅ Generación completada.${NC}"
+        else
+            echo -e "${RED}❌ Error: No se encuentra scripts/generate_dictionary.py${NC}"
+        fi
+    fi
+fi
+
+echo -e "${GREEN}🔥 Ejecutando comando: $@${NC}"
 exec "$@"

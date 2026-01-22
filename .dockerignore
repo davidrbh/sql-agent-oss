@@ -1,54 +1,20 @@
-# Ignorar Git
 .git
 .gitignore
-
-# Ignorar Entornos Virtuales Locales
+.env
+.env.*
+node_modules
+**/node_modules
+**/dist
+**/__pycache__
+**/*.pyc
 .venv
-venv/
-env/
-.env.local
-
-# Ignorar Configuración de IDEs
-.vscode
-.idea
-
-# Ignorar Python Cache y Builds
-__pycache__
-*.pyc
-*.pyo
-*.pyd
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# Ignorar Logs y Bases de Datos Locales
-logs/
-*.log
-mysql_data/
-mysql_dump/
-data/chroma_db/
-chrome_db/
-*.sqlite3
-*.db
-
-# Ignorar archivos temporales
 .DS_Store
-tmp/
 
-# Ignorar documentación generada localmente (opcional)
-site/
-waha_sessions/
-mysql_data/
+# Archivos pesados o de sesión que no deben ir a la imagen
+mysql_dump
+data/chroma_db
+waha_sessions
+.waha_sessions
+.turbo
+.files
+deploy
