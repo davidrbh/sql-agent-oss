@@ -5,7 +5,7 @@ services:
   mcp-mysql:
     container_name: mcp-mysql
     build:
-      context: . # Contexto Raíz
+      context: .
       dockerfile: services/mcp-mysql-sidecar/Dockerfile
     networks:
       - sql-agent-network
@@ -16,7 +16,7 @@ services:
       - MYSQL_USER=${DB_USER}
       - MYSQL_PASSWORD=${DB_PASSWORD}
       - MYSQL_DATABASE=${DB_NAME}
-      - MYSQL_PORT=3306
+      - MYSQL_PORT=${DB_PORT}
       - PORT=3002
     ports:
       - "3002:3002"
@@ -27,22 +27,25 @@ services:
   # -------------------------------------------------------
   # 2. CEREBRO: Agent Host (Python API)
   # -------------------------------------------------------
-  agent-host: &agent-base # Anchor para reutilizar configuración
+  agent-host: &agent-base
     container_name: agent-host
     build:
-      context: . # Contexto Raíz
+      context: .
       dockerfile: apps/agent-host/Dockerfile
     networks:
       - sql-agent-network
     env_file:
       - .env
     environment:
-      - SIDECAR_URL=http://mcp-mysql:3002
+      - SIDECAR_URL=${SIDECAR_URL}
       - PYTHONPATH=/app/src
       - SWAGGER_JSON_PATH=/app/docs/swagger.json
       - BUSINESS_CONTEXT_PATH=/app/config/business_context.yaml
+      - PYTHONUNBUFFERED=1
+      - WAHA_BASE_URL=${WAHA_BASE_URL}
+      - WAHA_API_KEY=${WAHA_API_KEY}
+      - WHATSAPP_WEBHOOK_URL=${WHATSAPP_WEBHOOK_URL}
     volumes:
-      # Volúmenes mapeados según tu Tree real
       - ./apps/agent-host/src:/app/src
       - ./config:/app/config
       - ./docs:/app/docs
@@ -53,21 +56,20 @@ services:
       - mcp-mysql
     ports:
       - "8000:8000"
-    # Comando ajustado al PYTHONPATH=/app/src
     command: uvicorn src.api.server:app --host 0.0.0.0 --port 8000 --reload
 
   # -------------------------------------------------------
   # 3. CANAL: Telegram Bot
   # -------------------------------------------------------
   telegram-bot:
-    <<: *agent-base # Hereda todo de agent-host
+    <<: *agent-base
     container_name: telegram-bot
-    ports: [] # No expone puertos
-    # Ruta ajustada: src/... es relativo a /app
+    ports: []
     command: python src/channels/telegram/entry.py
     restart: unless-stopped
     environment:
-      - SIDECAR_URL=http://mcp-mysql:3002
+      - SIDECAR_URL=${SIDECAR_URL}
+      - PYTHONUNBUFFERED=1
       - PYTHONPATH=/app/src
       - SWAGGER_JSON_PATH=/app/docs/swagger.json
       - BUSINESS_CONTEXT_PATH=/app/config/business_context.yaml
@@ -78,7 +80,7 @@ services:
   # -------------------------------------------------------
   waha:
     container_name: waha
-    image: devlikeapro/waha:latest
+    image: devlikeapro/waha:latest-2026.1.3
     networks:
       - sql-agent-network
     ports:
@@ -86,13 +88,19 @@ services:
     env_file:
       - .env
     environment:
-      - WHATSAPP_WEBHOOK_URL=http://agent-host:8000/api/webhook
-      - WHATSAPP_WEBHOOK_EVENTS=message
       - WHATSAPP_API_KEY=${WAHA_API_KEY}
       - WHATSAPP_SWAGGER_USERNAME=${WHATSAPP_SWAGGER_USERNAME}
       - WHATSAPP_SWAGGER_PASSWORD=${WHATSAPP_SWAGGER_PASSWORD}
+      - WHATSAPP_DEFAULT_ENGINE=WEBJS
+      - WHATSAPP_DEFAULT_SESSION=default
+      - WHATSAPP_START_SESSION=default
+      - WHATSAPP_WEBHOOK_URL=${WHATSAPP_WEBHOOK_URL}
+      - WHATSAPP_WEBHOOK_EVENTS=message
+      - WAHA_PUPPETEER_ARGS=--disable-dev-shm-usage --no-sandbox
     volumes:
-      - ./waha_sessions:/app/sessions
+      - ./waha_sessions:/app/.sessions
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: on-failure
 
   # -------------------------------------------------------
