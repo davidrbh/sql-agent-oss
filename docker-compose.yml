@@ -5,7 +5,7 @@ services:
   mcp-mysql:
     container_name: mcp-mysql
     build:
-      context: . # Contexto Raíz
+      context: .
       dockerfile: services/mcp-mysql-sidecar/Dockerfile
     networks:
       - sql-agent-network
@@ -27,10 +27,10 @@ services:
   # -------------------------------------------------------
   # 2. CEREBRO: Agent Host (Python API)
   # -------------------------------------------------------
-  agent-host: &agent-base # Anchor para reutilizar configuración
+  agent-host: &agent-base
     container_name: agent-host
     build:
-      context: . # Contexto Raíz
+      context: .
       dockerfile: apps/agent-host/Dockerfile
     networks:
       - sql-agent-network
@@ -42,7 +42,6 @@ services:
       - SWAGGER_JSON_PATH=/app/docs/swagger.json
       - BUSINESS_CONTEXT_PATH=/app/config/business_context.yaml
     volumes:
-      # Volúmenes mapeados según tu Tree real
       - ./apps/agent-host/src:/app/src
       - ./config:/app/config
       - ./docs:/app/docs
@@ -53,17 +52,15 @@ services:
       - mcp-mysql
     ports:
       - "8000:8000"
-    # Comando ajustado al PYTHONPATH=/app/src
     command: uvicorn src.api.server:app --host 0.0.0.0 --port 8000 --reload
 
   # -------------------------------------------------------
   # 3. CANAL: Telegram Bot
   # -------------------------------------------------------
   telegram-bot:
-    <<: *agent-base # Hereda todo de agent-host
+    <<: *agent-base
     container_name: telegram-bot
-    ports: [] # No expone puertos
-    # Ruta ajustada: src/... es relativo a /app
+    ports: []
     command: python src/channels/telegram/entry.py
     restart: unless-stopped
     environment:
@@ -74,11 +71,15 @@ services:
       - SKIP_GENERATION=true
 
   # -------------------------------------------------------
+  # 4. CANAL: WhatsApp (WAHA) - ¡VERSIÓN FINAL ROBUSTA!
+  # -------------------------------------------------------
+  # -------------------------------------------------------
   # 4. CANAL: WhatsApp (WAHA)
   # -------------------------------------------------------
   waha:
     container_name: waha
-    image: devlikeapro/waha:latest
+    image: devlikeapro/waha:latest-2026.1.3
+    user: "1000:1000" # ✅ Seguridad correcta (evita problemas de permisos)
     networks:
       - sql-agent-network
     ports:
@@ -86,13 +87,29 @@ services:
     env_file:
       - .env
     environment:
-      - WHATSAPP_WEBHOOK_URL=http://agent-host:8000/api/webhook
-      - WHATSAPP_WEBHOOK_EVENTS=message
+      # --- Credenciales ---
       - WHATSAPP_API_KEY=${WAHA_API_KEY}
       - WHATSAPP_SWAGGER_USERNAME=${WHATSAPP_SWAGGER_USERNAME}
       - WHATSAPP_SWAGGER_PASSWORD=${WHATSAPP_SWAGGER_PASSWORD}
+
+      # --- Automatización de Arranque ---
+      # Esto crea el "cascarón" de la sesión automáticamente
+      - WHATSAPP_DEFAULT_ENGINE=WEBJS
+      - WHATSAPP_DEFAULT_SESSION=default
+      - WHATSAPP_START_SESSION=default
+
+      # --- Configuración Base (Red de Seguridad) ---
+      # Dejamos esto aquí para que la sesión nazca conectada.
+      # Tu código Python luego SOBRESCRIBIRÁ esto con la versión avanzada (retries).
+      - WHATSAPP_WEBHOOK_URL=http://agent-host:8000/api/v1/webhooks/whatsapp/webhook
+      - WHATSAPP_WEBHOOK_EVENTS=message
+
+      # --- Estabilidad de Chrome ---
+      - WAHA_PUPPETEER_ARGS=--disable-dev-shm-usage --no-sandbox
+      - PYTHONUNBUFFERED=1
     volumes:
-      - ./waha_sessions:/app/sessions
+      # ✅ Persistencia: Aquí se guardará lo que tu código Python configure
+      - ./waha_sessions:/app/.sessions
     restart: on-failure
 
   # -------------------------------------------------------
