@@ -6,6 +6,9 @@ import httpx
 from fastapi import APIRouter, Request, BackgroundTasks
 from langchain_core.messages import HumanMessage
 
+# 👇 1. IMPORTAR MEMORIA RAM NATIVA
+from langgraph.checkpoint.memory import MemorySaver
+
 from infra.mcp.manager import MCPSessionManager
 from agent_core.graph import build_graph
 from features.sql_analysis.loader import get_sql_tools, get_sql_system_prompt
@@ -22,6 +25,11 @@ SIDECAR_URL = os.getenv("SIDECAR_URL", "http://mcp-mysql:3002")
 
 # ID especial de WhatsApp para actualizaciones de estado (Historias)
 STATUS_BROADCAST_ID = "status@broadcast"
+
+# 👇 2. INSTANCIA GLOBAL DE MEMORIA (RAM)
+# Al estar fuera de la función, persiste mientras el servidor esté encendido.
+# Funciona como un diccionario gigante {chat_id: estado}.
+agent_memory = MemorySaver()
 
 
 async def start_typing(chat_id: str) -> None:
@@ -92,57 +100,48 @@ async def send_whatsapp_message(chat_id: str, text: str) -> None:
 
 async def process_message(chat_id: str, message_text: str) -> None:
     """
-    Orquesta el flujo de ejecución del agente: conecta a la infraestructura,
-    construye el grafo de IA, invoca al agente y envía la respuesta al usuario.
-
-    Args:
-        chat_id (str): El identificador único del chat de WhatsApp.
-        message_text (str): El mensaje de entrada del usuario.
+    Procesa el mensaje usando MemorySaver para mantener el contexto en RAM.
     """
     mcp_manager = MCPSessionManager(SIDECAR_URL)
     
     try:
-        logger.info(f"[WhatsApp] Procesando mensaje de {chat_id}: {message_text[:50]}...")
-        
-        # 1. Feedback Visual (UX)
+        logger.info(f"[WhatsApp] Procesando mensaje de {chat_id}...")
         await start_typing(chat_id)
-
-        # 2. Configuración de Infraestructura
         await mcp_manager.connect()
         
-        # 3. Inicialización del Agente
         tools = await get_sql_tools(mcp_manager)
         system_prompt = get_sql_system_prompt()
-        agent = build_graph(tools=tools, system_prompt=system_prompt)
         
-        # Configuración para LangGraph
-        # 'recursion_limit' se aumenta a 50 para manejar bucles de corrección SQL complejos.
+        # 👇 3. PASAMOS LA MEMORIA AL GRAFO
+        # MemorySaver se encarga de buscar el historial usando el thread_id
+        # y de guardar el nuevo estado al terminar.
+        agent = build_graph(
+            tools=tools, 
+            system_prompt=system_prompt, 
+            checkpointer=agent_memory
+        )
+        
+        # Configuración
         config = {
-            "configurable": {"thread_id": chat_id},
+            "configurable": {
+                "thread_id": chat_id # 🔑 La llave para recuperar la memoria de este usuario
+            },
             "recursion_limit": 50
         }
         
+        # Invocación (Ya no necesitas pasar el historial manual, LangGraph lo inyecta solo)
         inputs = {"messages": [HumanMessage(content=message_text)]}
         
-        # 4. Ejecución del Agente
-        logger.info("[WhatsApp] Invocando Agente de IA...")
+        logger.info("[WhatsApp] Invocando Agente de IA con Memoria RAM...")
         result = await agent.ainvoke(inputs, config=config)
         
         bot_response = result["messages"][-1].content
-        
-        # 5. Entrega de Respuesta
         await send_whatsapp_message(chat_id, bot_response)
 
     except Exception as e:
-        logger.error(f"[WhatsApp] Error crítico durante el procesamiento: {str(e)}")
-        # Mensaje de respaldo al usuario en caso de error técnico
-        error_message = (
-            "Lo siento, ocurrió un error interno al procesar tu solicitud. "
-            "Por favor, intenta nuevamente más tarde."
-        )
-        await send_whatsapp_message(chat_id, error_message)
+        logger.error(f"[WhatsApp] Error crítico: {str(e)}")
+        await send_whatsapp_message(chat_id, "Error interno procesando tu solicitud.")
     finally:
-        # Asegurar cierre de conexiones
         await mcp_manager.close()
 
 

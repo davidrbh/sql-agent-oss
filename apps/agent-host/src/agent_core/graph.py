@@ -1,11 +1,12 @@
 import os
-from typing import List
+from typing import List, Optional
 from langchain_openai import ChatOpenAI
 from langchain_core.tools import BaseTool
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import ToolMessage, SystemMessage, AIMessage, HumanMessage
 from langgraph.graph import StateGraph, END
 from langgraph.prebuilt import ToolNode
+from langgraph.checkpoint.base import BaseCheckpointSaver
 
 # Imports para el Validador de SQL
 from sqlglot import parse_one, exp
@@ -185,7 +186,11 @@ def sql_validator_node(state: AgentState):
 
 # --- CONSTRUCTOR DEL GRAFO CON ROUTER ---
 
-def build_graph(tools: List[BaseTool], system_prompt: str) -> StateGraph:
+def build_graph(
+    tools: List[BaseTool], 
+    system_prompt: str, 
+    checkpointer: Optional[BaseCheckpointSaver] = None
+) -> StateGraph:
     """Construye el grafo principal del agente con un router de intención."""
     
     # 1. Separar herramientas por tipo
@@ -261,4 +266,4 @@ def build_graph(tools: List[BaseTool], system_prompt: str) -> StateGraph:
     
     workflow.add_edge("tools", "agent")
 
-    return workflow.compile()
+    return workflow.compile(checkpointer=checkpointer)
