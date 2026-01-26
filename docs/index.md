@@ -36,6 +36,5 @@ La documentación está organizada siguiendo el estándar Diátaxis:
 
 ## Búsqueda Rápida
 
-- ¿Quieres instalarlo? Ve al [README](../README.md).
-- ¿Quieres entender cómo funciona la seguridad SQL? Lee [Semantic Layer](./concepts/semantic_layer.md).
-- ¿Quieres conectar una API nueva? Lee [Extending the Agent](./guides/development/extending_the_agent.md).
+- ¿Quieres entender cómo funciona la seguridad SQL? Lee [Semantic Layer](./concepts/semantic-layer.md).
+- ¿Quieres conectar una API nueva? Lee [Extending the Agent](./guides/development/extending-the-agent.md).

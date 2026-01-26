@@ -2,5 +2,5 @@
 
 El cerebro agnóstico del sistema.
 
-::: agent_core.graph
+::: core.application.workflows.graph
     handler: python

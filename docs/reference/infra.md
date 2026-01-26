@@ -2,5 +2,5 @@
 
 El gestor de conexiones y resiliencia.
 
-::: infra.mcp.manager
+::: infra.mcp.multi_server_client
     handler: python
