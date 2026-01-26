@@ -1,10 +1,6 @@
 import os
 import yaml
 from pathlib import Path
-from typing import List
-from langchain_core.tools import BaseTool
-from infra.mcp.loader import get_agent_tools as get_mcp_tools
-from infra.mcp.manager import MCPSessionManager
 
 # --- Lógica de Detección de Rutas ---
 # Detección inteligente del entorno (Docker vs Local) para encontrar la carpeta 'config'.
@@ -13,8 +9,14 @@ DOCKER_CONFIG_PATH = Path("/app/config")
 if DOCKER_CONFIG_PATH.exists():
     CONFIG_DIR = DOCKER_CONFIG_PATH
 else:
-    # Fallback para entorno local, se navega 6 niveles hacia arriba para encontrar la raíz
-    BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent.parent
+    # Fallback para entorno local
+    try:
+        # apps/agent-host/src/features/sql_analysis/loader.py -> root
+        BASE_DIR = Path(__file__).resolve().parents[5]
+    except IndexError:
+         # Fallback por si la estructura cambia
+        BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
+    
     CONFIG_DIR = BASE_DIR / "config"
 
 # --- Plantilla Base para el Prompt del Sistema ---
@@ -68,24 +70,3 @@ A continuación se definen las entidades, sinónimos y reglas de negocio. ÚSALO
 {context}
 ```
 """
-
-async def get_sql_tools(mcp_manager: MCPSessionManager) -> List[BaseTool]:
-    """Obtiene y combina todas las herramientas necesarias para la feature de SQL.
-
-    Esta función actúa como una fachada que ensambla las herramientas de diferentes
-    fuentes. Actualmente, combina las herramientas obtenidas del sidecar MCP
-    (como la ejecución de consultas SQL) y las herramientas para invocar APIs
-    (como la consulta de APIs REST externas).
-
-    Args:
-        mcp_manager: Una instancia de MCPSessionManager para comunicarse con el sidecar.
-
-    Returns:
-        Una lista combinada de objetos BaseTool que el agente podrá utilizar.
-    """
-    from agent_core.api.loader import load_api_tools
-    
-    mcp_tools = await get_mcp_tools(mcp_manager)
-    api_tools = load_api_tools() # Lee la configuración desde el entorno
-    
-    return mcp_tools + api_tools

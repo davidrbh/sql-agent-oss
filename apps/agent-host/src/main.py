@@ -5,21 +5,20 @@ import asyncio
 from langchain_core.messages import HumanMessage, AIMessage
 
 # --- MCP Imports ---
-from mcp import ClientSession
-from mcp.client.sse import sse_client
-from infra.mcp.manager import MCPSessionManager
+from core.application.container import Container
 
 # --- FEATURE Imports (Arquitectura Híbrida) ---
 # Cargamos la "feature" de Análisis SQL específicamente.
-from features.sql_analysis.loader import get_sql_tools, get_sql_system_prompt
+from features.sql_analysis.loader import get_sql_system_prompt
 
 # --- CONFIGURACIÓN DE PATH ---
 # Aseguramos que el sistema pueda encontrar el paquete 'src'
 current_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.join(current_dir, 'src'))
+if current_dir not in sys.path:
+    sys.path.append(current_dir)
 
 # Importamos el cerebro del agente
-from agent_core.graph import build_graph
+from core.application.workflows.graph import build_graph
 
 # URL interna de Docker
 SIDECAR_URL = os.getenv("SIDECAR_URL", "http://mcp-mysql:3002")
@@ -34,71 +33,55 @@ async def on_chat_start():
     """
     
     # 1. Feedback inicial
-    msg = cl.Message(content="🔌 Conectando con el Sidecar MySQL (MCP Protocol)...")
+    msg = cl.Message(content="🔌 Conectando con el ecosistema de micro-agentes (MCP)...")
     await msg.send()
 
     try:
-        # 2. Inicializar Conexión MCP Persistente (Auto-Reconnect)
-        # Usamos MCPSessionManager para manejar reconexiones automáticas si el socket se cierra.
-        mcp_manager = MCPSessionManager(SIDECAR_URL)
-        await mcp_manager.connect()
+        # 2. Obtener Proveedor de Herramientas y Checkpointer desde el Contenedor
+        tool_provider = Container.get_tool_provider()
+        checkpointer_manager = Container.get_checkpointer()
         
-        cl.user_session.set("mcp_manager", mcp_manager)
-        
-        msg.content = "✅ Conexión MCP Establecida. Cargando herramientas..."
+        msg.content = "✅ Conexión establecida. Cargando herramientas y memoria..."
         await msg.update()
 
-        # 3. Cargar Herramientas y Contexto (Feature SQL)
-        # Usamos el loader específico de la feature SQL
-        tools = await get_sql_tools(mcp_manager)
+        # 3. Cargar Herramientas y Contexto
+        tools = await tool_provider.get_tools()
         system_prompt = get_sql_system_prompt()
         
         tool_names = [t.name for t in tools]
-        msg.content = f"🔧 Herramientas cargadas: {tool_names}. Construyendo Cerebro..."
+        msg.content = f"🔧 Herramientas cargadas: {tool_names}. Configurando persistencia..."
         await msg.update()
 
-        # 4. Construir Grafo
-        # Ahora inyectamos explícitamente el prompt y las herramientas
-        graph = build_graph(tools, system_prompt)
-        cl.user_session.set("graph", graph)
+        # 4. Construir Grafo con Persistencia PostgreSQL
+        async with checkpointer_manager.get_saver() as saver:
+            graph = build_graph(tools, system_prompt, checkpointer=saver)
+            cl.user_session.set("graph", graph)
+            
         cl.user_session.set("history", [])
 
         # 5. Bienvenida Final
-        msg.content = """👋 **¡Hola! Soy SQL Agent v2.1**
+        msg.content = """👋 **¡Hola! Soy SQL Agent v3.0 (SOA Ready)**
         
-Estoy conectado a tu entorno híbrido (Base de Datos + APIs).
+Estoy operando bajo una arquitectura orientada a servicios y persistencia robusta.
 Puedo ayudarte a:
-* 📊 Consultar datos históricos SQL.
-* 🔌 Verificar estados en tiempo real vía API.
-* 🔄 Corregir mis propios errores si algo falla.
+* 📊 Consultar datos históricos SQL con validación AST.
+* 🔌 Interactuar con múltiples micro-servicios MCP.
+* 💾 Mantener el contexto de nuestra charla incluso tras reinicios.
 
-_¿Qué necesitas saber hoy?_"""
+_¿Qué consulta deseas realizar?_"""
         await msg.update()
 
     except Exception as e:
-        msg.content = f"❌ **Error Fatal:** No se pudo conectar al Sidecar.\n\nError: {e}"
+        msg.content = f"❌ **Error Fatal:** No se pudo inicializar el entorno.\n\nError: {e}"
         await msg.update()
+        print(f"Error en on_chat_start: {e}")
 
 @cl.on_chat_end
 async def on_chat_end():
     """Limpieza de recursos al cerrar la pestaña"""
-    # 1. Cerrar Cliente MCP
-    manager = cl.user_session.get("mcp_manager")
-    if manager:
-        await manager.close()
-        try:
-            await client.__aexit__(None, None, None)
-        except Exception as e:
-            print(f"Error cerrando Cliente MCP: {e}")
-
-    # 2. Cerrar Transporte SSE
-    sse_ctx = cl.user_session.get("sse_ctx")
-    if sse_ctx:
-        print("🛑 Cerrando conexión MCP...")
-        try:
-            await sse_ctx.__aexit__(None, None, None)
-        except Exception as e:
-            print(f"Error cerrando SSE: {e}")
+    # En la v3.0, los recursos globales se mantienen en el Container
+    # para optimizar la reutilización de pools entre sesiones.
+    pass
 
 @cl.on_message
 async def on_message(message: cl.Message):

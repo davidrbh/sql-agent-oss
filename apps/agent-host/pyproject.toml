@@ -20,6 +20,8 @@ cryptography = "^42.0.0" # Necesario para autenticación en MySQL 8
 
 # Driver Postgres (Lo dejamos por si acaso, no estorba)
 asyncpg = "^0.29.0"
+psycopg = {extras = ["binary", "pool"], version = "^3.2.4"}
+langgraph-checkpoint-postgres = "^2.0.9"
 
 # --- Manejo de Datos y Fuzzy Search ---
 pandas = "^2.2.0"           

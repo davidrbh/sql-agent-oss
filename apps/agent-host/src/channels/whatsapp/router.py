@@ -10,7 +10,7 @@ from langchain_core.messages import HumanMessage
 from langgraph.checkpoint.memory import MemorySaver
 
 from infra.mcp.manager import MCPSessionManager
-from agent_core.graph import build_graph
+from core.application.workflows.graph import build_graph
 from features.sql_analysis.loader import get_sql_tools, get_sql_system_prompt
 
 # Configuración del logger a nivel de módulo

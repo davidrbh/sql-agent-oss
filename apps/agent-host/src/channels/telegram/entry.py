@@ -8,8 +8,8 @@ from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, Messa
 # --- IMPORTAMOS EL CEREBRO UNIFICADO ---
 from langchain_core.messages import HumanMessage
 # Asegúrate de que estas rutas existan en tu agent_core
-from agent_core.graph import build_graph 
-from agent_core.main import build_context 
+from core.application.workflows.graph import build_graph 
+# from agent_core.main import build_context # DEPRECATED
 
 # Cargar variables de entorno
 load_dotenv()
@@ -24,6 +24,10 @@ logger = logging.getLogger(__name__)
 # --- ESTADO GLOBAL ---
 global_graph = None
 user_histories = {} 
+
+# --- IMPORTAMOS EL CONTENEDOR ---
+from core.application.container import Container
+from features.sql_analysis.loader import get_sql_system_prompt
 
 async def initialize_agent():
     """
@@ -42,13 +46,28 @@ async def initialize_agent():
 
     for attempt in range(max_retries):
         try:
-            # 1. Construimos el contexto (Esto intenta conectar al MCP Sidecar)
-            # Si el sidecar no está listo, esto lanzará una excepción
-            context = await build_context()
+            # 1. Obtener recursos del Container
+            tool_provider = Container.get_tool_provider()
+            checkpointer_manager = Container.get_checkpointer()
+
+            # 2. Cargar Herramientas
+            tools = await tool_provider.get_tools()
+            system_prompt = get_sql_system_prompt()
+
+            # 3. Construir Grafo con Persistencia
+            # Nota: Para Telegram (memoria simple en RAM por usuario en v3),
+            # podríamos usar el checkpointer o mantener la memoria local como estaba.
+            # Para consistencia con la arquitectura v4, usaremos checkpointer si queremos persistencia real,
+            # o MemorySaver si queremos simplicidad.
+            # Aquí, para minimizar cambios drásticos en la lógica de 'user_histories' existente en Telegram,
+            # construiremos el grafo SIN checkpointer por defecto (MemorySaver implícito en LangGraph)
+            # o lo inyectamos pero Telegram gestiona su historial.
             
-            # 2. Construimos el grafo
-            # Usamos unpacking (**) asumiendo que build_context retorna {'tools': ..., 'system_prompt': ...}
-            global_graph = build_graph(**context)
+            # Sin embargo, el build_graph ACEPTA checkpointer.
+            # Para este refactor rápido, lo pasaremos como None (memoria volátil)
+            # ya que TelegramBot maneja su propio 'user_histories' en este archivo.
+            # TODO: Migrar Telegram a usar Checkpointer nativo de LangGraph.
+            global_graph = build_graph(tools, system_prompt, checkpointer=None)
             
             logger.info("🧠 [Telegram] Agente CONECTADO y LISTO (Clasificador + SQL + API).")
             return global_graph

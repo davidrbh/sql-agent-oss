@@ -1,5 +1,6 @@
 import os
 import yaml
+import json
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -56,6 +57,30 @@ class ConfigLoader:
         return cls._settings
 
     
+    @classmethod
+    def get_mcp_config(cls) -> str:
+        """Retrieves the MCP server configuration as a JSON string.
+        
+        Prioritizes the MCP_SERVERS_CONFIG environment variable. If missing, 
+        it falls back to a legacy SIDECAR_URL mapping.
+        """
+        config = os.getenv("MCP_SERVERS_CONFIG")
+        if config:
+            return config
+            
+        # Fallback for backward compatibility with v2.x
+        sidecar_url = os.getenv("SIDECAR_URL")
+        if sidecar_url:
+            print("⚠️ Using legacy SIDECAR_URL fallback. Consider migrating to MCP_SERVERS_CONFIG.")
+            return json.dumps({
+                "default": {
+                    "transport": "sse",
+                    "url": f"{sidecar_url}/sse"
+                }
+            })
+            
+        return "{}"
+
     @staticmethod
     def _find_project_root():
         # src/agent_core/config/loader.py -> ... -> root

@@ -19,7 +19,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.join(current_dir, 'src'))
 
 # Importamos el cerebro del agente
-from agent_core.graph import build_graph
+from core.application.workflows.graph import build_graph
 
 # URL interna de Docker
 SIDECAR_URL = os.getenv("SIDECAR_URL", "http://mcp-mysql:3002")

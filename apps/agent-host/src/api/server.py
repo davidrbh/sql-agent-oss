@@ -26,6 +26,7 @@ engineio.payload.Payload.max_decode_packets = 500
 
 # Importación tardía de rutas para asegurar que el entorno esté cargado
 from channels.whatsapp.router import router as whatsapp_router
+from core.application.container import Container
 
 # --- 2. CONFIGURACIÓN DE LOGGING Y CONSTANTES ---
 
@@ -159,8 +160,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
     
     yield
     
-    # Lógica de cierre (Shutdown) - Si se requiere limpieza en el futuro
+    # Lógica de cierre (Shutdown)
     logger.info("Apagando servidor API...")
+    await Container.cleanup()
 
 
 app = FastAPI(

@@ -25,6 +25,29 @@ services:
     restart: unless-stopped
 
   # -------------------------------------------------------
+  # 1.5 MEMORIA: PostgreSQL (LangGraph Persistence)
+  # -------------------------------------------------------
+  agent-memory:
+    container_name: agent-memory
+    image: postgres:16-alpine
+    networks:
+      - sql-agent-network
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${MEMORY_DB_USER:-postgres}
+      - POSTGRES_PASSWORD=${MEMORY_DB_PASSWORD:-postgres}
+      - POSTGRES_DB=${MEMORY_DB_NAME:-agent_memory}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # -------------------------------------------------------
   # 2. CEREBRO: Agent Host (Python API)
   # -------------------------------------------------------
   agent-host: &agent-base
@@ -37,6 +60,13 @@ services:
     env_file:
       - .env
     environment:
+      # Configuración de Memoria Persistente
+      - DB_URI=postgresql://${MEMORY_DB_USER:-postgres}:${MEMORY_DB_PASSWORD:-postgres}@agent-memory:5432/${MEMORY_DB_NAME:-agent_memory}
+      
+      # Configuración SOA (MCP Servers)
+      - MCP_SERVERS_CONFIG={"default":{"transport":"sse","url":"http://mcp-mysql:3002/sse"}}
+      
+      # Fallbacks Legacy
       - SIDECAR_URL=${SIDECAR_URL}
       - PYTHONPATH=/app/src
       - SWAGGER_JSON_PATH=/app/docs/swagger.json
@@ -54,6 +84,7 @@ services:
       - ./data:/app/data
     depends_on:
       - mcp-mysql
+      - agent-memory
     ports:
       - "8000:8000"
     command: uvicorn src.api.server:app --host 0.0.0.0 --port 8000 --reload
@@ -118,6 +149,10 @@ services:
     volumes:
       - ./docs:/app/docs
       - ./mkdocs.yml:/app/mkdocs.yml
+
+volumes:
+  postgres_data:
+    driver: local
 
 networks:
   sql-agent-network:

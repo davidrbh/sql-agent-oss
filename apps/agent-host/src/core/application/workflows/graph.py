@@ -9,10 +9,10 @@ from langgraph.prebuilt import ToolNode
 from langgraph.checkpoint.base import BaseCheckpointSaver
 
 # Imports para el Validador de SQL
-from sqlglot import parse_one, exp
+from features.sql_analysis.tools.sql_guard import SQLGuard
 
 # Importa tu estado, ahora con el campo 'intent'
-from agent_core.core.state import AgentState 
+from core.domain.state import AgentState
 
 # --- NODO 1: CLASIFICADOR DE INTENCIÓN ---
 
@@ -150,38 +150,54 @@ def agent_node(state: AgentState, llm_with_tools: dict, system_prompt: str):
 
 def sql_validator_node(state: AgentState):
     """
-    Nodo de validación de seguridad para consultas SQL. (Sin cambios)
+    Nodo de seguridad que valida y normaliza las consultas SQL.
+    
+    Usa SQLGuard para realizar transpilación defensiva, eliminar comentarios 
+    maliciosos y asegurar que las operaciones sean estrictamente de solo lectura.
+    Si una consulta es insegura, devuelve un ToolMessage con el error para permitir 
+    que el agente la corrija.
     """
-    print("🛡️ [Node: SQL Validator] Validando consulta SQL...")
+    print("🛡️ [Node: SQL Validator] Validando y normalizando SQL...")
     messages = state["messages"]
     last_message = messages[-1]
 
     if not isinstance(last_message, AIMessage) or not last_message.tool_calls:
         return {"messages": []}
 
+    guard = SQLGuard(dialect="mysql")
+    new_messages = []
+
     for tool_call in last_message.tool_calls:
         if tool_call.get("name") == "query":
             sql_query = tool_call.get("args", {}).get("sql")
             if not sql_query:
-                return {"messages": [ToolMessage(content="Error: Query SQL vacía.", tool_call_id=tool_call.get("id"), name="query")]}
+                new_messages.append(ToolMessage(
+                    content="Error: Empty SQL query.", 
+                    tool_call_id=tool_call.get("id"), 
+                    name="query"
+                ))
+                continue
 
-            try:
-                parsed_expression = parse_one(sql_query, read="mysql")
-                forbidden_names = ["Drop", "Delete", "Insert", "Update", "Create", "Grant", "Revoke", "Alter", "AlterTable", "Truncate", "TruncateTable", "Command"]
-                forbidden_nodes = [getattr(exp, name) for name in forbidden_names if hasattr(exp, name)]
-                
-                if parsed_expression and parsed_expression.find(*tuple(forbidden_nodes)):
-                    found_node = parsed_expression.find(*tuple(forbidden_nodes))
-                    error_msg = f"⛔ SEGURIDAD: Operación prohibida detectada ({found_node.key.upper()}). Solo se permite SELECT."
-                    print(f"❌ {error_msg}")
-                    return {"messages": [ToolMessage(content=error_msg, tool_call_id=tool_call.get("id"), name="query")]}
-            except Exception as e:
-                error_msg = f"⚠️ Error de Parsing SQL: {str(e)}. Consulta bloqueada por precaución."
-                print(f"❌ {error_msg}")
-                return {"messages": [ToolMessage(content=error_msg, tool_call_id=tool_call.get("id"), name="query")]}
+            is_safe, safe_sql, error_msg = guard.validate_and_transpile(sql_query)
+            
+            if not is_safe:
+                print(f"❌ Violación de seguridad: {error_msg}")
+                new_messages.append(ToolMessage(
+                    content=f"⛔ ERROR DE SEGURIDAD: {error_msg}", 
+                    tool_call_id=tool_call.get("id"), 
+                    name="query"
+                ))
+            else:
+                # Actualizar la llamada a la herramienta con el SQL transpilado (seguro)
+                # Nota: En LangGraph, normalmente reemplazamos los args de tool_call en el estado
+                # si queremos que el nodo tool_node posterior use la versión modificada.
+                # Sin embargo, dado que no podemos mutar fácilmente AIMessage aquí,
+                # solo lo registramos por ahora. En una v4 real, necesitaríamos una
+                # actualización de estado más compleja o un ToolNode personalizado.
+                print(f"✅ SQL validado y normalizado.")
+                tool_call["args"]["sql"] = safe_sql # Intento de mutación
 
-    print("✅ Consulta(s) SQL validadas y seguras.")
-    return {"messages": []}
+    return {"messages": new_messages}
 
 
 # --- CONSTRUCTOR DEL GRAFO CON ROUTER ---
