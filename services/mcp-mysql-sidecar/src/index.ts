@@ -28,11 +28,10 @@ const pool = mysql.createPool({
 
 const start = async () => {
   await fastify.register(cors, {
-    origin: true, // Allow all origins for dev simplicity, tune for prod
+    origin: true, // Permitir todos los orígenes para simplicidad en desarrollo
   });
 
-  // Bypass default JSON parsing so MCP SDK can consume the raw stream
-  // "payload" here is the incoming stream
+  // Bypass al parsing JSON por defecto para que el SDK de MCP consuma el stream crudo
   fastify.addContentTypeParser("application/json", (req, payload, done) => {
     done(null, payload);
   });
@@ -49,15 +48,14 @@ const start = async () => {
     },
   );
 
-  // Define tools
+  // Definir herramientas
   server.setRequestHandler(ListToolsRequestSchema, async () => {
-    // Simulated async operation
     await Promise.resolve();
     return {
       tools: [
         {
           name: "query",
-          description: "Execute a SQL query",
+          description: "Ejecuta una consulta SQL segura (Solo LECTURA)",
           inputSchema: {
             type: "object",
             properties: {
@@ -72,24 +70,36 @@ const start = async () => {
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     if (request.params.name === "query") {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const sql = Array.isArray(request.params.arguments?.sql)
         ? request.params.arguments?.sql[0]
         : request.params.arguments?.sql;
 
       if (typeof sql !== "string") {
-        throw new TypeError("Invalid SQL argument");
+        throw new TypeError("Argumento SQL inválido");
+      }
+
+      // --- CAPA DE SEGURIDAD V4 (Defensa en Profundidad) ---
+      // Aunque el Host ya valida, el Sidecar es la última línea de defensa.
+      // Rechazamos cualquier cosa que no empiece por SELECT (case insensitive).
+      const upperSql = sql.trim().toUpperCase();
+      if (!upperSql.startsWith("SELECT") && !upperSql.startsWith("DESCRIBE") && !upperSql.startsWith("SHOW")) {
+         return {
+          isError: true,
+          content: [
+            { type: "text", text: `⛔ SEGURIDAD: El Sidecar ha bloqueado esta consulta. Solo se permiten operaciones de lectura (SELECT/DESCRIBE/SHOW).` },
+          ],
+        };
       }
 
       try {
-        // 2. REAL EXECUTION (Replaces Mock)
+        // 2. EJECUCIÓN REAL
         const [rows] = await pool.execute(sql);
 
         return {
           content: [
             {
               type: "text",
-              text: JSON.stringify(rows, null, 2), // Return real data as JSON
+              text: JSON.stringify(rows, null, 2),
             },
           ],
         };
@@ -97,12 +107,12 @@ const start = async () => {
         return {
           isError: true,
           content: [
-            { type: "text", text: `MySQL Error: ${(error as Error).message}` },
+            { type: "text", text: `Error MySQL: ${(error as Error).message}` },
           ],
         };
       }
     }
-    throw new Error("Tool not found");
+    throw new Error("Herramienta no encontrada");
   });
 
   // Map of sessionId -> Transport
