@@ -59,10 +59,11 @@ class ConfigLoader:
     
     @classmethod
     def get_mcp_config(cls) -> str:
-        """Retrieves the MCP server configuration as a JSON string.
+        """
+        Recupera la configuración del servidor MCP como una cadena JSON.
         
-        Prioritizes the MCP_SERVERS_CONFIG environment variable. If missing, 
-        it falls back to a legacy SIDECAR_URL mapping.
+        Prioriza la variable de entorno MCP_SERVERS_CONFIG. Si falta, 
+        recurre a un mapeo heredado de SIDECAR_URL.
         """
         config = os.getenv("MCP_SERVERS_CONFIG")
         if config:
