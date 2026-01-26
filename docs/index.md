@@ -9,28 +9,28 @@ La documentación está organizada siguiendo el estándar Diátaxis:
 ### 🧠 [Conceptos](./concepts/)
 *Entiende el "por qué" y la filosofía del diseño.*
 - [Arquitectura General (Hybrid Slice)](./concepts/architecture.md)
-- [Capa Semántica y Seguridad](./concepts/semantic_layer.md)
+- [Capa Semántica y Seguridad](./concepts/semantic-layer.md)
 - [Límites del Proyecto](./concepts/boundaries.md)
 
 ### 🚀 [Guías](./guides/)
 *Tutoriales paso a paso para configurar y extender.*
 - **Setup:**
-    - [Integración con WhatsApp](./guides/setup/whatsapp_integration.md)
-    - [Configuración de Terminal WARP](./guides/setup/warp_terminal.md)
+    - [Integración con WhatsApp](./guides/setup/whatsapp-integration.md)
+    - [Configuración de Terminal WARP](./guides/setup/warp-terminal.md)
 - **Desarrollo:**
-    - [Cómo Extender el Agente](./guides/development/extending_the_agent.md)
-    - [Personalizar la UI (Chainlit)](./guides/development/chainlit_ui.md)
+    - [Cómo Extender el Agente](./guides/development/extending-the-agent.md)
+    - [Personalizar la UI (Chainlit)](./guides/development/chainlit-ui.md)
 
 ### 📚 [Referencia](./reference/)
 *Especificaciones técnicas detalladas.*
 - [Configuración de Infraestructura](./reference/config/infrastructure.md)
 - [API Swagger](./reference/api/swagger.json)
-- [Módulos del Core](./reference/agent_core.md)
+- [Módulos del Core](./reference/agent-core.md)
 
 ### 🏛️ [ADR (Architecture Decision Records)](./adr/)
 *Historial de decisiones técnicas importantes.*
-- [001: Stack Tecnológico](./adr/001_tech_stack.md)
-- [002: Roadmap de Modernización v3](./adr/002_modernization_roadmap_v3.md)
+- [0001: Stack Tecnológico](./adr/0001-tech-stack.md)
+- [0002: Roadmap de Modernización v3](./adr/0002-modernization-roadmap-v3.md)
 
 ---
 
