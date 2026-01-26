@@ -38,19 +38,21 @@ plugins:
 
 nav:
   - Inicio: index.md
-  - Arquitectura:
-      - 'Visión General': 01_architecture/overview.md
-      - 'Límites del Proyecto': 01_architecture/project_boundaries.md
-      - 'Stack Tecnológico': 01_architecture/tech_stack_decisions.md
-      - 'Migración MCP': 06_mcp_migration_spec.md
-  - Componentes:
-      - 'Infraestructura': 02_setup_infra/infrastructure_spec.md
-      - 'Capa Semántica': 03_semantic_layer/semantic_spec.md
-      - 'Integración WhatsApp': 05_whatsapp_integration.md
-  - Guías Avanzadas:
-      - 'Extender el Agente': 04_optimization/how_to_extend.md
-      - 'Roadmap de Modernización': 04_optimization/modernization_roadmap.md
-  - Referencia de Código (API):
-      - 'Agent Core': reference/agent_core.md
+  - Conceptos:
+      - 'Arquitectura SOA': concepts/architecture.md
+      - 'Capa Semántica y Seguridad': concepts/semantic-layer.md
+      - 'Límites del Proyecto': concepts/boundaries.md
+  - Guías de Setup:
+      - 'Integración WhatsApp': guides/setup/whatsapp-integration.md
+      - 'Terminal WARP': guides/setup/warp-terminal.md
+  - Guías de Desarrollo:
+      - 'Extender el Agente': guides/development/extending-the-agent.md
+      - 'Personalizar UI (Chainlit)': guides/development/chainlit-ui.md
+  - Referencia Técnica:
+      - 'Infraestructura Docker': reference/config/infrastructure.md
+      - 'Agent Core': reference/agent-core.md
       - 'Features (SQL)': reference/features.md
       - 'Infra (MCP)': reference/infra.md
+  - ADR (Decisiones):
+      - '0001: Stack Tecnológico': adr/0001-tech-stack.md
+      - '0002: Roadmap v3 (Histórico)': adr/0002-modernization-roadmap-v3.md
