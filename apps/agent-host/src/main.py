@@ -1,50 +1,45 @@
+"""Punto de entrada principal para la interfaz de usuario (Chainlit).
+
+Este módulo gestiona la lógica de la conversación mediante Web UI, integrando
+el núcleo del agente, el descubrimiento de herramientas y la persistencia
+del estado en PostgreSQL.
+"""
+
 import sys
 import os
-import chainlit as cl
 import asyncio
+import logging
+import chainlit as cl
 from langchain_core.messages import HumanMessage, AIMessage
 
-# --- MCP Imports ---
 from core.application.container import Container
-
-# --- FEATURE Imports (Arquitectura Híbrida) ---
-# Cargamos la "feature" de Análisis SQL específicamente.
+from core.application.workflows.graph import build_graph
 from features.sql_analysis.loader import get_sql_system_prompt
 
-# --- CONFIGURACIÓN DE PATH ---
-# Aseguramos que el sistema pueda encontrar el paquete 'src'
+# Asegurar la correcta resolución de rutas para el paquete 'src'
 current_dir = os.path.dirname(os.path.abspath(__file__))
 if current_dir not in sys.path:
     sys.path.append(current_dir)
 
-# Importamos el cerebro del agente
-from core.application.workflows.graph import build_graph
+logger = logging.getLogger("ui.main")
 
-# URL interna de Docker
-SIDECAR_URL = os.getenv("SIDECAR_URL", "http://mcp-mysql:3002")
-
-# --- EVENTOS DE CHAINLIT ---
 
 @cl.on_chat_start
 async def on_chat_start():
     """
-    Se ejecuta cuando un nuevo usuario inicia una sesión.
-    Aquí inicializamos la conexión MCP, cargamos herramientas y construimos el grafo.
+    Inicializa la sesión de chat, cargando herramientas y configurando el grafo.
     """
-    
-    # 1. Feedback inicial
     msg = cl.Message(content="🔌 Conectando con el ecosistema de micro-agentes (MCP)...")
     await msg.send()
 
     try:
-        # 2. Obtener Proveedor de Herramientas y Checkpointer desde el Contenedor
+        # Obtener dependencias desde el contenedor global
         tool_provider = Container.get_tool_provider()
         checkpointer_manager = Container.get_checkpointer()
         
         msg.content = "✅ Conexión establecida. Cargando herramientas y memoria..."
         await msg.update()
 
-        # 3. Cargar Herramientas y Contexto
         tools = await tool_provider.get_tools()
         system_prompt = get_sql_system_prompt()
         
@@ -52,15 +47,14 @@ async def on_chat_start():
         msg.content = f"🔧 Herramientas cargadas: {tool_names}. Configurando persistencia..."
         await msg.update()
 
-        # 4. Construir Grafo con Persistencia PostgreSQL
+        # Construcción del grafo con persistencia transaccional
         async with checkpointer_manager.get_saver() as saver:
             graph = build_graph(tools, system_prompt, checkpointer=saver)
             cl.user_session.set("graph", graph)
             
         cl.user_session.set("history", [])
 
-        # 5. Bienvenida Final
-        msg.content = """👋 **¡Hola! Soy SQL Agent v3.0 (SOA Ready)**
+        msg.content = """👋 **¡Hola! Soy SQL Agent v4.0 (SOA Ready)**
         
 Estoy operando bajo una arquitectura orientada a servicios y persistencia robusta.
 Puedo ayudarte a:
@@ -72,42 +66,40 @@ _¿Qué consulta deseas realizar?_"""
         await msg.update()
 
     except Exception as e:
+        logger.error(f"Error fatal en inicio de chat: {e}")
         msg.content = f"❌ **Error Fatal:** No se pudo inicializar el entorno.\n\nError: {e}"
         await msg.update()
-        print(f"Error en on_chat_start: {e}")
+
 
 @cl.on_chat_end
 async def on_chat_end():
-    """Limpieza de recursos al cerrar la pestaña"""
-    # En la v3.0, los recursos globales se mantienen en el Container
-    # para optimizar la reutilización de pools entre sesiones.
+    """
+    Gestiona la limpieza de recursos al finalizar la sesión.
+    Nota: Los recursos globales persisten en el Container para su reutilización.
+    """
     pass
+
 
 @cl.on_message
 async def on_message(message: cl.Message):
     """
-    Manejador con UI "Status Bar Efímero".
-    - Feedback Visual: Un mensaje que cambia dinámicamente ("🔄...", "💾...").
-    - Limpieza: El mensaje de estado SE BORRA antes de mostrar la respuesta final.
+    Manejador principal de mensajes con soporte para streaming y feedback visual.
     """
     graph = cl.user_session.get("graph")
     history = cl.user_session.get("history")
     
     if graph is None or history is None:
-        await cl.Message(content="⚠️ No se puede procesar el mensaje porque la conexión inicial con el Sidecar falló. Por favor, revisa los logs y reinicia el chat.").send()
+        await cl.Message(content="⚠️ Error de conexión inicial. Reinicia el chat.").send()
         return
 
-    # 1. Mensaje de Estado (Ephemeral Status Bar)
     status_msg = cl.Message(content="🔄 _Iniciando..._")
     await status_msg.send()
 
-    # Contenedor para respuesta final
     final_response_msg = cl.Message(content="")
     final_answer_started = False
     full_response_text = ""
 
     try:
-        # Añadir mensaje del usuario al historial
         history.append(HumanMessage(content=message.content))
         inputs = {"messages": history}
         config = {"configurable": {"thread_id": cl.context.session.id}}
@@ -117,43 +109,31 @@ async def on_message(message: cl.Message):
             name = event.get("name", "")
             data = event.get("data", {})
             
-            # --- 2. FEEDBACK VISUAL (Status Bar) ---
+            # Gestión de la barra de estado efímera
             if kind == "on_chain_start":
                 if name == "intent_classifier_node":
                     status_msg.content = "🚦 _Clasificando Intención..._"
                     await status_msg.update()
-                    await asyncio.sleep(0.7) # Smooth transition
-                elif name == "sql_validator_node":
-                    status_msg.content = "🛡️ _Validando Seguridad SQL..._"
-                    await status_msg.update()
-                    await asyncio.sleep(0.7) # Smooth transition
-                elif name == "agent": # FIX: Nombre real del nodo es 'agent'
+                elif name == "agent":
                     status_msg.content = "🧠 _Generando Respuesta..._"
                     await status_msg.update()
-                    await asyncio.sleep(0.7) # Smooth transition
                     
             elif kind == "on_tool_start":
                 status_msg.content = f"🛠️ _Ejecutando Herramienta: {name}..._"
                 await status_msg.update()
-                await asyncio.sleep(0.7) # Smooth transition
                 
             elif kind == "on_tool_end":
-                status_msg.content = "✅ _Datos obtenidos. Procesando..._"
+                status_msg.content = "✅ _Procesando resultados..._"
                 await status_msg.update()
-                await asyncio.sleep(0.7) # Smooth transition
 
-            # --- 3. STREAMING RESPUESTA FINAL ---
+            # Streaming de la respuesta final del modelo
             elif kind == "on_chat_model_stream":
-                # Verificamos origen. Metadata suele tener 'langgraph_node'
                 node_name = event.get("metadata", {}).get("langgraph_node", "")
                 
-                # 'agent' es el nodo que habla con el usuario final.
-                # 'intent_classifier' tambien usa LLM pero es interno.
                 if node_name == "agent" or not node_name:
                     chunk_content = data["chunk"].content
                     if chunk_content:
                         if not final_answer_started:
-                            # Primer token: borramos status y mostramos respuesta
                             await status_msg.remove()
                             final_answer_started = True
                             await final_response_msg.send()
@@ -161,29 +141,21 @@ async def on_message(message: cl.Message):
                         await final_response_msg.stream_token(chunk_content)
                         full_response_text += chunk_content
 
-        # --- 4. FINALIZACIÓN ---
-        
         if not final_answer_started:
-            # Fallback: Si no hubo streaming (ej. respuesta muy corta o error en stream),
-            # verificamos si el grafo devolvió algo en el último estado.
-            # Como astream_events iteró, el último estado está 'implícito'.
-            # Para simplificar, si no hubo stream, borramos status y enviamos mensaje genérico o error.
             await status_msg.remove()
             if not full_response_text:
-                await cl.Message(content="✅ Proceso completado (Sin respuesta de texto generada).").send()
+                await cl.Message(content="✅ Proceso completado.").send()
         else:
             await final_response_msg.update()
         
-        # Guardar en historial la respuesta completa del asistente
         if full_response_text:
             history.append(AIMessage(content=full_response_text))
             cl.user_session.set("history", history)
             
     except Exception as e:
-        # Error handling
+        logger.error(f"Error procesando mensaje: {e}")
         if not final_answer_started:
             status_msg.content = f"❌ **Error:** {str(e)}"
             await status_msg.update()
         else:
-            await cl.Message(content=f"❌ **Error ocurrido durante la respuesta:** {str(e)}").send()
-        print(f"Error en on_message: {e}")
+            await cl.Message(content="❌ Ocurrió un error durante la respuesta.").send()
