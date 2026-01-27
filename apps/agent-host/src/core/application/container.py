@@ -1,3 +1,11 @@
+"""
+Contenedor de inyección de dependencias.
+
+Este módulo implementa el patrón Container para gestionar el ciclo de vida
+de las dependencias compartidas de la aplicación, como la persistencia y
+los proveedores de herramientas.
+"""
+
 import os
 import logging
 from typing import Optional
@@ -14,7 +22,7 @@ class Container:
     Contenedor de Inyección de Dependencias para el ecosistema del agente.
     
     Esta clase gestiona el ciclo de vida de componentes de infraestructura compartidos 
-    como pools de conexiones y clientes MCP, asegurando que se usen singletons donde sea apropiado.
+    como pools de conexiones y clientes MCP, asegurando que se usen singletons.
     """
 
     _checkpointer: Optional[PostgresCheckpointer] = None
@@ -25,12 +33,12 @@ class Container:
         """
         Devuelve el singleton global del checkpointer PostgreSQL.
         
-        Requiere que la variable de entorno DB_URI esté configurada.
+        Returns:
+            PostgresCheckpointer: Instancia del checkpointer configurado.
         """
         if cls._checkpointer is None:
             db_uri = os.getenv("DB_URI")
             if not db_uri:
-                # Fallback para desarrollo local si no se proporciona
                 db_uri = "postgresql://postgres:postgres@localhost:5432/agent_memory"
             
             cls._checkpointer = PostgresCheckpointer(db_uri)
@@ -41,7 +49,8 @@ class Container:
         """
         Devuelve el singleton global del proveedor de herramientas compuesto.
         
-        Agrega herramientas tanto de servidores MCP como de definiciones de API locales.
+        Returns:
+            CompositeToolProvider: Instancia del proveedor de herramientas.
         """
         if cls._tool_provider is None:
             config_json = ConfigLoader.get_mcp_config()
@@ -51,7 +60,9 @@ class Container:
 
     @classmethod
     async def cleanup(cls):
-        """Cierra ordenadamente todos los recursos compartidos."""
+        """
+        Cierra ordenadamente todos los recursos compartidos.
+        """
         if cls._checkpointer:
             await cls._checkpointer.close()
         if cls._tool_provider:

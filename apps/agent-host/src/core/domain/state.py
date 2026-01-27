@@ -1,16 +1,22 @@
-from typing import TypedDict, Annotated, List, Dict, Any
+"""
+Definición del estado del agente.
+
+Este módulo define la estructura de datos que representa el estado interno
+del agente durante una ejecución del grafo, incluyendo el historial de 
+mensajes y la intención detectada.
+"""
+
+from typing import TypedDict, Annotated, List
 import operator
 from langchain_core.messages import BaseMessage
 
 class AgentState(TypedDict):
     """
     Representa la 'Memoria de Trabajo' del Agente durante una conversación.
-    LangGraph pasará este objeto entre los nodos.
+    
+    Attributes:
+        messages: Lista de mensajes (Human, AI, Tool) que se acumulan mediante operator.add.
+        intent: La intención clasificada del usuario (ej. 'DATABASE', 'API', 'GENERAL').
     """
-    
-    # Historial de chat: Lista de mensajes (Human, AI, Tool)
-    # operator.add significa que cuando un nodo devuelve mensajes, se AGREGAN a la lista
     messages: Annotated[List[BaseMessage], operator.add]
-    
-    # La intención clasificada del usuario (ej. 'DATABASE', 'API', 'GENERAL')
     intent: str

@@ -1,3 +1,11 @@
+"""
+Gestor compuesto de herramientas.
+
+Este módulo implementa un proveedor de herramientas que agrega capacidades
+desde múltiples fuentes, incluyendo servidores MCP externos y cargadores
+locales heredados.
+"""
+
 from typing import List
 from langchain_core.tools import BaseTool
 
@@ -30,22 +38,15 @@ class CompositeToolProvider(IToolProvider):
         Returns:
             List[BaseTool]: Lista combinada de herramientas MCP y locales.
         """
-        # 1. Cargar Herramientas MCP (Capa de Infraestructura)
         mcp_tools = await self.mcp_provider.get_tools()
-        
-        # 2. Cargar Herramientas API Locales (Soporte Legacy)
-        # Nota: En fases futuras, estas también deberían moverse a un servidor MCP.
         local_api_tools = load_api_tools()
-        
-        # 3. Cargar Herramientas Específicas de Features (Capa de Dominio/Feature)
-        # Aquí podríamos cargar dinámicamente herramientas exportadas por features si tuvieran locales.
-        # Por ahora, la feature de Análisis SQL confía en herramientas MCP, pero este es el lugar
-        # donde inyectaríamos `features.sql_analysis.loader.get_local_tools()`
         feature_tools = [] 
         
         self._tools_cache = mcp_tools + local_api_tools + feature_tools
         return self._tools_cache
 
     async def close(self):
-        """Cierra todos los proveedores subyacentes."""
+        """
+        Cierra todos los proveedores subyacentes.
+        """
         await self.mcp_provider.close()
