@@ -1,3 +1,12 @@
+/**
+ * @file index.ts
+ * @description Servidor MCP (Model Context Protocol) Sidecar para MySQL.
+ * Este servicio actúa como un puente seguro entre el agente de IA y la base de datos,
+ * exponiendo herramientas para la ejecución de consultas SQL validadas.
+ * 
+ * Basado en Fastify para el transporte de red y @modelcontextprotocol/sdk para la lógica del protocolo.
+ */
+
 import "dotenv/config";
 
 import cors from "@fastify/cors";
@@ -9,13 +18,20 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 import Fastify, { FastifyReply, FastifyRequest } from "fastify";
 import mysql from "mysql2/promise";
-// import { z } from "zod";
 
+/**
+ * Instancia del servidor Fastify.
+ * Se encarga de gestionar las conexiones HTTP y los eventos SSE.
+ */
 const fastify = Fastify({
   logger: true,
 });
 
-// 1. Connection Pool (Outside handler to be persistent)
+/**
+ * Pool de conexiones a MySQL.
+ * Configurado fuera del manejador para permitir persistencia y reutilización de conexiones.
+ * Utiliza variables de entorno para la configuración.
+ */
 const pool = mysql.createPool({
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
@@ -26,16 +42,33 @@ const pool = mysql.createPool({
   queueLimit: 0,
 });
 
+/**
+ * Inicializa y arranca el ecosistema del Sidecar MCP.
+ * Configura CORS, parsers personalizados, el servidor MCP y las rutas de Fastify.
+ * 
+ * @async
+ * @function start
+ * @returns {Promise<void>}
+ */
 const start = async () => {
+  // Registrar el plugin de CORS
   await fastify.register(cors, {
     origin: true, // Permitir todos los orígenes para simplicidad en desarrollo
   });
 
-  // Bypass al parsing JSON por defecto para que el SDK de MCP consuma el stream crudo
+  /**
+   * Bypass al parsing JSON por defecto.
+   * Esto permite que el SDK de MCP consuma el flujo (stream) crudo de la petición,
+   * delegando el manejo de mensajes JSON-RPC al protocolo.
+   */
   fastify.addContentTypeParser("application/json", (req, payload, done) => {
     done(null, payload);
   });
 
+  /**
+   * Inicialización del servidor MCP.
+   * Define las capacidades y la identidad del servidor.
+   */
   const server = new Server(
     {
       name: "mysql-sidecar",
@@ -48,7 +81,10 @@ const start = async () => {
     },
   );
 
-  // Definir herramientas
+  /**
+   * Manejador para el descubrimiento de herramientas.
+   * Expone la lista de funciones disponibles que el agente de IA puede invocar.
+   */
   server.setRequestHandler(ListToolsRequestSchema, async () => {
     await Promise.resolve();
     return {
@@ -68,8 +104,14 @@ const start = async () => {
     };
   });
 
+  /**
+   * Manejador para la ejecución de herramientas.
+   * Implementa la lógica de negocio para la herramienta 'query'.
+   * Incluye una capa de seguridad crítica que valida operaciones de solo lectura.
+   */
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     if (request.params.name === "query") {
+      // Extraer el argumento SQL, manejando posibles arrays o strings
       const sql = Array.isArray(request.params.arguments?.sql)
         ? request.params.arguments?.sql[0]
         : request.params.arguments?.sql;
@@ -78,11 +120,17 @@ const start = async () => {
         throw new TypeError("Argumento SQL inválido");
       }
 
-      // --- CAPA DE SEGURIDAD V4 (Defensa en Profundidad) ---
-      // Aunque el Host ya valida, el Sidecar es la última línea de defensa.
-      // Rechazamos cualquier cosa que no empiece por SELECT (case insensitive).
+      /**
+       * --- CAPA DE SEGURIDAD V4 (Defensa en Profundidad) ---
+       * Aunque el Host ya valida, el Sidecar es la última línea de defensa.
+       * Rechazamos cualquier operación que no sea estrictamente de lectura.
+       */
       const upperSql = sql.trim().toUpperCase();
-      if (!upperSql.startsWith("SELECT") && !upperSql.startsWith("DESCRIBE") && !upperSql.startsWith("SHOW")) {
+      const isReadOnly = upperSql.startsWith("SELECT") || 
+                         upperSql.startsWith("DESCRIBE") || 
+                         upperSql.startsWith("SHOW");
+
+      if (!isReadOnly) {
          return {
           isError: true,
           content: [
@@ -92,7 +140,9 @@ const start = async () => {
       }
 
       try {
-        // 2. EJECUCIÓN REAL
+        /**
+         * Ejecución de la consulta en la base de datos real.
+         */
         const [rows] = await pool.execute(sql);
 
         return {
@@ -115,62 +165,73 @@ const start = async () => {
     throw new Error("Herramienta no encontrada");
   });
 
-  // Map of sessionId -> Transport
+  /**
+   * Mapa de sesiones activas.
+   * Asocia IDs de sesión con sus respectivos transportes SSE.
+   */
   const transports = new Map<string, SSEServerTransport>();
 
+  /**
+   * Ruta de salud (Health Check).
+   */
   fastify.get("/health", async () => {
-    // Simulated async health check
     await Promise.resolve();
     return { status: "ok" };
   });
 
+  /**
+   * Endpoint principal para el establecimiento de conexiones SSE.
+   * Inicia el transporte SSE y vincula el servidor MCP a la nueva sesión.
+   */
   fastify.get("/sse", async (req: FastifyRequest, reply: FastifyReply) => {
-    // Delegate response handling to MCP SDK
-    reply.hijack();
+    reply.hijack(); // Tomar control manual de la respuesta para SSE
 
     const transport = new SSEServerTransport("/messages", reply.raw);
-
     const sessionId = transport.sessionId;
     transports.set(sessionId, transport);
 
-    // We need to keep the connection open.
+    // Conectar el servidor MCP al transporte
     await server.connect(transport);
 
-    // Cleanup on close
+    // Limpieza al cerrar la conexión
     req.raw.on("close", () => {
       transports.delete(sessionId);
     });
   });
 
+  /**
+   * Endpoint para la recepción de mensajes JSON-RPC.
+   * Enruta los mensajes POST al transporte SSE correspondiente basado en el sessionId.
+   */
   fastify.post(
     "/messages",
     async (req: FastifyRequest, reply: FastifyReply) => {
       const sessionId = (req.query as { sessionId?: string }).sessionId;
 
       if (!sessionId || !transports.has(sessionId)) {
-        reply.status(404).send({ error: "Session not found" });
+        reply.status(404).send({ error: "Sesión no encontrada" });
         return;
       }
 
       const transport = transports.get(sessionId);
       if (transport) {
-        // Delegate response handling to MCP SDK
         reply.hijack();
-
-        // req.body is now the raw stream because of our custom parser
-        // @ts-expect-error - req.body is raw stream
+        // @ts-expect-error - req.body es tratado como stream por el parser personalizado
         await transport.handlePostMessage(req.body, reply.raw);
       }
     },
   );
 
   try {
+    /**
+     * Arranca la escucha del servidor Fastify.
+     */
     await fastify.listen({ port: 3002, host: "0.0.0.0" });
   } catch (error) {
     fastify.log.error(error);
-    // eslint-disable-next-line unicorn/no-process-exit
     process.exit(1);
   }
 };
 
+// Ejecutar el inicio del servidor
 void start();
