@@ -52,7 +52,7 @@ RUN mkdir -p /app/data /app/logs /app/.files /app/.chainlit && \
 ENV PATH="/app/.venv/bin:$PATH"
 # Apuntamos PYTHONPATH a src para que los imports funcionen limpio
 ENV PYTHONPATH=/app/src
-ENV SWAGGER_JSON_PATH=/app/docs/swagger.json
+ENV SWAGGER_JSON_PATH=/app/docs/reference/api/swagger.json
 ENV BUSINESS_CONTEXT_PATH=/app/config/business_context.yaml
 
 USER appuser
