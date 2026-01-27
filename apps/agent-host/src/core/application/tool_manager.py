@@ -2,8 +2,8 @@
 Gestor compuesto de herramientas.
 
 Este módulo implementa un proveedor de herramientas que agrega capacidades
-desde múltiples fuentes, incluyendo servidores MCP externos y cargadores
-locales heredados.
+desde múltiples fuentes, consolidando actualmente todas las herramientas
+bajo el protocolo MCP.
 """
 
 from typing import List
@@ -11,14 +11,14 @@ from langchain_core.tools import BaseTool
 
 from core.ports.tool_provider import IToolProvider
 from infra.mcp.tool_provider import MCPToolProvider
-from infra.legacy.api_loader import load_api_tools
 
 class CompositeToolProvider(IToolProvider):
     """
-    Orquesta el descubrimiento de herramientas de múltiples fuentes (MCP y Local).
+    Orquesta el descubrimiento de herramientas mediante el protocolo MCP.
     
-    Este proveedor agrega herramientas de sidecars MCP externos y cargadores locales 
-    heredados, proporcionando un único punto de entrada para las capacidades del agente.
+    Este proveedor actúa como el punto central para obtener capacidades
+    del agente, las cuales se descubren dinámicamente desde los sidecars
+    MCP configurados.
     """
 
     def __init__(self, mcp_provider: MCPToolProvider):
@@ -33,16 +33,20 @@ class CompositeToolProvider(IToolProvider):
 
     async def get_tools(self) -> List[BaseTool]:
         """
-        Agrega herramientas de todas las fuentes configuradas.
+        Agrega herramientas de todas las fuentes MCP configuradas.
 
         Returns:
-            List[BaseTool]: Lista combinada de herramientas MCP y locales.
+            List[BaseTool]: Lista combinada de herramientas descubiertas vía MCP.
         """
+        # En la Arquitectura V4 pura, todas las herramientas se cargan vía MCP.
+        # El descubrimiento es dinámico basado en MCP_SERVERS_CONFIG.
         mcp_tools = await self.mcp_provider.get_tools()
-        local_api_tools = load_api_tools()
+        
+        # En el futuro, se podrían inyectar herramientas locales específicas aquí
+        # si fueran necesarias, pero el estándar es delegar a Sidecars.
         feature_tools = [] 
         
-        self._tools_cache = mcp_tools + local_api_tools + feature_tools
+        self._tools_cache = mcp_tools + feature_tools
         return self._tools_cache
 
     async def close(self):

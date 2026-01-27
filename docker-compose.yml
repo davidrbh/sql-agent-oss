@@ -25,6 +25,29 @@ services:
     restart: unless-stopped
 
   # -------------------------------------------------------
+  # 1.2 SIDECAR: API (Python)
+  # -------------------------------------------------------
+  mcp-api:
+    container_name: mcp-api
+    build:
+      context: .
+      dockerfile: services/mcp-api-sidecar/Dockerfile
+    networks:
+      - sql-agent-network
+    env_file:
+      - .env
+    environment:
+      - API_BASE_URL=${API_BASE_URL}
+      - API_AUTH_HEADER=${API_AUTH_HEADER}
+      - API_AUTH_VALUE=${API_AUTH_VALUE}
+      - PORT=3003
+    volumes:
+      - ./services/mcp-api-sidecar/src:/app/src
+    ports:
+      - "3003:3003"
+    restart: unless-stopped
+
+  # -------------------------------------------------------
   # 1.5 MEMORIA: PostgreSQL (LangGraph Persistence)
   # -------------------------------------------------------
   agent-memory:
@@ -63,8 +86,8 @@ services:
       # Configuración de Memoria Persistente
       - DB_URI=postgresql://${MEMORY_DB_USER:-postgres}:${MEMORY_DB_PASSWORD:-postgres}@agent-memory:5432/${MEMORY_DB_NAME:-agent_memory}
       
-      # Configuración SOA (MCP Servers)
-      - MCP_SERVERS_CONFIG={"default":{"transport":"sse","url":"http://mcp-mysql:3002/sse"}}
+      # Configuración SOA (MCP Servers) - Tomada de .env
+      - MCP_SERVERS_CONFIG=${MCP_SERVERS_CONFIG}
       
       # Fallbacks Legacy
       - SIDECAR_URL=${SIDECAR_URL}

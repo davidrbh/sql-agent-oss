@@ -24,7 +24,7 @@ graph TD
     subgraph "Capa de Ejecución (Sidecars MCP)"
         Host -->|MCP Protocol (SSE/Stdio)| Client[🔌 Multi-Server MCP Client]
         Client -->|Conexión| MySQLSidecar[📦 MCP MySQL (Node.js)]
-        Client -->|Futuro| APISidecar[📦 MCP OpenAPI (Python)]
+        Client -->|Conexión| APISidecar[📦 MCP API (Python)]
     end
 
     subgraph "Infraestructura de Datos"

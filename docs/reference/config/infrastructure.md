@@ -19,14 +19,21 @@ El `docker-compose.yml` actualizado orquesta los siguientes servicios:
     -   La URL de los sidecars MCP (`http://mcp-mysql:3002/sse`).
     -   La URL de su propia memoria (`postgresql://...`).
 
-### 2.2. `mcp-mysql-sidecar` (El Brazo Ejecutor)
+### 2.2. `mcp-mysql-sidecar` (El Brazo Ejecutor SQL)
 
 -   **Rol:** Microservicio especializado que actúa como proxy seguro hacia la base de datos de negocio (MySQL).
 -   **Tecnología:** Node.js 20, Fastify, MCP SDK.
 -   **Responsabilidad:** Ejecutar consultas SQL estrictamente validadas (READ-ONLY).
 -   **Seguridad:** Es el **único** contenedor con las credenciales `DB_PASSWORD` de la base de datos de producción.
 
-### 2.3. `agent-memory` (El Hipocampo)
+### 2.3. `mcp-api-sidecar` (El Brazo Ejecutor API)
+
+-   **Rol:** Microservicio que actúa como proxy para interactuar con APIs externas mediante el protocolo MCP.
+-   **Tecnología:** Python 3.11, FastMCP.
+-   **Responsabilidad:** Traducir las intenciones del agente en peticiones REST (GET) validadas contra una especificación Swagger.
+-   **Seguridad:** Centraliza la autenticación mediante API Keys inyectadas por el entorno.
+
+### 2.4. `agent-memory` (El Hipocampo)
 
 -   **Rol:** Base de datos dedicada para la persistencia del estado del agente.
 -   **Tecnología:** PostgreSQL 16 (Alpine).
