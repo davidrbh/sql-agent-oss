@@ -1,3 +1,10 @@
+"""
+Proveedor de herramientas basado en MCP.
+
+Este módulo implementa la interfaz IToolProvider para descubrir, conectar y 
+adaptar herramientas desde múltiples servidores MCP en el ecosistema de LangChain.
+"""
+
 import os
 import logging
 from typing import List
@@ -11,33 +18,28 @@ logger = logging.getLogger(__name__)
 
 class MCPToolProvider(IToolProvider):
     """
-    Implementación de IToolProvider usando el Protocolo de Contexto de Modelo (MCP).
+    Implementación de IToolProvider mediante el Protocolo de Contexto de Modelo (MCP).
     
-    Esta clase gestiona un MultiServerMCPClient para descubrir y adaptar herramientas 
-    de varios sidecars MCP en herramientas compatibles con LangChain.
+    Gestiona un cliente multi-servidor para agregar capacidades desde diversos sidecars.
     """
 
     def __init__(self, config_json: str):
         """
-        Inicializa el proveedor con configuraciones de servidor.
+        Inicializa el proveedor con las configuraciones de los servidores.
 
         Args:
-            config_json: Cadena JSON con los perfiles de conexión para servidores MCP.
+            config_json: Cadena JSON con los perfiles de conexión MCP.
         """
         self.client = MultiServerMCPClient(config_json)
         self._tools_cache: List[BaseTool] = []
 
     async def get_tools(self) -> List[BaseTool]:
         """
-        Descubre y carga herramientas de todos los servidores MCP configurados.
-        
-        Este método asegura que las conexiones estén activas, recupera herramientas de cada 
-        sesión y utiliza el adaptador de LangChain para convertirlas.
+        Descubre y adapta herramientas de todos los servidores MCP activos.
 
         Returns:
-            List[BaseTool]: Lista agregada de herramientas de todos los servidores conectados.
+            List[BaseTool]: Colección de herramientas compatibles con LangChain.
         """
-        # Asegurar que estamos conectados
         await self.client.connect()
         
         all_tools = []
@@ -45,7 +47,6 @@ class MCPToolProvider(IToolProvider):
         
         for name, session in sessions.items():
             try:
-                # Usar langchain-mcp-adapters para convertir herramientas de sesión
                 server_tools = await load_mcp_tools(session)
                 all_tools.extend(server_tools)
             except Exception as e:
@@ -55,5 +56,7 @@ class MCPToolProvider(IToolProvider):
         return all_tools
 
     async def close(self):
-        """Cierra todas las sesiones MCP activas."""
+        """
+        Finaliza todas las conexiones MCP activas.
+        """
         await self.client.close()

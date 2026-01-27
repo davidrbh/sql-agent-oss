@@ -1,3 +1,11 @@
+"""
+Módulo de persistencia en PostgreSQL.
+
+Este módulo implementa el checkpointer para LangGraph utilizando PostgreSQL,
+permitiendo que el estado del agente sea persistente y transaccional mediante
+el uso de pooling de conexiones asíncronas.
+"""
+
 import os
 import logging
 from contextlib import asynccontextmanager
@@ -12,9 +20,9 @@ class PostgresCheckpointer:
     """
     Gestiona la persistencia en PostgreSQL para los checkpoints de LangGraph.
     
-    Esta clase proporciona un pool de conexiones seguro para hilos y un guardador 
-    asíncrono para persistir el estado del agente, habilitando conversaciones de 
-    múltiples turnos y tolerancia a fallos.
+    Esta clase proporciona un pool de conexiones seguro y un guardador asíncrono 
+    para persistir el estado del agente, habilitando conversaciones multi-turno
+    y tolerancia a fallos.
     """
 
     def __init__(self, conninfo: str, max_pool_size: int = 20):
@@ -23,11 +31,10 @@ class PostgresCheckpointer:
 
         Args:
             conninfo: URI de conexión a PostgreSQL.
-            max_pool_size: Número máximo de conexiones en el pool.
+            max_pool_size: Número máximo de conexiones simultáneas en el pool.
         """
         self.conninfo = conninfo
-        # Configurar kwargs para autocommit=True es CRÍTICO para que .setup() funcione
-        # y para evitar "CREATE INDEX CONCURRENTLY inside transaction block".
+        # autocommit=True es requerido por .setup() para crear tablas e índices.
         self.pool = AsyncConnectionPool(
             conninfo=conninfo,
             max_size=max_pool_size,
@@ -41,27 +48,28 @@ class PostgresCheckpointer:
         """
         Proporciona una instancia de AsyncPostgresSaver usando el pool de conexiones.
 
+        Este gestor de contexto asegura que el pool esté abierto y que el esquema
+        de la base de datos esté inicializado antes de devolver el saver.
+
         Yields:
-            AsyncPostgresSaver: El checkpointer compatible con LangGraph.
+            AsyncPostgresSaver: El motor de persistencia para LangGraph.
         """
         if not self._is_open:
             await self.pool.open()
             self._is_open = True
             
         saver = AsyncPostgresSaver(self.pool)
-        # Asegurar que el esquema esté configurado (Seguro para llamadas concurrentes en producción)
-        # En entornos estrictamente regulados, esto podría manejarse vía Alembic.
         await saver.setup()
         
         try:
             yield saver
         finally:
-            # El saver no necesita cierre explícito si usa un pool,
-            # pero mantenemos la estructura para futuras extensiones.
             pass
 
     async def close(self):
-        """Cierra el pool de conexiones."""
+        """
+        Cierra el pool de conexiones y libera los recursos.
+        """
         if self._is_open:
             await self.pool.close()
             self._is_open = False
