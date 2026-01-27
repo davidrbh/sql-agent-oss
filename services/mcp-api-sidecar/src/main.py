@@ -13,9 +13,6 @@ from typing import List, Optional
 
 from mcp.server.fastmcp import FastMCP
 from langchain_community.utilities.requests import RequestsWrapper
-from dotenv import load_dotenv
-
-load_dotenv()
 
 # Configuraci0n de logging profesional
 logging.basicConfig(
@@ -35,13 +32,7 @@ SWAGGER_PATH = os.getenv("SWAGGER_JSON_PATH", "/app/docs/swagger.json")
 
 def get_requests_wrapper() -> RequestsWrapper:
     """
-    Configura y devuelve un wrapper de peticiones HTTP.
-    
-    A0ade autom0ticamente los headers de autenticaci0n y gestiona
-    la reconstrucci0n de URLs relativas a la URL base configurada.
-
-    Returns:
-        RequestsWrapper: Instancia configurada para realizar peticiones.
+    Configura y devuelve un wrapper de peticiones HTTP con auth.
     """
     headers = {"Content-Type": "application/json"}
     if API_AUTH_HEADER and API_AUTH_VALUE:
@@ -49,7 +40,6 @@ def get_requests_wrapper() -> RequestsWrapper:
     
     class BaseUrlRequestsWrapper(RequestsWrapper):
         def _clean_url(self, url: str) -> str:
-            """Normaliza la URL asegurando que sea absoluta."""
             clean_url = str(url).strip().strip("'").strip('"')
             if clean_url.lower().startswith("http"):
                 return clean_url
@@ -75,10 +65,7 @@ async def api_get(path: str, params: Optional[dict] = None) -> str:
     
     Args:
         path: Ruta relativa del endpoint (ej: '/admin/users').
-        params: Diccionario opcional de par0metros de consulta (query params).
-        
-    Returns:
-        str: Respuesta de la API en formato texto/JSON.
+        params: Diccionario opcional de par0metros de consulta.
     """
     logger.info(f"Ejecutando petici0n GET en ruta: {path}")
     try:
@@ -92,12 +79,6 @@ async def api_get(path: str, params: Optional[dict] = None) -> str:
 def list_api_endpoints() -> str:
     """
     Provee un resumen de los endpoints disponibles en la API.
-    
-    Lee la especificaci0n Swagger/OpenAPI configurada y genera una lista
-    de los m0todos y rutas disponibles para ayudar al agente a navegar la API.
-
-    Returns:
-        str: Resumen textual de la documentaci0n de la API.
     """
     if not os.path.exists(SWAGGER_PATH):
         logger.warning(f"No se encontr0 el archivo Swagger en: {SWAGGER_PATH}")
