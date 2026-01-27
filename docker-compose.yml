@@ -41,8 +41,10 @@ services:
       - API_AUTH_HEADER=${API_AUTH_HEADER}
       - API_AUTH_VALUE=${API_AUTH_VALUE}
       - PORT=3003
+      - SWAGGER_JSON_PATH=/app/docs/swagger.json
     volumes:
       - ./services/mcp-api-sidecar/src:/app/src
+      - ./docs/reference/api/swagger.json:/app/docs/swagger.json
     ports:
       - "3003:3003"
     restart: unless-stopped
@@ -92,7 +94,6 @@ services:
       # Fallbacks Legacy
       - SIDECAR_URL=${SIDECAR_URL}
       - PYTHONPATH=/app/src
-      - SWAGGER_JSON_PATH=/app/docs/swagger.json
       - BUSINESS_CONTEXT_PATH=/app/config/business_context.yaml
       - PYTHONUNBUFFERED=1
       - WAHA_BASE_URL=${WAHA_BASE_URL}
@@ -125,7 +126,6 @@ services:
       - SIDECAR_URL=${SIDECAR_URL}
       - PYTHONUNBUFFERED=1
       - PYTHONPATH=/app/src
-      - SWAGGER_JSON_PATH=/app/docs/swagger.json
       - BUSINESS_CONTEXT_PATH=/app/config/business_context.yaml
       - SKIP_GENERATION=true
 
