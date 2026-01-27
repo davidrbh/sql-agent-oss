@@ -1,3 +1,11 @@
+"""
+Módulo de protección y validación de consultas SQL.
+
+Este módulo implementa el SQLGuard, un componente de seguridad que utiliza 
+análisis de AST para garantizar que las consultas generadas sean seguras,
+de solo lectura y normalizadas.
+"""
+
 import sqlglot
 from sqlglot import exp, parse_one, transpile
 from typing import Optional, Tuple
@@ -6,21 +14,19 @@ class SQLGuard:
     """
     Proporciona validación de seguridad y transpilación defensiva para consultas SQL.
     
-    Esta clase actúa como un 'Cortafuegos Cognitivo', asegurando que las consultas SQL 
-    generadas sean estrictamente de solo lectura y cumplan con los patrones sintácticos esperados.
+    Esta clase actúa como un 'Cortafuegos Cognitivo', asegurando que las consultas 
+    cumplan con los estándares de seguridad antes de ser ejecutadas.
     """
 
     def __init__(self, dialect: str = "mysql"):
         """
-        Inicializa el guardián con el dialecto objetivo.
+        Inicializa el guardián con un dialecto específico.
 
         Args:
-            dialect: El dialecto SQL de la base de datos objetivo (ej. 'mysql', 'postgres').
+            dialect: El dialecto SQL objetivo (ej. 'mysql', 'postgres').
         """
         self.dialect = dialect
-        # Operaciones DDL y DML que están estrictamente prohibidas
-        # Nota: Usamos AlterTable ya que es el nodo AST específico.
-        # TRUNCATE suele ser parseado como Command en algunas versiones, por lo que Command lo cubre.
+        # Definición de nodos AST que representan operaciones prohibidas (DML/DDL)
         self._forbidden_nodes = (
             exp.Drop, exp.Delete, exp.Insert, exp.Update, 
             exp.AlterTable, exp.Create, exp.Command
@@ -28,21 +34,18 @@ class SQLGuard:
 
     def validate_and_transpile(self, raw_sql: str) -> Tuple[bool, Optional[str], Optional[str]]:
         """
-        Valida la consulta por seguridad y la transpila para normalización.
+        Valida la seguridad de la consulta y realiza una transpilación defensiva.
+
+        Este método normaliza el SQL y bloquea operaciones peligrosas.
 
         Args:
-            raw_sql: La cadena SQL cruda generada por el LLM.
+            raw_sql: La cadena SQL generada por el LLM.
 
         Returns:
-            Tuple conteniendo:
-            - is_safe (bool): True si la consulta pasó todos los chequeos de seguridad.
-            - safe_sql (str): La cadena SQL normalizada y transpilada.
-            - error_msg (str): Mensaje de error si la consulta es insegura o inválida.
+            tuple: (es_segura, sql_limpio, mensaje_error)
         """
         try:
-            # 1. Parsing y Normalización
-            # Transpilar de vuelta al mismo dialecto normaliza la sintaxis y 
-            # elimina comentarios potencialmente maliciosos u ofuscaciones.
+            # Normalización mediante transpilación
             transpiled = transpile(raw_sql, read=None, write=self.dialect)
             if not transpiled:
                 return False, None, "No se pudo parsear ningún SQL válido."
@@ -50,20 +53,20 @@ class SQLGuard:
             clean_sql = transpiled[0]
             parsed = parse_one(clean_sql, read=self.dialect)
 
-            # 2. Chequeo de Seguridad: Operaciones Prohibidas
-            # Buscamos en el AST cualquier nodo que represente una operación de modificación de datos.
+            # Verificación de operaciones prohibidas en el AST
             if parsed.find(*self._forbidden_nodes):
                 found_node = parsed.find(*self._forbidden_nodes)
                 return False, None, f"Operación prohibida detectada: {found_node.key.upper()}"
 
-            # 3. Aplicación de Solo-Lectura
-            # Asegurar que la consulta sea una operación de lectura (SELECT, DESCRIBE, SHOW).
-            is_select = isinstance(parsed, exp.Select)
-            is_desc = isinstance(parsed, exp.Describe)
-            is_show = isinstance(parsed, exp.Show)
-            is_set_op = any(isinstance(parsed, t) for t in (exp.Union, exp.Except, exp.Intersect))
+            # Verificación estricta de operaciones de lectura
+            is_read_only = any([
+                isinstance(parsed, exp.Select),
+                isinstance(parsed, exp.Describe),
+                isinstance(parsed, exp.Show),
+                any(isinstance(parsed, t) for t in (exp.Union, exp.Except, exp.Intersect))
+            ])
 
-            if not any([is_select, is_desc, is_show, is_set_op]):
+            if not is_read_only:
                  return False, None, "La consulta debe ser una sentencia de lectura (SELECT, DESCRIBE o SHOW)."
 
             return True, clean_sql, None
