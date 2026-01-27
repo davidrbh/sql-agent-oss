@@ -1,3 +1,11 @@
+"""
+Módulo principal del servidor API (Agent Host).
+
+Este módulo inicializa la aplicación FastAPI, gestiona el ciclo de vida de los servicios
+(incluyendo la conexión con gateways externos como WhatsApp/WAHA) y configura los
+puntos de entrada de la API y la interfaz de usuario.
+"""
+
 import asyncio
 import logging
 import os
@@ -58,6 +66,11 @@ async def configure_waha_session() -> None:
     Implementa una estrategia de 'polling' (sondeo) para esperar a que el servicio
     WAHA esté disponible, y posteriormente crea o actualiza la sesión 'default'
     con la configuración del Webhook actual.
+    
+    Flujo:
+    1. Sondea el endpoint de estado de WAHA hasta que responda 200 OK.
+    2. Intenta actualizar (PUT) la sesión existente.
+    3. Si no existe (404), crea (POST) una nueva sesión.
     """
     session_name = "default"
     
@@ -151,7 +164,15 @@ async def configure_waha_session() -> None:
 async def lifespan(app: FastAPI) -> AsyncGenerator:
     """
     Gestor del ciclo de vida de la aplicación FastAPI.
-    Reemplaza al evento deprecado @app.on_event("startup").
+    
+    Reemplaza a los eventos deprecados @app.on_event("startup") y "shutdown".
+    Maneja la inicialización de tareas en segundo plano y la limpieza de recursos.
+    
+    Args:
+        app (FastAPI): La instancia de la aplicación.
+    
+    Yields:
+        None: Control devuelto a la aplicación principal.
     """
     # Lógica de inicio (Startup)
     logger.info("Iniciando servidor API y tareas en segundo plano...")
@@ -183,7 +204,12 @@ app.include_router(
 
 @app.get("/health", tags=["System"])
 async def health_check():
-    """Endpoint para verificar el estado de salud del servicio."""
+    """
+    Endpoint para verificar el estado de salud del servicio.
+    
+    Returns:
+        dict: Estado del servicio y nombre del componente.
+    """
     return {"status": "ok", "service": "agent-host"}
 
 # Montaje de la interfaz de chat (Chainlit)
