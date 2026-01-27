@@ -1,5 +1,6 @@
 import os
 import json
+import logging
 from typing import List, Dict
 
 from langchain_community.agent_toolkits.openapi.toolkit import RequestsToolkit
@@ -8,6 +9,8 @@ from langchain_community.tools.json.tool import JsonSpec
 from dotenv import load_dotenv
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 def _get_swagger_path():
     """
@@ -39,7 +42,7 @@ def _get_swagger_path():
     except IndexError:
         pass
 
-    print("⚠️ [API Loader] No se pudo encontrar swagger.json automáticamente.")
+    logger.warning("No se pudo encontrar swagger.json automáticamente.")
     return "docs/swagger.json"
 
 def load_swagger_summary() -> str:
@@ -47,7 +50,7 @@ def load_swagger_summary() -> str:
     try:
         path = _get_swagger_path()
         if not os.path.exists(path): 
-            print(f"❌ [API Loader] Swagger no encontrado en: {path}")
+            logger.error(f"Swagger no encontrado en: {path}")
             return "No API spec found."
         
         with open(path, 'r', encoding='utf-8') as f:
@@ -78,7 +81,7 @@ def load_api_tools() -> List:
     """
     Cargador Ligero (RequestsToolkit).
     """
-    print("🔌 [API Loader] Inicializando herramientas HTTP (Light Mode)...")
+    logger.info("Inicializando herramientas HTTP (Light Mode)...")
     
     swagger_path = _get_swagger_path()
     
@@ -91,7 +94,7 @@ def load_api_tools() -> List:
     }
     
     if auth_header and auth_value:
-        print(f"   🔑 Inyectando credenciales dinámicas en header: '{auth_header}'")
+        logger.info(f"Inyectando credenciales dinámicas en header: '{auth_header}'")
         headers[auth_header] = auth_value
     
     try:
@@ -102,7 +105,7 @@ def load_api_tools() -> List:
         if not env_base_url:
             # Fallback inteligente para desarrollo local
             env_base_url = "http://localhost:3002"
-            print("   ⚠️ No se encontró API_BASE_URL. Usando default: http://localhost:3002")
+            logger.warning("No se encontró API_BASE_URL. Usando default: http://localhost:3002")
         
         # Limpiamos la URL (quitamos /sse si viene de SIDECAR_URL)
         if "/sse" in env_base_url:
@@ -111,7 +114,7 @@ def load_api_tools() -> List:
         # Wrapper Personalizado para Inyección de URL Base
         class BaseUrlRequestsWrapper(RequestsWrapper):
             def _clean_url(self, url: str) -> str:
-                clean_url = str(url).strip().strip("'").strip('"')
+                clean_url = str(url).strip().strip("'" ).strip('"')
                 
                 # Si la URL ya es absoluta (http...), la respetamos
                 if clean_url.lower().startswith("http"):
@@ -121,7 +124,7 @@ def load_api_tools() -> List:
                 base = env_base_url.rstrip("/")
                 path = clean_url.lstrip("/")
                 target_url = f"{base}/{path}"
-                print(f"   🔄 [URL Rewrite] '{clean_url}' -> '{target_url}'")
+                logger.debug(f"[URL Rewrite] '{clean_url}' -> '{target_url}'")
                 return target_url
 
             def get(self, url: str, **kwargs):
@@ -149,11 +152,11 @@ def load_api_tools() -> List:
         # Agregamos la herramienta de lectura de documentación
         final_tools.append(get_read_swagger_tool())
         
-        print(f"   ✅ Herramientas ligeras cargadas: {len(final_tools)} (include read_api_documentation).")
+        logger.info(f"Herramientas ligeras cargadas: {len(final_tools)} (include read_api_documentation).")
         return final_tools
 
     except Exception as e:
-        print(f"   ❌ Error cargando herramientas API: {e}")
+        logger.error(f"Error cargando herramientas API: {e}")
         return []
 
 if __name__ == "__main__":

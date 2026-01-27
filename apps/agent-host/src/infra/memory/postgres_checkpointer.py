@@ -1,9 +1,12 @@
 import os
+import logging
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
 from psycopg_pool import AsyncConnectionPool
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
+
+logger = logging.getLogger(__name__)
 
 class PostgresCheckpointer:
     """
@@ -23,11 +26,15 @@ class PostgresCheckpointer:
             max_pool_size: Número máximo de conexiones en el pool.
         """
         self.conninfo = conninfo
+        # Configurar kwargs para autocommit=True es CRÍTICO para que .setup() funcione
+        # y para evitar "CREATE INDEX CONCURRENTLY inside transaction block".
         self.pool = AsyncConnectionPool(
             conninfo=conninfo,
             max_size=max_pool_size,
-            open=False  # El pool se abre explícitamente durante el inicio de la app
+            open=False,
+            kwargs={"autocommit": True}
         )
+        self._is_open = False
 
     @asynccontextmanager
     async def get_saver(self) -> AsyncGenerator[AsyncPostgresSaver, None]:
@@ -37,8 +44,9 @@ class PostgresCheckpointer:
         Yields:
             AsyncPostgresSaver: El checkpointer compatible con LangGraph.
         """
-        if not self.pool.opened:
+        if not self._is_open:
             await self.pool.open()
+            self._is_open = True
             
         saver = AsyncPostgresSaver(self.pool)
         # Asegurar que el esquema esté configurado (Seguro para llamadas concurrentes en producción)
@@ -54,6 +62,7 @@ class PostgresCheckpointer:
 
     async def close(self):
         """Cierra el pool de conexiones."""
-        if self.pool.opened:
+        if self._is_open:
             await self.pool.close()
-            print("📦 Pool de conexiones Postgres cerrado.")
+            self._is_open = False
+            logger.info("Pool de conexiones Postgres cerrado.")

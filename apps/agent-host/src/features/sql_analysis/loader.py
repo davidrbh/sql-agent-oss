@@ -1,6 +1,10 @@
 import os
 import yaml
+import logging
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
+# ...
 
 # --- Lógica de Detección de Rutas ---
 # Detección inteligente del entorno (Docker vs Local) para encontrar la carpeta 'config'.
@@ -32,7 +36,8 @@ SYSTEM_PROMPT_TEMPLATE = """Eres un experto Agente SQL.
 - Sé amable y conciso.
 - EVITA el uso excesivo de saltos de línea (\\n).
 - Cuando listes datos simples (como nombres), úsalos separados por comas.
-- NO menciones tus restricciones de seguridad ni tus herramientas internas a menos que sea estrictamente necesario para explicar un error.
+- NO menciones tus herramientas internas.
+- 🛑 MANEJO DE ERRORES: Si recibes un mensaje que comienza con "⛔ ERROR DE SEGURIDAD", NO reintentes la misma consulta. Explícale al usuario que esa operación está restringida por políticas de seguridad y detente.
 """
 
 def load_business_context() -> str:
@@ -47,7 +52,7 @@ def load_business_context() -> str:
         with open(path, "r", encoding="utf-8") as f:
             return f.read()
     except FileNotFoundError:
-        print(f"⚠️ Alerta: No se encontró {path}")
+        logger.warning(f"No se encontró {path}")
         return "Sin contexto definido."
 
 def get_sql_system_prompt() -> str:

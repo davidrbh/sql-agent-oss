@@ -19,9 +19,11 @@ class SQLGuard:
         """
         self.dialect = dialect
         # Operaciones DDL y DML que están estrictamente prohibidas
+        # Nota: Usamos AlterTable ya que es el nodo AST específico.
+        # TRUNCATE suele ser parseado como Command en algunas versiones, por lo que Command lo cubre.
         self._forbidden_nodes = (
             exp.Drop, exp.Delete, exp.Insert, exp.Update, 
-            exp.Alter, exp.Truncate, exp.Create, exp.Command
+            exp.AlterTable, exp.Create, exp.Command
         )
 
     def validate_and_transpile(self, raw_sql: str) -> Tuple[bool, Optional[str], Optional[str]]:
@@ -55,11 +57,14 @@ class SQLGuard:
                 return False, None, f"Operación prohibida detectada: {found_node.key.upper()}"
 
             # 3. Aplicación de Solo-Lectura
-            # Asegurar que la consulta sea fundamentalmente una sentencia SELECT.
-            if not isinstance(parsed, exp.Select):
-                # Chequear si es una Unión u otras expresiones de solo lectura si es necesario
-                if not any(isinstance(parsed, t) for t in (exp.Union, exp.Except, exp.Intersect)):
-                     return False, None, "La consulta debe ser una sentencia SELECT."
+            # Asegurar que la consulta sea una operación de lectura (SELECT, DESCRIBE, SHOW).
+            is_select = isinstance(parsed, exp.Select)
+            is_desc = isinstance(parsed, exp.Describe)
+            is_show = isinstance(parsed, exp.Show)
+            is_set_op = any(isinstance(parsed, t) for t in (exp.Union, exp.Except, exp.Intersect))
+
+            if not any([is_select, is_desc, is_show, is_set_op]):
+                 return False, None, "La consulta debe ser una sentencia de lectura (SELECT, DESCRIBE o SHOW)."
 
             return True, clean_sql, None
 

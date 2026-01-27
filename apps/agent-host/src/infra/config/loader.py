@@ -1,8 +1,12 @@
 import os
 import yaml
 import json
+import logging
 from pathlib import Path
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
+# ...
 
 # src/agent_core/config/loader.py
 
@@ -30,18 +34,13 @@ else:
         load_dotenv(BASE_DIR / ".env")
     except IndexError:
         # Fallback extremo para desarrollo local si la estructura cambia
-        print("⚠️ [Config Loader] IndexError al calcular root. Usando ruta relativa fallback.")
+        logger.warning("[Config Loader] IndexError al calcular root. Usando ruta relativa fallback.")
         BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent.parent
         CONFIG_DIR = BASE_DIR / "config"
 load_dotenv(BASE_DIR / ".env")
 
 class ConfigLoader:
-    """
-    Singleton encargado de cargar la configuración una sola vez.
-    """
-    _settings = None
-    _business_context = None
-
+# ... (rest of class)
     @classmethod
     def load_settings(cls):
         """Carga config/settings.yaml"""
@@ -53,7 +52,7 @@ class ConfigLoader:
             except FileNotFoundError:
                 # Fallback por si no existe
                 cls._settings = {"app": {"debug": True}}
-                print(f"⚠️ Alerta: No se encontró {path}, usando valores por defecto.")
+                logger.warning(f"Alerta: No se encontró {path}, usando valores por defecto.")
         return cls._settings
 
     
@@ -72,7 +71,7 @@ class ConfigLoader:
         # Fallback for backward compatibility with v2.x
         sidecar_url = os.getenv("SIDECAR_URL")
         if sidecar_url:
-            print("⚠️ Using legacy SIDECAR_URL fallback. Consider migrating to MCP_SERVERS_CONFIG.")
+            logger.warning("Using legacy SIDECAR_URL fallback. Consider migrating to MCP_SERVERS_CONFIG.")
             return json.dumps({
                 "default": {
                     "transport": "sse",

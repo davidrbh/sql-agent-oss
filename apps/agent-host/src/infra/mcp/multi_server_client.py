@@ -1,14 +1,16 @@
 import asyncio
 import json
 import os
+import logging
 from contextlib import AsyncExitStack
-from typing import Dict, List, Optional, Any, Union
+from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 from mcp.client.sse import sse_client
-import anyio
+
+logger = logging.getLogger(__name__)
 
 @dataclass
 class ServerConfig:
@@ -57,7 +59,7 @@ class MultiServerMCPClient:
                 configs[name] = ServerConfig(**cfg)
             return configs
         except Exception as e:
-            print(f"❌ Error parseando MCP_SERVERS_CONFIG: {e}")
+            logger.error(f"Error parseando MCP_SERVERS_CONFIG: {e}")
             return {}
 
     async def connect(self):
@@ -70,7 +72,7 @@ class MultiServerMCPClient:
 
     async def _connect_server(self, name: str, config: ServerConfig):
         """Conecta a un único servidor MCP basado en su tipo de transporte."""
-        print(f"🔄 Conectando al servidor MCP '{name}' vía {config.transport}...")
+        logger.info(f"Conectando al servidor MCP '{name}' vía {config.transport}...")
         try:
             if config.transport == "sse":
                 if not config.url:
@@ -98,10 +100,10 @@ class MultiServerMCPClient:
 
             await session.initialize()
             self.sessions[name] = session
-            print(f"✅ Conectado a '{name}'")
+            logger.info(f"Conectado a '{name}'")
             
         except Exception as e:
-            print(f"❌ Falló la conexión a '{name}': {e}")
+            logger.error(f"Falló la conexión a '{name}': {e}")
 
     async def list_all_tools(self) -> Dict[str, List[Any]]:
         """
@@ -116,7 +118,7 @@ class MultiServerMCPClient:
                 result = await session.list_tools()
                 all_tools[name] = result.tools
             except Exception as e:
-                print(f"⚠️ Falló listar herramientas para '{name}': {e}")
+                logger.warning(f"Falló listar herramientas para '{name}': {e}")
         return all_tools
 
     async def call_tool(self, server_name: str, tool_name: str, arguments: Dict[str, Any]) -> Any:
@@ -138,4 +140,4 @@ class MultiServerMCPClient:
         """Cierra todas las sesiones activas y pilas de recursos."""
         await self._exit_stack.aclose()
         self.sessions.clear()
-        print("🔌 Todas las conexiones MCP cerradas.")
+        logger.info("Todas las conexiones MCP cerradas.")

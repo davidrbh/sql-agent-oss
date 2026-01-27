@@ -1,10 +1,13 @@
 import os
+import logging
 from typing import Optional
 
 from infra.config.loader import ConfigLoader
 from infra.memory.postgres_checkpointer import PostgresCheckpointer
 from infra.mcp.tool_provider import MCPToolProvider
 from core.application.tool_manager import CompositeToolProvider
+
+logger = logging.getLogger(__name__)
 
 class Container:
     """
@@ -15,7 +18,7 @@ class Container:
     """
 
     _checkpointer: Optional[PostgresCheckpointer] = None
-    _tool_provider: Optional[MCPToolProvider] = None
+    _tool_provider: Optional[CompositeToolProvider] = None
 
     @classmethod
     def get_checkpointer(cls) -> PostgresCheckpointer:
@@ -53,4 +56,4 @@ class Container:
             await cls._checkpointer.close()
         if cls._tool_provider:
             await cls._tool_provider.close()
-        print("🏛️ Recursos del contenedor limpiados.")
+        logger.info("Recursos del contenedor limpiados.")

@@ -1,10 +1,13 @@
 import os
+import logging
 from typing import List
 from langchain_core.tools import BaseTool
 from langchain_mcp_adapters.tools import load_mcp_tools
 
 from core.ports.tool_provider import IToolProvider
 from infra.mcp.multi_server_client import MultiServerMCPClient
+
+logger = logging.getLogger(__name__)
 
 class MCPToolProvider(IToolProvider):
     """
@@ -46,7 +49,7 @@ class MCPToolProvider(IToolProvider):
                 server_tools = await load_mcp_tools(session)
                 all_tools.extend(server_tools)
             except Exception as e:
-                print(f"⚠️ Error cargando herramientas del servidor MCP '{name}': {e}")
+                logger.warning(f"Error cargando herramientas del servidor MCP '{name}': {e}")
         
         self._tools_cache = all_tools
         return all_tools
