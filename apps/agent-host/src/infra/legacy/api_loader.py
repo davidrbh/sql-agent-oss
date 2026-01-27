@@ -28,15 +28,16 @@ def _get_swagger_path():
     from pathlib import Path
     
     # En Docker, los archivos suelen estar en /app/docs/
-    docker_path = Path("/app/docs/swagger.json")
+    # Actualizado para v4 structure: docs/reference/api/swagger.json
+    docker_path = Path("/app/docs/reference/api/swagger.json")
     if docker_path.exists():
         return str(docker_path)
 
     # Fallback: Cálculo relativo (5 niveles desde src/agent_core/api/loader.py)
-    # apps/agent-host/src/agent_core/api/loader.py (parents[0..3]) -> apps/agent-host (parents[4]) -> root (parents[5])
+    # apps/agent-host/src/infra/legacy/api_loader.py -> ... -> root
     try:
         project_root = Path(__file__).resolve().parents[5]
-        local_path = project_root / "docs" / "swagger.json"
+        local_path = project_root / "docs" / "reference" / "api" / "swagger.json"
         if local_path.exists():
             return str(local_path)
     except IndexError:
