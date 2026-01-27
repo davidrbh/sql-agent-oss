@@ -25,6 +25,8 @@ mysql_data/
 data/chroma_db/
 chroma_db/
 waha_sessions/
+mysql_dump/
+data/*.yaml
 
 # Node.js / TypeScript
 node_modules/
