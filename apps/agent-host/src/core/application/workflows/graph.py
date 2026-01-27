@@ -46,7 +46,7 @@ def intent_classifier_node(state: AgentState) -> dict:
     prompt = ChatPromptTemplate.from_template(
         """Eres un clasificador de intenciones experto. Analiza la ÚLTIMA pregunta del usuario y clasifícala en:
         - DATABASE: Consultas de datos de negocio, conteos, tablas o esquemas (ej: "cuantos...", "que tablas...", "quien es...").
-        - API: Consultas técnicas de estado de servicios o endpoints externos.
+        - API: Consultas técnicas sobre capacidades del sistema, endpoints disponibles, estado de servicios o llamadas HTTP (ej: "¿qué endpoints hay?", "¿puedes llamar a la API?").
         - GENERAL: Saludos o charla casual.
         
         Historial:

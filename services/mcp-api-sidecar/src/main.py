@@ -61,24 +61,25 @@ requests_wrapper = get_requests_wrapper()
 @mcp.tool()
 async def api_get(path: str, params: Optional[dict] = None) -> str:
     """
-    Realiza una petici0n GET a la API externa vinculada.
+    Realiza una petición GET a la API externa para consultar estados o datos en tiempo real.
     
     Args:
-        path: Ruta relativa del endpoint (ej: '/admin/users').
-        params: Diccionario opcional de par0metros de consulta.
+        path: La ruta relativa del endpoint (ej: '/admin/users'). DEBES obtener esta ruta de list_api_endpoints.
+        params: Parámetros opcionales para filtrar la consulta.
     """
-    logger.info(f"Ejecutando petici0n GET en ruta: {path}")
+    logger.info(f"Ejecutando petición GET en ruta: {path}")
     try:
         response = await requests_wrapper.aget(path, params=params)
         return response
     except Exception as e:
-        logger.error(f"Error cr0tico en petici0n API: {str(e)}")
-        return f"Error de comunicaci0n con la API: {str(e)}"
+        logger.error(f"Error crítico en petición API: {str(e)}")
+        return f"Error de comunicación con la API: {str(e)}"
 
 @mcp.tool()
 def list_api_endpoints() -> str:
     """
-    Provee un resumen de los endpoints disponibles en la API.
+    Lista todos los endpoints, rutas y métodos disponibles en la API externa.
+    Úsala cuando necesites saber qué información técnica puedes consultar o qué URLs están permitidas.
     """
     if not os.path.exists(SWAGGER_PATH):
         logger.warning(f"No se encontr0 el archivo Swagger en: {SWAGGER_PATH}")
