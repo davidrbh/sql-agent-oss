@@ -225,7 +225,8 @@ def build_graph(
                 return ToolMessage(content=f"Error: Herramienta '{name}' no disponible.", tool_call_id=tid, name=name)
 
             try:
-                output = await asyncio.wait_for(tool.ainvoke(args), timeout=45.0)
+                # Aumentamos el timeout del orquestador para dar margen al cliente MCP (60s)
+                output = await asyncio.wait_for(tool.ainvoke(args), timeout=70.0)
                 return ToolMessage(content=str(output), tool_call_id=tid, name=name)
             except Exception as e:
                 err_info = str(e)
