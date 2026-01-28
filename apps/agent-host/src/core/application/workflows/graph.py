@@ -229,8 +229,10 @@ def build_graph(
                 output = await asyncio.wait_for(tool.ainvoke(args), timeout=70.0)
                 return ToolMessage(content=str(output), tool_call_id=tid, name=name)
             except Exception as e:
-                err_info = str(e)
-                logger.error(f"Fallo en herramienta '{name}': {err_info}")
+                # Usamos repr(e) y traceback para capturar errores que no tienen mensaje string (ej. AssertionError)
+                err_info = repr(e)
+                logger.error(f"Fallo crítico en herramienta '{name}': {err_info}")
+                logger.error(traceback.format_exc())
                 return ToolMessage(
                     content=f"❌ Error técnico en '{name}': {err_info}", 
                     tool_call_id=tid, 
