@@ -33,16 +33,13 @@ class ServerConfig:
 class MultiServerMCPClient:
     """
     Gestiona múltiples conexiones a servidores MCP de forma centralizada.
-    
-    Esta clase es responsable de mantener activas las sesiones con los sidecars
-    y asegurar que todos los recursos se liberen correctamente al apagar el sistema.
     """
 
     def __init__(self, config_json: str):
         self.configs: Dict[str, ServerConfig] = self._parse_config(config_json)
         self.sessions: Dict[str, ClientSession] = {}
-        # El ExitStack centraliza el ciclo de vida de todos los transportes y sesiones
-        self._exit_stack = AsyncExitStack()
+        # Manejamos un ExitStack por cada servidor para permitir re-conexiones individuales
+        self.stacks: Dict[str, AsyncExitStack] = {}
         self._lock = asyncio.Lock()
         # Tiempos de espera como floats (requerido por el SDK de MCP)
         self._timeout_sec = 60.0
@@ -69,28 +66,30 @@ class MultiServerMCPClient:
                     await self._connect_server(name, config)
 
     async def _connect_server(self, name: str, config: ServerConfig):
-        """Conecta a un servidor específico y registra su sesión en el ExitStack."""
+        """Conecta a un servidor específico y registra su sesión en su propio ExitStack."""
         logger.info(f"Conectando al servidor MCP '{name}' vía {config.transport}...")
+        
+        # Crear un nuevo stack para esta conexión
+        stack = AsyncExitStack()
+        
         try:
             if config.transport == "sse":
                 if not config.url:
                     raise ValueError(f"Falta URL para el servidor SSE '{name}'")
                 
-                # 1. Entrar al contexto del transporte SSE con timeouts extendidos (floats)
                 ctx = sse_client(
                     url=config.url, 
                     timeout=self._timeout_sec,
                     sse_read_timeout=self._timeout_sec
                 )
-                read_stream, write_stream = await self._exit_stack.enter_async_context(ctx)
+                read_stream, write_stream = await stack.enter_async_context(ctx)
                 
-                # 2. Crear y entrar al contexto de la sesión MCP
                 session = ClientSession(read_stream, write_stream)
-                await self._exit_stack.enter_async_context(session)
+                await stack.enter_async_context(session)
                 
-                # 3. Inicializar el protocolo
                 await session.initialize()
                 self.sessions[name] = session
+                self.stacks[name] = stack
                 logger.info(f"✅ Conectado a '{name}' (SSE)")
             
             elif config.transport == "stdio":
@@ -103,30 +102,35 @@ class MultiServerMCPClient:
                     env={**os.environ, **(config.env or {})}
                 )
                 
-                # 1. Entrar al contexto del transporte Stdio
                 ctx = stdio_client(server_params)
-                read_stream, write_stream = await self._exit_stack.enter_async_context(ctx)
+                read_stream, write_stream = await stack.enter_async_context(ctx)
                 
-                # 2. Crear y entrar al contexto de la sesión MCP
                 session = ClientSession(read_stream, write_stream)
-                await self._exit_stack.enter_async_context(session)
+                await stack.enter_async_context(session)
                 
-                # 3. Inicializar el protocolo
                 await session.initialize()
                 self.sessions[name] = session
+                self.stacks[name] = stack
                 logger.info(f"✅ Conectado a '{name}' (Stdio)")
             
         except Exception as e:
             logger.error(f"❌ Error conectando con '{name}': {repr(e)}")
+            await stack.aclose() # Limpiar si falla
+
+    async def remove_session(self, name: str):
+        """Cierra y elimina una sesión específica, permitiendo su reconexión posterior."""
+        async with self._lock:
+            if name in self.stacks:
+                logger.warning(f"Cerrando sesión expirada o rota: '{name}'")
+                await self.stacks[name].aclose()
+                del self.stacks[name]
+            if name in self.sessions:
+                del self.sessions[name]
 
     async def close(self):
         """Libera todos los recursos y cierra todas las sesiones MCP."""
         logger.info("Cerrando todas las conexiones MCP...")
-        try:
-            # aclose() ejecutará los __aexit__ de todos los contextos en orden inverso
-            await self._exit_stack.aclose()
-            self.sessions.clear()
+        async with self._lock:
+            for name in list(self.stacks.keys()):
+                await self.remove_session(name)
             logger.info("Conexiones MCP cerradas limpiamente.")
-        except Exception as e:
-            # Evitamos que fallos en el cierre bloqueen el shutdown del proceso
-            logger.error(f"Error durante el cierre de MCP: {repr(e)}")

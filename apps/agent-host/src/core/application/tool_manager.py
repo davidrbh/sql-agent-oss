@@ -51,6 +51,16 @@ class CompositeToolProvider(IToolProvider):
         self._tools_cache = mcp_tools + feature_tools
         return self._tools_cache
 
+    async def invalidate_cache(self):
+        """Limpia el cache de todas las fuentes."""
+        self._tools_cache = []
+        await self.mcp_provider.invalidate_cache()
+
+    async def report_tool_failure(self, tool_name: str):
+        """Notifica el fallo de una herramienta para forzar re-conexión."""
+        self._tools_cache = []
+        await self.mcp_provider.report_tool_failure(tool_name)
+
     async def close(self):
         """
         Cierra todos los proveedores subyacentes.

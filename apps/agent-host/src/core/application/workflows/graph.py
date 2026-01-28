@@ -201,6 +201,10 @@ def build_graph(
         if not isinstance(last_message, AIMessage) or not last_message.tool_calls:
             return {"messages": []}
 
+        # Obtenemos el proveedor desde el contenedor para poder invalidar cache si falla
+        from core.application.container import Container
+        tool_provider = Container.get_tool_provider()
+
         async def run_single_tool(tool_call):
             name = tool_call["name"]
             args = tool_call["args"]
@@ -229,8 +233,18 @@ def build_graph(
                 output = await asyncio.wait_for(tool.ainvoke(args), timeout=70.0)
                 return ToolMessage(content=str(output), tool_call_id=tid, name=name)
             except Exception as e:
-                # Usamos repr(e) y traceback para capturar errores que no tienen mensaje string (ej. AssertionError)
+                # DETECCIÓN DE CONEXIÓN ROTA (Self-Healing)
                 err_info = repr(e)
+                if "ClosedResourceError" in err_info or "Connection closed" in err_info:
+                    logger.error(f"🔴 CONEXIÓN MCP ROTA DETECTADA en '{name}'. Iniciando auto-reparación...")
+                    await tool_provider.report_tool_failure(name)
+                    return ToolMessage(
+                        content=f"🔄 Error de conexión detectado. He reiniciado el túnel de datos. Por favor, intenta de nuevo.", 
+                        tool_call_id=tid, 
+                        name=name
+                    )
+
+                # Usamos repr(e) y traceback para capturar errores que no tienen mensaje string (ej. AssertionError)
                 logger.error(f"Fallo crítico en herramienta '{name}': {err_info}")
                 logger.error(traceback.format_exc())
                 return ToolMessage(

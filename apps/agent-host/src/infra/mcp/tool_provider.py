@@ -60,6 +60,21 @@ class MCPToolProvider(IToolProvider):
         self._tools_cache = all_tools
         return all_tools
 
+    async def invalidate_cache(self):
+        """Limpia el cache de herramientas para forzar un re-descubrimiento."""
+        self._tools_cache = []
+
+    async def report_tool_failure(self, tool_name: str):
+        """
+        Maneja el fallo de una herramienta específica invalidando el cache 
+        y forzando la limpieza de sesiones.
+        """
+        logger.warning(f"Reportado fallo en herramienta '{tool_name}'. Invalidando cache...")
+        await self.invalidate_cache()
+        # Intentamos identificar qué servidor falló y removerlo
+        # Por simplicidad en v1, cerramos todas para asegurar consistencia
+        await self.client.close() 
+
     async def close(self):
         """
         Finaliza todas las conexiones MCP activas.
