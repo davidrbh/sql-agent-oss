@@ -38,8 +38,12 @@ const pool = mysql.createPool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
+  connectionLimit: 30, // Límite seguro para DB remota
+  queueLimit: 0,        // Sin límite de cola para no rechazar peticiones
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 10000,
+  connectTimeout: 30000, // 30s para lidiar con latencia de red
+  idleTimeout: 60000,    // Mantener conexiones inactivas por 1 min
 });
 
 /**
@@ -125,25 +129,24 @@ const start = async () => {
        * Aunque el Host ya valida, el Sidecar es la última línea de defensa.
        * Rechazamos cualquier operación que no sea estrictamente de lectura.
        */
-      const upperSql = sql.trim().toUpperCase();
-      const isReadOnly = upperSql.startsWith("SELECT") || 
-                         upperSql.startsWith("DESCRIBE") || 
-                         upperSql.startsWith("SHOW");
+      const cleanSql = sql.replace(/\/\*[\s\S]*?\*\/|--.*$/gm, "").trim().toUpperCase();
+      const safeKeywords = ["SELECT", "DESCRIBE", "DESC", "SHOW", "EXPLAIN", "WITH"];
+      const isReadOnly = safeKeywords.some(kw => cleanSql.startsWith(kw));
 
       if (!isReadOnly) {
          return {
           isError: true,
           content: [
-            { type: "text", text: `⛔ SEGURIDAD: El Sidecar ha bloqueado esta consulta. Solo se permiten operaciones de lectura (SELECT/DESCRIBE/SHOW).` },
+            { type: "text", text: `⛔ SEGURIDAD: El Sidecar ha bloqueado esta consulta. Solo se permiten operaciones de lectura (SELECT/DESCRIBE/SHOW/WITH/EXPLAIN).` },
           ],
         };
       }
 
       try {
-        /**
-         * Ejecución de la consulta en la base de datos real.
-         */
+        // 2. EJECUCIÓN REAL
+        fastify.log.info({ sql }, "Ejecutando consulta SQL");
         const [rows] = await pool.execute(sql);
+
 
         return {
           content: [

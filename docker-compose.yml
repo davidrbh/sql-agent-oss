@@ -87,10 +87,10 @@ services:
     environment:
       # Configuración de Memoria Persistente
       - DB_URI=postgresql://${MEMORY_DB_USER:-postgres}:${MEMORY_DB_PASSWORD:-postgres}@agent-memory:5432/${MEMORY_DB_NAME:-agent_memory}
-      
+
       # Configuración SOA (MCP Servers) - Tomada de .env
       - MCP_SERVERS_CONFIG=${MCP_SERVERS_CONFIG}
-      
+
       # Fallbacks Legacy
       - SIDECAR_URL=${SIDECAR_URL}
       - PYTHONPATH=/app/src
@@ -111,7 +111,7 @@ services:
       - agent-memory
     ports:
       - "8000:8000"
-    command: uvicorn src.api.server:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn src.api.server:app --host 0.0.0.0 --port 8000
 
   # -------------------------------------------------------
   # 3. CANAL: Telegram Bot
@@ -134,7 +134,7 @@ services:
   # -------------------------------------------------------
   waha:
     container_name: waha
-    image: devlikeapro/waha:latest-2026.1.3
+    image: devlikeapro/waha:latest-2026.1.4
     networks:
       - sql-agent-network
     ports:
@@ -145,7 +145,7 @@ services:
       - WHATSAPP_API_KEY=${WAHA_API_KEY}
       - WHATSAPP_SWAGGER_USERNAME=${WHATSAPP_SWAGGER_USERNAME}
       - WHATSAPP_SWAGGER_PASSWORD=${WHATSAPP_SWAGGER_PASSWORD}
-      - WHATSAPP_DEFAULT_ENGINE=WEBJS
+      - WHATSAPP_DEFAULT_ENGINE=NOWEB
       - WHATSAPP_DEFAULT_SESSION=default
       - WHATSAPP_START_SESSION=default
       - WHATSAPP_WEBHOOK_URL=${WHATSAPP_WEBHOOK_URL}
