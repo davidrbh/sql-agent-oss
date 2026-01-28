@@ -117,20 +117,28 @@ class MultiServerMCPClient:
             logger.error(f"❌ Error conectando con '{name}': {repr(e)}")
             await stack.aclose() # Limpiar si falla
 
+    async def _remove_session_internal(self, name: str):
+        """Lógica interna de limpieza sin bloqueos (usar solo dentro de async with self._lock)."""
+        if name in self.stacks:
+            logger.warning(f"Cerrando sesión expirada o rota: '{name}'")
+            try:
+                await self.stacks[name].aclose()
+            except Exception as e:
+                logger.error(f"Error cerrando stack para '{name}': {e}")
+            del self.stacks[name]
+        if name in self.sessions:
+            del self.sessions[name]
+
     async def remove_session(self, name: str):
         """Cierra y elimina una sesión específica, permitiendo su reconexión posterior."""
         async with self._lock:
-            if name in self.stacks:
-                logger.warning(f"Cerrando sesión expirada o rota: '{name}'")
-                await self.stacks[name].aclose()
-                del self.stacks[name]
-            if name in self.sessions:
-                del self.sessions[name]
+            await self._remove_session_internal(name)
 
     async def close(self):
         """Libera todos los recursos y cierra todas las sesiones MCP."""
         logger.info("Cerrando todas las conexiones MCP...")
         async with self._lock:
+            # Creamos una lista de nombres para evitar modificar el dict mientras iteramos
             for name in list(self.stacks.keys()):
-                await self.remove_session(name)
+                await self._remove_session_internal(name)
             logger.info("Conexiones MCP cerradas limpiamente.")
