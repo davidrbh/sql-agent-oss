@@ -55,7 +55,7 @@ async def initialize_agent():
         try:
             tool_provider = Container.get_tool_provider()
             tools = await tool_provider.get_tools()
-            system_prompt = get_sql_system_prompt()
+            system_prompt = get_sql_system_prompt(channel="telegram")
 
             # Inyectamos None en checkpointer para usar memoria volátil en RAM para Telegram
             # TODO: Migrar a persistencia PostgreSQL mediante thread_id de Telegram

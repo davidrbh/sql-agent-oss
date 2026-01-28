@@ -41,7 +41,7 @@ async def on_chat_start():
         await msg.update()
 
         tools = await tool_provider.get_tools()
-        system_prompt = get_sql_system_prompt()
+        system_prompt = get_sql_system_prompt(channel="web")
         
         tool_names = [t.name for t in tools]
         msg.content = f"🔧 Herramientas cargadas: {tool_names}. Configurando persistencia..."
@@ -100,9 +100,14 @@ async def on_message(message: cl.Message):
     full_response_text = ""
 
     try:
+        # Añadir mensaje actual al historial
         history.append(HumanMessage(content=message.content))
+        
         inputs = {"messages": history}
-        config = {"configurable": {"thread_id": cl.context.session.id}}
+        config = {
+            "configurable": {"thread_id": cl.context.session.id},
+            "recursion_limit": 50
+        }
         
         async for event in graph.astream_events(inputs, config=config, version="v2"):
             kind = event["event"]

@@ -108,7 +108,7 @@ async def process_message(chat_id: str, message_text: str) -> None:
         checkpointer_manager = Container.get_checkpointer()
         
         tools = await tool_provider.get_tools()
-        system_prompt = get_sql_system_prompt()
+        system_prompt = get_sql_system_prompt(channel="whatsapp")
         
         async with checkpointer_manager.get_saver() as saver:
             agent = build_graph(
