@@ -1,7 +1,7 @@
 app:
   name: "SQL Agent OSS"
   version: "0.1.0"
-  debug: true
+  debug: false
 
 llm:
   #provider: "google" # Opciones: google, openai
