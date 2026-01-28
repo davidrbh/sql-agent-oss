@@ -41,8 +41,8 @@ class MultiServerMCPClient:
         # Manejamos un ExitStack por cada servidor para permitir re-conexiones individuales
         self.stacks: Dict[str, AsyncExitStack] = {}
         self._lock = asyncio.Lock()
-        # Tiempos de espera extendidos a 5 minutos para reportes pesados
-        self._timeout_sec = 300.0
+        # Tiempos de espera estándar (60s)
+        self._timeout_sec = 60.0
 
     def _parse_config(self, config_json: str) -> Dict[str, ServerConfig]:
         try:
