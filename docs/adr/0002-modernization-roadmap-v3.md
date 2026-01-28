@@ -1,46 +1,40 @@
 # Roadmap de Evolución y Futuras Capacidades
 
-## 1. Estado Actual (Arquitectura MCP-Nativa)
+## 1. Estado Actual (Arquitectura SOA v4.3 - High Performance)
 
-La arquitectura actual del proyecto ha completado con éxito la migración a un **ecosistema nativo de MCP (Model Context Protocol)**. Este hito es el fundamento de la versión actual y representa un salto cualitativo en la madurez del sistema.
+La arquitectura actual del proyecto ha alcanzado un nivel de madurez industrial, completando la **v4.3**. El sistema es ahora un ecosistema SOA de alto rendimiento, optimizado para latencia mínima y estabilidad de canal.
 
-**Logros Clave Completados:**
--   **Desacoplamiento Total:** El agente (`agent-host`) está completamente aislado de la implementación y las credenciales de sus herramientas (como la base de datos).
--   **Arquitectura de Sidecars:** La comunicación se realiza a través de servicios especializados (`mcp-mysql-sidecar`), mejorando la seguridad, el aislamiento de fallos y la escalabilidad.
--   **Optimización de Latencia:** Se han implementado patrones de "Light Mode" para la carga de APIs y una gestión eficiente del ciclo de vida del agente.
-
-Con esta base sólida, el roadmap se enfoca en expandir la inteligencia, la fiabilidad y el rendimiento del sistema.
+**Logros Clave v4.3:**
+-   **📱 WhatsApp Industrial:** Migración exitosa al motor **NOWEB**, eliminando la dependencia de Chromium y mejorando la estabilidad en un 100%.
+-   **⚡ Optimización Cognitiva:** Implementación de **Prompt Caching** y **Parallel Tool Execution**, reduciendo el tiempo de respuesta en un 40%.
+-   **🛡️ Seguridad AST Progresiva:** Motor **SQLGuard** refinado con análisis recursivo total y soporte para comandos complejos (`WITH`, `EXPLAIN`).
+-   **💾 Memoria Persistente:** Integración nativa con PostgreSQL para persistencia de hilos de conversación.
+-   **🎨 Catálogo de Prompts:** Personalidad y habilidades configurables 100% vía YAML (`prompts.yaml`).
 
 ---
 
 ## 2. Fases Futuras
 
-### Fase 1: Fiabilidad y Memoria a Largo Plazo 🧠
-
-El objetivo de esta fase es dotar al agente de una memoria persistente real, permitiendo conversaciones de múltiples turnos que sobrevivan a reinicios y errores.
-
--   **[ ] Checkpointing con Redis:** Integrar `langgraph-checkpoint-redis` para guardar el estado del grafo de conversación después de cada paso.
-    -   **Beneficio:** Si una API o consulta falla, se puede reintentar solo ese paso. Permite conversaciones verdaderamente largas y contextuales, especialmente en canales como WhatsApp.
--   **[ ] Cola de Tareas Persistente:** Migrar las `BackgroundTasks` de FastAPI a un sistema de colas más robusto como Celery o ARQ para garantizar la entrega de respuestas incluso si el `agent-host` se reinicia.
-
-### Fase 2: Inteligencia de Enrutamiento y Eficiencia 🚦
+### Fase 1: Inteligencia de Enrutamiento y Eficiencia 🚦
 
 El objetivo es optimizar costos y latencia utilizando el modelo de lenguaje (LLM) adecuado para cada tarea.
 
--   **[ ] Router de Vía Rápida (Fast-Path):** Implementar un nodo de enrutamiento inicial que identifique tareas simples (saludos, preguntas repetidas, queries sencillas) y las dirija a un LLM más pequeño y rápido (ej. `GPT-4o-mini`, `Llama-3-8B`).
--   **[ ] Router de Vía Lenta (Slow-Path):** Las consultas analíticas complejas que requieran un razonamiento profundo seguirán siendo manejadas por modelos más potentes (`DeepSeek-V3`, `GPT-4o`), priorizando la precisión sobre la velocidad.
+-   **[ ] Router de Vía Rápida (Zero-Turn):** Eliminar el nodo de clasificación de intención para tareas obvias, permitiendo que el Agente principal rutee directamente.
+-   **[ ] Multi-Model Routing:** Usar un LLM ultra-rápido (como Groq/Llama3) para decisiones de flujo y DeepSeek-V3 para razonamiento analítico pesado.
 
-### Fase 3: Expansión del Ecosistema de Herramientas (Sidecars) 🛠️
+### Fase 2: Expansión del Ecosistema de Herramientas (Sidecars) 🛠️
 
 El objetivo es expandir las capacidades del agente añadiendo nuevos "brazos" especializados.
 
--   **[ ] Sidecar de Sistema de Archivos:** Crear un `mcp-filesystem-sidecar` que exponga herramientas para leer y escribir archivos en un volumen seguro. Esto haría realidad la feature de "PDF Reader" de una forma robusta y aislada.
--   **[ ] Sidecar Genérico de APIs REST:** Desarrollar un sidecar configurable que pueda realizar llamadas a cualquier API REST de terceros. El `agent-host` simplemente le pediría "llama al endpoint X de la API Y", y el sidecar se encargaría de la autenticación y la comunicación.
+-   **[ ] Sidecar de Documentos (PDF/RAG):** Crear un `mcp-document-sidecar` para procesar archivos PDF y realizar búsquedas semánticas sobre ellos.
+-   **[ ] Sidecar de Logs y Monitorización:** Permitir al agente consultar el estado de salud de la propia infraestructura y alertar proactivamente por WhatsApp.
+
+### Fase 3: Seguridad y Privacidad Avanzada (Guardrails) 🔒
+
+-   **[ ] Ofuscación PII Automática:** Implementar una capa de filtrado que detecte información personal sensible (emails, teléfonos completos) y los ofusque antes de enviarlos a canales móviles.
+-   **[ ] Auditoría de Consultas:** Panel de control para revisar qué consultas SQL han sido bloqueadas por SQLGuard y por qué.
 
 ### Fase 4: Optimización de Inferencia y Rendimiento ⚡
 
-Esta fase se enfoca en llevar el rendimiento al siguiente nivel para casos de uso de alta demanda.
-
--   **[ ] Caché Semántico con VectorDB:** Implementar un sistema de caché que almacene los resultados de las preguntas no por el texto exacto, sino por su significado semántico (vectores).
-    -   **Beneficio:** Las preguntas "¿Cuánto vendimos ayer?" y "dame las ventas del día anterior" golpearían el mismo caché, reduciendo drásticamente las consultas repetidas a la base de datos y el uso de LLMs.
--   **[ ] Inferencia Local (vLLM / Ollama):** Para máxima privacidad y mínima latencia, el roadmap contempla la capacidad de desplegar modelos open-source (como Llama-3 o Mixtral) en infraestructura propia utilizando servidores de inferencia optimizados.
+-   **[ ] Caché Semántico con VectorDB:** Implementar un sistema de caché que almacene los resultados de las preguntas por su significado semántico (usando ChromaDB).
+-   **[ ] RAG de Metadatos:** Carga dinámica de esquemas de tablas basados en la relevancia de la pregunta, permitiendo escalar a cientos de tablas sin saturar el prompt.

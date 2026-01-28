@@ -4,7 +4,14 @@ Este documento describe cómo el proyecto se integra con WhatsApp para permitir 
 
 ## 1. Arquitectura y Flujo de Mensajes
 
-La arquitectura es simple y se basa en la comunicación entre dos servicios principales de nuestro `docker-compose.yml`:
+A partir de la **v4.3**, el proyecto utiliza el motor **NOWEB** de WAHA. A diferencia de las versiones anteriores que emulaban un navegador Chrome (WEBJS), NOWEB se conecta directamente a los servidores de WhatsApp mediante WebSockets.
+
+**Ventajas de NOWEB:**
+-   **Estabilidad:** Elimina errores de "navegador desconectado" o cuelgues de Puppeteer.
+-   **Rendimiento:** Reduce el consumo de memoria RAM en un 60% y la carga de CPU.
+-   **Velocidad:** Las notificaciones de mensajes son casi instantáneas.
+
+La arquitectura se basa en la comunicación entre dos servicios principales:
 
 -   **`waha`**: El servicio Docker que se conecta directamente a los servidores de WhatsApp y expone una API REST para enviar y recibir mensajes.
 -   **`agent-host`**: Nuestro servidor principal, que contiene la lógica del agente y un endpoint para recibir los webhooks de `waha`.

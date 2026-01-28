@@ -1,40 +1,30 @@
-# Documentación de SQL Agent OSS (v4.0)
+# SQL Agent OSS v4.3 (SOA Ready) 🚀
 
-Bienvenido a la documentación oficial. Este proyecto sigue una arquitectura **SOA (Service-Oriented Architecture)** implementando el protocolo **MCP (Model Context Protocol)**.
+Bienvenido a la documentación oficial del **SQL Agent OSS**, el ecosistema de inteligencia empresarial más avanzado, seguro y rápido para entornos Fintech.
 
-## Estructura de la Documentación
+## 🏗️ Filosofía del Proyecto
 
-La documentación está organizada siguiendo el estándar Diátaxis:
+Esta no es una aplicación monolítica. Es una **Arquitectura de Micro-Agentes** basada en el protocolo **MCP (Model Context Protocol)**. El "Cerebro" (Agent Host) razona y planifica, mientras que los "Músculos" (Sidecars) ejecutan tareas específicas en entornos aislados.
 
-### 🧠 [Conceptos](./concepts/)
-*Entiende el "por qué" y la filosofía del diseño.*
-- [Arquitectura General (Hybrid Slice)](./concepts/architecture.md)
-- [Capa Semántica y Seguridad](./concepts/semantic-layer.md)
-- [Límites del Proyecto](./concepts/boundaries.md)
+## ✨ Características de v4.3 (High Performance)
 
-### 🚀 [Guías](./guides/)
-*Tutoriales paso a paso para configurar y extender.*
-- **Setup:**
-    - [Integración con WhatsApp](./guides/setup/whatsapp-integration.md)
-    - [Configuración de Terminal WARP](./guides/setup/warp-terminal.md)
-- **Desarrollo:**
-    - [Cómo Extender el Agente](./guides/development/extending-the-agent.md)
-    - [Personalizar la UI (Chainlit)](./guides/development/chainlit-ui.md)
+*   **⚡ Latencia Ultra-Baja:** Optimizaciones de *Parallel Tool Execution* y *DeepSeek Prompt Caching*.
+*   **📱 WhatsApp Industrial:** Motor **NOWEB** integrado para máxima estabilidad y bajo consumo.
+*   **🛡️ Seguridad AST:** Motor **SQLGuard** que valida cada consulta a nivel sintáctico antes de su ejecución.
+*   **🔌 Multi-Servicio:** Capacidad nativa para consultar Bases de Datos y APIs REST simultáneamente.
+*   **💾 Memoria Infinita:** Persistencia en PostgreSQL que permite mantener el contexto incluso tras reinicios.
+*   **🎨 Configuración Cognitiva:** Personalidad y habilidades 100% configurables vía YAML.
 
-### 📚 [Referencia](./reference/)
-*Especificaciones técnicas detalladas.*
-- [Configuración de Infraestructura](./reference/config/infrastructure.md)
-- [API Swagger](./reference/api/swagger.json)
-- [Módulos del Core](./reference/agent-core.md)
+## 🚀 Guía Rápida de Inicio
 
-### 🏛️ [ADR (Architecture Decision Records)](./adr/)
-*Historial de decisiones técnicas importantes.*
-- [0001: Stack Tecnológico](./adr/0001-tech-stack.md)
-- [0002: Roadmap de Modernización v3](./adr/0002-modernization-roadmap-v3.md)
+1.  **Configura tu entorno:** Renombra `.env.example` a `.env` y añade tus credenciales.
+2.  **Levanta la infraestructura:**
+    ```bash
+    docker compose up -d
+    ```
+3.  **Vincula WhatsApp:** Entra a `http://localhost:3001` y escanea el QR.
+4.  **¡Empieza a preguntar!**
 
 ---
 
-## Búsqueda Rápida
-
-- ¿Quieres entender cómo funciona la seguridad SQL? Lee [Semantic Layer](./concepts/semantic-layer.md).
-- ¿Quieres conectar una API nueva? Lee [Extending the Agent](./guides/development/extending-the-agent.md).
+*Desarrollado con ❤️ para ecosistemas de datos modernos.*

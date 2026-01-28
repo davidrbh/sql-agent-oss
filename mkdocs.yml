@@ -44,7 +44,7 @@ nav:
       - 'Límites del Proyecto': concepts/boundaries.md
   - Guías de Setup:
       - 'Integración WhatsApp': guides/setup/whatsapp-integration.md
-      - 'Terminal WARP': guides/setup/warp-terminal.md
+      - 'Integración Telegram': guides/setup/telegram-integration.md
   - Guías de Desarrollo:
       - 'Extender el Agente': guides/development/extending-the-agent.md
       - 'Personalizar UI (Chainlit)': guides/development/chainlit-ui.md
