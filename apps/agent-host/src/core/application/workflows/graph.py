@@ -229,8 +229,8 @@ def build_graph(
                 return ToolMessage(content=f"Error: Herramienta '{name}' no disponible.", tool_call_id=tid, name=name)
 
             try:
-                # Aumentamos el timeout del orquestador para dar margen al cliente MCP (60s)
-                output = await asyncio.wait_for(tool.ainvoke(args), timeout=70.0)
+                # Aumentamos el timeout del orquestador a 310s para dar margen al cliente MCP (300s)
+                output = await asyncio.wait_for(tool.ainvoke(args), timeout=310.0)
                 return ToolMessage(content=str(output), tool_call_id=tid, name=name)
             except Exception as e:
                 # DETECCIÓN DE CONEXIÓN ROTA (Self-Healing)
