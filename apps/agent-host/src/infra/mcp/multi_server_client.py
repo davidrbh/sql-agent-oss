@@ -122,12 +122,14 @@ class MultiServerMCPClient:
         if name in self.stacks:
             logger.warning(f"Cerrando sesión expirada o rota: '{name}'")
             try:
-                await self.stacks[name].aclose()
+                # Forzamos un timeout al cerrar para que una sesión colgada no bloquee todo el Agente
+                await asyncio.wait_for(self.stacks[name].aclose(), timeout=5.0)
             except Exception as e:
-                logger.error(f"Error cerrando stack para '{name}': {e}")
-            del self.stacks[name]
-        if name in self.sessions:
-            del self.sessions[name]
+                logger.error(f"Error (no crítico) cerrando stack para '{name}': {repr(e)}")
+            finally:
+                # Nos aseguramos de limpiar las referencias pase lo que pase
+                self.stacks.pop(name, None)
+                self.sessions.pop(name, None)
 
     async def remove_session(self, name: str):
         """Cierra y elimina una sesión específica, permitiendo su reconexión posterior."""

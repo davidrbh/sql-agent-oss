@@ -28,49 +28,45 @@ logger = logging.getLogger(__name__)
 
 global_graph = None
 user_histories = {}
+init_lock = asyncio.Lock()
 
 
 async def initialize_agent():
     """
-    Construye el grafo del agente con lógica de reintento.
-
-    Intenta conectar con la infraestructura necesaria (MCP Sidecars) y 
-    configura el motor de razonamiento. Reintenta en caso de que los 
-    servicios dependientes no estén listos.
-
-    Returns:
-        StateGraph: La instancia del grafo compilado del agente.
+    Construye el grafo del agente con lógica de reintento y protección de concurrencia.
     """
     global global_graph
     
-    if global_graph:
-        return global_graph
-
-    max_retries = 15
-    retry_delay = 5
-
-    logger.info("Iniciando secuencia de conexión con el núcleo cognitivo...")
-
-    for attempt in range(max_retries):
-        try:
-            tool_provider = Container.get_tool_provider()
-            tools = await tool_provider.get_tools()
-            system_prompt = get_sql_system_prompt(channel="telegram")
-
-            # Inyectamos None en checkpointer para usar memoria volátil en RAM para Telegram
-            # TODO: Migrar a persistencia PostgreSQL mediante thread_id de Telegram
-            global_graph = build_graph(tools, system_prompt, checkpointer=None)
-            
-            logger.info("Agente conectado y listo (Clasificador + SQL + API).")
+    async with init_lock:
+        if global_graph:
             return global_graph
 
-        except Exception as e:
-            logger.warning(f"Intento {attempt + 1}/{max_retries} fallido. Reintentando en {retry_delay}s...")
-            if attempt < max_retries - 1:
-                await asyncio.sleep(retry_delay)
-            else:
-                logger.error("Se agotaron los reintentos de conexión.")
-                raise e
+        max_retries = 15
+        retry_delay = 5
+
+        logger.info("Iniciando secuencia de conexión con el núcleo cognitivo...")
+
+        for attempt in range(max_retries):
+            try:
+                tool_provider = Container.get_tool_provider()
+                # Limpiamos cache previo para asegurar frescura
+                await tool_provider.invalidate_cache()
+                
+                tools = await tool_provider.get_tools()
+                system_prompt = get_sql_system_prompt(channel="telegram")
+
+                global_graph = build_graph(tools, system_prompt, checkpointer=None)
+                
+                logger.info("Agente conectado y listo (Clasificador + SQL + API).")
+                return global_graph
+
+            except Exception as e:
+                logger.warning(f"Intento {attempt + 1}/{max_retries} fallido ({repr(e)}). Reintentando en {retry_delay}s...")
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(retry_delay)
+                else:
+                    logger.error("Se agotaron los reintentos de conexión.")
+                    raise e
 
 
 async def send_long_message(update: Update, text: str):
