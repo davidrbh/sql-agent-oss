@@ -38,12 +38,12 @@ const pool = mysql.createPool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   waitForConnections: true,
-  connectionLimit: 30, // Límite seguro para DB remota
-  queueLimit: 0,        // Sin límite de cola para no rechazar peticiones
+  connectionLimit: 50, // Aumentado para mayor concurrencia
+  queueLimit: 0,        // Sin límite de cola
   enableKeepAlive: true,
   keepAliveInitialDelay: 10000,
-  connectTimeout: 30000, // 30s para lidiar con latencia de red
-  idleTimeout: 60000,    // Mantener conexiones inactivas por 1 min
+  connectTimeout: 60000, // 60s para conexión inicial
+  idleTimeout: 60000,    // 1 min para liberar conexiones inactivas
 });
 
 /**
