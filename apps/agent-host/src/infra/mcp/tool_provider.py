@@ -36,10 +36,14 @@ class MCPToolProvider(IToolProvider):
     async def get_tools(self) -> List[BaseTool]:
         """
         Descubre y adapta herramientas de todos los servidores MCP activos.
+        Implementa cache para evitar re-descubrimiento en cada llamada.
 
         Returns:
             List[BaseTool]: Colección de herramientas compatibles con LangChain.
         """
+        if self._tools_cache:
+            return self._tools_cache
+
         await self.client.connect()
         
         all_tools = []
@@ -49,6 +53,7 @@ class MCPToolProvider(IToolProvider):
             try:
                 server_tools = await load_mcp_tools(session)
                 all_tools.extend(server_tools)
+                logger.info(f"Herramientas cargadas exitosamente del servidor MCP '{name}'.")
             except Exception as e:
                 logger.warning(f"Error cargando herramientas del servidor MCP '{name}': {e}")
         

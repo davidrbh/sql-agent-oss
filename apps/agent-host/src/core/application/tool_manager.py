@@ -34,16 +34,18 @@ class CompositeToolProvider(IToolProvider):
     async def get_tools(self) -> List[BaseTool]:
         """
         Agrega herramientas de todas las fuentes MCP configuradas.
+        Implementa cache para optimizar el rendimiento.
 
         Returns:
             List[BaseTool]: Lista combinada de herramientas descubiertas vía MCP.
         """
+        if self._tools_cache:
+            return self._tools_cache
+
         # En la Arquitectura V4 pura, todas las herramientas se cargan vía MCP.
-        # El descubrimiento es dinámico basado en MCP_SERVERS_CONFIG.
         mcp_tools = await self.mcp_provider.get_tools()
         
-        # En el futuro, se podrían inyectar herramientas locales específicas aquí
-        # si fueran necesarias, pero el estándar es delegar a Sidecars.
+        # En el futuro, se podrían inyectar herramientas locales aquí
         feature_tools = [] 
         
         self._tools_cache = mcp_tools + feature_tools
