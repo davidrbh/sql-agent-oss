@@ -49,88 +49,81 @@ WAHA_MAX_RETRIES = 15
 async def configure_waha_session() -> None:
     """
     Realiza la configuración automática de la sesión de WhatsApp en WAHA.
-
-    Implementa una estrategia de 'polling' para esperar a que el servicio
-    WAHA esté disponible, y posteriormente crea o actualiza la sesión 'default'
-    con la configuración del Webhook actual.
     """
     session_name = "default"
-    
+    headers = {"Content-Type": "application/json", "X-Api-Key": WAHA_API_KEY}
     config_payload = {
         "config": {
+            "noweb": {
+                "store": {
+                    "enabled": True,
+                    "fullSync": False
+                }
+            },
             "webhooks": [{
                 "url": WEBHOOK_URL,
                 "events": ["message"],
-                "retries": {
-                    "delaySeconds": 2,
-                    "attempts": 5
-                }
+                "retries": {"delaySeconds": 2, "attempts": 5}
             }]
         }
     }
 
-    headers = {
-        "Content-Type": "application/json",
-        "X-Api-Key": WAHA_API_KEY
-    }
+    logger.info(f"[Auto-Config] Esperando a WAHA en: {WAHA_BASE_URL}...")
 
-    logger.info(f"[Auto-Config] Iniciando configuración. URL Webhook: {WEBHOOK_URL}")
-    logger.info(f"[Auto-Config] Buscando servicio WAHA en: {WAHA_BASE_URL}...")
-
-    async with httpx.AsyncClient(timeout=WAHA_INIT_TIMEOUT) as client:
-        service_ready = False
+    # 1. Fase de Polling: Esperar a que el servicio esté online
+    service_ready = False
+    async with httpx.AsyncClient(timeout=10.0) as client:
         for _ in range(WAHA_MAX_RETRIES):
             try:
                 resp = await client.get(f"{WAHA_BASE_URL}/api/server/status", headers=headers)
-                
                 if resp.status_code == 200:
-                    logger.info("[Auto-Config] Servicio WAHA detectado en línea.")
                     service_ready = True
                     break
-                elif resp.status_code == 401:
-                    logger.error("[Auto-Config] Error de Autenticación (401). Verifique WAHA_API_KEY.")
-                    return
-            except httpx.RequestError:
+            except Exception:
                 pass
-            
             await asyncio.sleep(WAHA_POLL_INTERVAL)
 
-        if not service_ready:
-            logger.error("[Auto-Config] Tiempo de espera agotado. WAHA no está disponible.")
-            return
+    if not service_ready:
+        logger.error("[Auto-Config] WAHA no disponible tras varios reintentos.")
+        return
 
-        logger.info(f"[Auto-Config] Configurando sesión '{session_name}'...")
-        try:
-            response = await client.put(
-                f"{WAHA_BASE_URL}/api/sessions/{session_name}",
-                json=config_payload,
-                headers=headers
-            )
-
-            if response.status_code == 404:
-                logger.info(f"[Auto-Config] Sesión no encontrada. Creando nueva sesión...")
+    # 2. Fase de Configuración: Aplicar cambios con un nuevo cliente
+    logger.info(f"[Auto-Config] Aplicando configuración a sesión '{session_name}' (esperando 5s para estabilidad)...")
+    await asyncio.sleep(5)
+    
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        for attempt in range(3):
+            try:
+                # Intentar actualizar configuración existente
+                resp = await client.put(f"{WAHA_BASE_URL}/api/sessions/{session_name}", json=config_payload, headers=headers)
                 
-                create_payload = config_payload.copy()
-                create_payload["name"] = session_name
+                if resp.status_code == 404:
+                    logger.info(f"[Auto-Config] Sesión '{session_name}' no encontrada. Creando nueva...")
+                    create_payload = config_payload.copy()
+                    create_payload["name"] = session_name
+                    await client.post(f"{WAHA_BASE_URL}/api/sessions", json=create_payload, headers=headers)
+                elif resp.status_code not in [200, 201]:
+                    logger.error(f"[Auto-Config] Error al actualizar configuración (Intento {attempt+1}): {resp.text}")
+                    continue
                 
-                await client.post(
-                    f"{WAHA_BASE_URL}/api/sessions",
-                    json=create_payload,
-                    headers=headers
-                )
-                logger.info("[Auto-Config] Sesión creada exitosamente.")
-            
-            elif response.status_code in [200, 201]:
-                logger.info("[Auto-Config] Sesión actualizada exitosamente.")
-            
-            else:
-                logger.error(
-                    f"[Auto-Config] WAHA rechazó la configuración. "
-                    f"Código: {response.status_code}. Razón: {response.text}"
-                )
-
-        except Exception as e:
-            logger.error(f"[Auto-Config] Error crítico durante la configuración: {str(e)}")
+                # Forzar reinicio para asegurar que el motor (NOWEB) tome el Webhook
+                logger.info(f"[Auto-Config] Reiniciando sesión '{session_name}' para aplicar cambios...")
+                await client.post(f"{WAHA_BASE_URL}/api/sessions/{session_name}/stop", headers=headers)
+                await asyncio.sleep(5) # Más tiempo para NOWEB
+                await client.post(f"{WAHA_BASE_URL}/api/sessions/{session_name}/start", headers=headers)
+                
+                # Verificación final de salud del Webhook
+                await asyncio.sleep(2)
+                verify = await client.get(f"{WAHA_BASE_URL}/api/sessions/{session_name}", headers=headers)
+                if verify.status_code == 200 and verify.json().get("config", {}).get("webhooks"):
+                    logger.info(f"✅ [Auto-Config] Sesión '{session_name}' configurada y lista.")
+                    return # ÉXITO
+                
+            except Exception as e:
+                logger.warning(f"⚠️ [Auto-Config] Intento {attempt+1} fallido: {e}")
+                await asyncio.sleep(5)
+        
+        logger.error("❌ [Auto-Config] Se agotaron los reintentos de configuración.")
 
 
 @asynccontextmanager
