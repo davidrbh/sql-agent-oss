@@ -10,6 +10,7 @@ import asyncio
 import json
 import os
 import logging
+import httpx
 from contextlib import AsyncExitStack
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
@@ -43,6 +44,8 @@ class MultiServerMCPClient:
         # El ExitStack centraliza el ciclo de vida de todos los transportes y sesiones
         self._exit_stack = AsyncExitStack()
         self._lock = asyncio.Lock()
+        # Configuración de timeout robusta para red remota
+        self._timeout = httpx.Timeout(60.0, read=60.0, connect=10.0)
 
     def _parse_config(self, config_json: str) -> Dict[str, ServerConfig]:
         try:
@@ -73,8 +76,8 @@ class MultiServerMCPClient:
                 if not config.url:
                     raise ValueError(f"Falta URL para el servidor SSE '{name}'")
                 
-                # 1. Entrar al contexto del transporte SSE
-                ctx = sse_client(url=config.url)
+                # 1. Entrar al contexto del transporte SSE con timeout extendido
+                ctx = sse_client(url=config.url, timeout=self._timeout)
                 read_stream, write_stream = await self._exit_stack.enter_async_context(ctx)
                 
                 # 2. Crear y entrar al contexto de la sesión MCP
