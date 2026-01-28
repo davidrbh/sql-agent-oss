@@ -195,65 +195,62 @@ def build_graph(
     }
 
     async def validated_tool_node(state: AgentState):
-        '''Ejecuta herramientas en PARALELO con interceptores de seguridad.'''
+        '''Ejecuta herramientas en PARALELO con auto-reparación silenciosa.'''
         last_message = state["messages"][-1]
         
         if not isinstance(last_message, AIMessage) or not last_message.tool_calls:
             return {"messages": []}
 
-        # Obtenemos el proveedor desde el contenedor para poder invalidar cache si falla
         from core.application.container import Container
         tool_provider = Container.get_tool_provider()
 
-        async def run_single_tool(tool_call):
+        async def run_single_tool(tool_call, retry=True):
             name = tool_call["name"]
             args = tool_call["args"]
             tid = tool_call["id"]
             
             logger.info(f"Iniciando ejecución de herramienta: {name}")
             
+            # Validación de Seguridad AST
             if name == "query":
                 sql = args.get("sql", "")
                 is_safe, safe_sql, error_msg = guard.validate_and_transpile(sql)
                 if not is_safe:
                     logger.warning(f"Consulta bloqueada: {error_msg}")
-                    return ToolMessage(
-                        content=f"⛔ BLOQUEO DE SEGURIDAD: {error_msg}", 
-                        tool_call_id=tid, 
-                        name=name
-                    )
+                    return ToolMessage(content=f"⛔ BLOQUEO DE SEGURIDAD: {error_msg}", tool_call_id=tid, name=name)
                 args["sql"] = safe_sql or sql
 
-            tool = tool_map.get(name)
+            # Obtención dinámica de la herramienta para soportar re-conexión
+            available_tools = await tool_provider.get_tools()
+            tool = next((t for t in available_tools if t.name == name), None)
+            
             if not tool:
                 return ToolMessage(content=f"Error: Herramienta '{name}' no disponible.", tool_call_id=tid, name=name)
 
             try:
-                # Aumentamos el timeout del orquestador a 70s para dar margen al cliente MCP (60s)
+                # Ejecución con timeout estándar
                 output = await asyncio.wait_for(tool.ainvoke(args), timeout=70.0)
                 return ToolMessage(content=str(output), tool_call_id=tid, name=name)
+            
             except Exception as e:
-                # DETECCIÓN DE CONEXIÓN ROTA (Self-Healing)
                 err_info = repr(e)
-                if "ClosedResourceError" in err_info or "Connection closed" in err_info:
-                    logger.error(f"🔴 CONEXIÓN MCP ROTA DETECTADA en '{name}'. Iniciando auto-reparación...")
+                
+                # DETECCIÓN DE CONEXIÓN ROTA Y REINTENTO SILENCIOSO
+                if retry and ("ClosedResourceError" in err_info or "Connection closed" in err_info):
+                    logger.warning(f"🔄 Reintento silencioso para '{name}' tras detectar conexión rota.")
                     await tool_provider.report_tool_failure(name)
-                    return ToolMessage(
-                        content=f"🔄 Error de conexión detectado. He reiniciado el túnel de datos. Por favor, intenta de nuevo.", 
-                        tool_call_id=tid, 
-                        name=name
-                    )
+                    # Recursión simple: un solo reintento para evitar bucles infinitos
+                    return await run_single_tool(tool_call, retry=False)
 
-                # Usamos repr(e) y traceback para capturar errores que no tienen mensaje string (ej. AssertionError)
-                logger.error(f"Fallo crítico en herramienta '{name}': {err_info}")
-                logger.error(traceback.format_exc())
+                # Si el reintento también falla o es otro error, reportamos
+                logger.error(f"Fallo crítico en '{name}': {err_info}")
                 return ToolMessage(
                     content=f"❌ Error técnico en '{name}': {err_info}", 
                     tool_call_id=tid, 
                     name=name
                 )
 
-        # Lanzamos todas las llamadas a herramientas en paralelo
+        # Ejecución paralela de todas las herramientas
         results = await asyncio.gather(*(run_single_tool(tc) for tc in last_message.tool_calls))
         return {"messages": list(results)}
 
