@@ -1,3 +1,11 @@
+"""
+Cliente de conexión para múltiples servidores MCP.
+
+Maneja el ciclo de vida de las sesiones MCP (SSE y Stdio), proporcionando
+una interfaz unificada y resiliente para la ejecución de herramientas.
+Utiliza AsyncExitStack para una gestión de recursos segura y profesional.
+"""
+
 import asyncio
 import json
 import os
@@ -23,35 +31,20 @@ class ServerConfig:
 
 class MultiServerMCPClient:
     """
-    Cliente para gestionar múltiples conexiones a servidores MCP simultáneamente.
+    Gestiona múltiples conexiones a servidores MCP de forma centralizada.
     
-    Maneja el ciclo de vida de múltiples sesiones MCP, proporcionando una interfaz 
-    unificada para el descubrimiento y ejecución de herramientas a través de diferentes transportes.
+    Esta clase es responsable de mantener activas las sesiones con los sidecars
+    y asegurar que todos los recursos se liberen correctamente al apagar el sistema.
     """
 
     def __init__(self, config_json: str):
-        """
-        Inicializa el cliente multi-servidor.
-
-        Args:
-            config_json: Una cadena JSON que contiene las configuraciones de los servidores.
-        """
         self.configs: Dict[str, ServerConfig] = self._parse_config(config_json)
         self.sessions: Dict[str, ClientSession] = {}
+        # El ExitStack centraliza el ciclo de vida de todos los transportes y sesiones
         self._exit_stack = AsyncExitStack()
         self._lock = asyncio.Lock()
 
-    def get_sessions(self) -> Dict[str, ClientSession]:
-        """
-        Retorna el diccionario de sesiones MCP activas.
-        
-        Returns:
-            Dict[str, ClientSession]: Sesiones activas indexadas por nombre del servidor.
-        """
-        return self.sessions
-
     def _parse_config(self, config_json: str) -> Dict[str, ServerConfig]:
-        """Parsea la configuración JSON en objetos ServerConfig."""
         try:
             data = json.loads(config_json)
             configs = {}
@@ -62,82 +55,71 @@ class MultiServerMCPClient:
             logger.error(f"Error parseando MCP_SERVERS_CONFIG: {e}")
             return {}
 
+    def get_sessions(self) -> Dict[str, ClientSession]:
+        return self.sessions
+
     async def connect(self):
-        """Establece conexiones con todos los servidores MCP configurados."""
+        """Establece conexiones con todos los servidores configurados si aún no existen."""
         async with self._lock:
             for name, config in self.configs.items():
-                if name in self.sessions:
-                    continue
-                await self._connect_server(name, config)
+                if name not in self.sessions:
+                    await self._connect_server(name, config)
 
     async def _connect_server(self, name: str, config: ServerConfig):
-        """Conecta a un único servidor MCP basado en su tipo de transporte."""
+        """Conecta a un servidor específico y registra su sesión en el ExitStack."""
         logger.info(f"Conectando al servidor MCP '{name}' vía {config.transport}...")
         try:
             if config.transport == "sse":
                 if not config.url:
                     raise ValueError(f"Falta URL para el servidor SSE '{name}'")
-                # Transporte SSE
+                
+                # 1. Entrar al contexto del transporte SSE
                 ctx = sse_client(url=config.url)
-                streams = await self._exit_stack.enter_async_context(ctx)
-                session = await self._exit_stack.enter_async_context(ClientSession(streams[0], streams[1]))
+                read_stream, write_stream = await self._exit_stack.enter_async_context(ctx)
+                
+                # 2. Crear y entrar al contexto de la sesión MCP
+                session = ClientSession(read_stream, write_stream)
+                await self._exit_stack.enter_async_context(session)
+                
+                # 3. Inicializar el protocolo
+                await session.initialize()
+                self.sessions[name] = session
+                logger.info(f"✅ Conectado a '{name}' (SSE)")
             
             elif config.transport == "stdio":
                 if not config.command:
                     raise ValueError(f"Falta comando para el servidor Stdio '{name}'")
-                # Transporte Stdio
+                
                 server_params = StdioServerParameters(
                     command=config.command,
                     args=config.args or [],
                     env={**os.environ, **(config.env or {})}
                 )
+                
+                # 1. Entrar al contexto del transporte Stdio
                 ctx = stdio_client(server_params)
-                streams = await self._exit_stack.enter_async_context(ctx)
-                session = await self._exit_stack.enter_async_context(ClientSession(streams[0], streams[1]))
-            
-            else:
-                raise ValueError(f"Transporte no soportado '{config.transport}' para el servidor '{name}'")
-
-            await session.initialize()
-            self.sessions[name] = session
-            logger.info(f"Conectado a '{name}'")
+                read_stream, write_stream = await self._exit_stack.enter_async_context(ctx)
+                
+                # 2. Crear y entrar al contexto de la sesión MCP
+                session = ClientSession(read_stream, write_stream)
+                await self._exit_stack.enter_async_context(session)
+                
+                # 3. Inicializar el protocolo
+                await session.initialize()
+                self.sessions[name] = session
+                logger.info(f"✅ Conectado a '{name}' (Stdio)")
             
         except Exception as e:
-            logger.error(f"Falló la conexión a '{name}': {e}")
-
-    async def list_all_tools(self) -> Dict[str, List[Any]]:
-        """
-        Lista las herramientas de todos los servidores conectados.
-
-        Returns:
-            Dict mapeando nombres de servidores a su lista de herramientas.
-        """
-        all_tools = {}
-        for name, session in self.sessions.items():
-            try:
-                result = await session.list_tools()
-                all_tools[name] = result.tools
-            except Exception as e:
-                logger.warning(f"Falló listar herramientas para '{name}': {e}")
-        return all_tools
-
-    async def call_tool(self, server_name: str, tool_name: str, arguments: Dict[str, Any]) -> Any:
-        """
-        Invoca una herramienta en un servidor específico.
-
-        Args:
-            server_name: El nombre del servidor que aloja la herramienta.
-            tool_name: El nombre de la herramienta a ejecutar.
-            arguments: Argumentos para la herramienta.
-        """
-        session = self.sessions.get(server_name)
-        if not session:
-            raise ValueError(f"Servidor '{server_name}' no conectado")
-        
-        return await session.call_tool(tool_name, arguments=arguments)
+            logger.error(f"❌ Error conectando con '{name}': {repr(e)}")
 
     async def close(self):
-        """Cierra todas las sesiones activas y pilas de recursos."""
-        await self._exit_stack.aclose()
-        self.sessions.clear()
-        logger.info("Todas las conexiones MCP cerradas.")
+        """Libera todos los recursos y cierra todas las sesiones MCP."""
+        logger.info("Cerrando todas las conexiones MCP...")
+        try:
+            # aclose() ejecutará los __aexit__ de todos los contextos en orden inverso
+            await self._exit_stack.aclose()
+            self.sessions.clear()
+            logger.info("Conexiones MCP cerradas limpiamente.")
+        except Exception as e:
+            # Evitamos que fallos en el cierre bloqueen el shutdown del proceso
+            logger.error(f"Error durante el cierre de MCP: {repr(e)}")
