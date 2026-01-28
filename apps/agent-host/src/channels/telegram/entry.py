@@ -114,21 +114,19 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     Procesa los mensajes de texto entrantes de los usuarios.
-
-    Args:
-        update (Update): Actualización de Telegram.
-        context (ContextTypes.DEFAULT_TYPE): Contexto de la ejecución.
     """
+    global global_graph
     chat_id = update.effective_chat.id
     user_text = update.message.text
     
     await context.bot.send_chat_action(chat_id=chat_id, action=constants.ChatAction.TYPING)
 
+    # 1. Asegurar que el agente esté inicializado
     if not global_graph:
         try:
             await initialize_agent()
         except Exception:
-            await update.message.reply_text("\u26A0\uFE0F El sistema se está iniciando, intenta en unos segundos...")
+            await update.message.reply_text("⚠️ El sistema se está iniciando, intenta en unos segundos...")
             return
 
     if chat_id not in user_histories:
@@ -147,13 +145,27 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if final_messages:
             last_msg = final_messages[-1]
             user_histories[chat_id] = final_messages
+            
+            # 2. Detección de auto-reparación (Self-Healing)
+            # Si el agente detecta internamente que la conexión se rompió, 
+            # forzamos la re-inicialización del grafo para el siguiente mensaje.
+            if "reiniciado el túnel de datos" in last_msg.content:
+                logger.warning("🔴 Detectada señal de auto-reparación. Reseteando grafo global de Telegram.")
+                global_graph = None
+                
             await send_long_message(update, last_msg.content)
         else:
             await update.message.reply_text("El agente no generó una respuesta de texto.")
 
     except Exception as e:
         logger.error(f"Error procesando mensaje de Telegram: {str(e)}")
-        await update.message.reply_text("\u26A0\uFE0F Ocurrió un error interno procesando tu solicitud.")
+        # 3. Si hay un error crítico de recursos, reseteamos el grafo para obligar a re-conectar
+        if "ClosedResourceError" in str(e) or "Connection closed" in str(e):
+            global_graph = None
+            logger.warning("🔄 Grafo de Telegram reseteado por error de conexión.")
+            await update.message.reply_text("🔄 He tenido un problema de conexión, pero ya lo he solucionado. Por favor, repite tu pregunta.")
+        else:
+            await update.message.reply_text("⚠️ Ocurrió un error interno procesando tu solicitud.")
 
 
 async def post_init(application: ApplicationBuilder):
