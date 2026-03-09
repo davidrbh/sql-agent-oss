@@ -101,6 +101,28 @@ def get_sql_system_prompt(channel: str = "web") -> str:
     
     # 5. Contexto de Negocio
     context = load_business_context()
+
+    # 6. Habilidad Lysto (Notificaciones)
+    lysto_skill = catalog.get("skills", {}).get("lysto_campaigns", {})
+    lysto_section = ""
+    if lysto_skill:
+        lysto_inst          = lysto_skill.get("instructions", "")
+        lysto_flow          = lysto_skill.get("flow", "")
+        lysto_segmentation  = lysto_skill.get("segmentation_rules", "")
+        lysto_placeholders  = lysto_skill.get("message_placeholders", "")
+        lysto_behavior      = lysto_skill.get("behavioral_rules", "")
+        lysto_section = f"""
+--- HABILIDAD: NOTIFICACIONES LYSTO ---
+{lysto_inst}
+
+📋 FLUJO DE CAMPAÑAS:
+{lysto_flow}
+🔍 SEGMENTACIÓN:
+{lysto_segmentation}
+✉️ PLACEHOLDERS:
+{lysto_placeholders}
+⚡ COMPORTAMIENTO:
+{lysto_behavior}"""
     
     return f"""{persona}
 
@@ -125,5 +147,5 @@ MAPA DE TABLAS Y COLUMNAS (ESQUEMA):
 📘 CONTEXTO DE NEGOCIO Y DICCIONARIO DE DATOS:
 ```yaml
 {context}
-```
+```{lysto_section}
 """
