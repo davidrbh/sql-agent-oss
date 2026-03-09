@@ -38,8 +38,10 @@ skills:
           WHERE u.id = 123 AND pp.status = 1 
           ORDER BY pp.created_at DESC LIMIT 1
     safety_rules: |
-      1. PROHIBIDO SELECT *.
-      2. No reintentes más de 2 veces.
+      1. PROHIBIDO SELECT * o table.*. Selecciona columnas ESPECÍFICAS (ej: id, status, amount).
+      2. OBLIGATORIO usar LIMIT (máximo 20) en todas las consultas de listado para evitar lentitud.
+      3. No reintentes más de 2 veces si hay error de sintaxis.
+      4. Si una consulta es bloqueada por seguridad, detente.
     error_handling: "Si hay BLOQUEO DE SEGURIDAD, explica la restricción."
 
 # 4. Estilo General

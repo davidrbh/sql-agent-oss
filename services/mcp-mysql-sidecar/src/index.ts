@@ -152,7 +152,7 @@ const start = async () => {
           content: [
             {
               type: "text",
-              text: JSON.stringify(rows, null, 2),
+              text: JSON.stringify(rows),
             },
           ],
         };
