@@ -29,6 +29,7 @@ class ServerConfig:
     args: Optional[List[str]] = None
     env: Optional[Dict[str, str]] = None
     url: Optional[str] = None
+    headers: Optional[Dict[str, str]] = None
 
 class MultiServerMCPClient:
     """
@@ -78,7 +79,8 @@ class MultiServerMCPClient:
                     raise ValueError(f"Falta URL para el servidor SSE '{name}'")
                 
                 ctx = sse_client(
-                    url=config.url, 
+                    url=config.url,
+                    headers=config.headers or {},
                     timeout=self._timeout_sec,
                     sse_read_timeout=self._timeout_sec
                 )
