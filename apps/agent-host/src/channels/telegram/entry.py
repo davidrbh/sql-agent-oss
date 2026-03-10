@@ -53,6 +53,12 @@ async def initialize_agent():
                 await tool_provider.invalidate_cache()
                 
                 tools = await tool_provider.get_tools()
+                
+                # Ensure critical MCP tools (like Lysto) are loaded before building the graph
+                tool_names = [t.name for t in tools]
+                if "list_campaigns" not in tool_names:
+                    raise RuntimeError("Las herramientas de Lysto no están listas aún. Reintentando...")
+
                 system_prompt = get_sql_system_prompt(channel="telegram")
 
                 global_graph = build_graph(tools, system_prompt, checkpointer=None)
