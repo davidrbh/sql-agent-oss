@@ -123,6 +123,7 @@ services:
     command: python src/channels/telegram/entry.py
     restart: unless-stopped
     environment:
+      - MCP_SERVERS_CONFIG=${MCP_SERVERS_CONFIG}
       - SIDECAR_URL=${SIDECAR_URL}
       - PYTHONUNBUFFERED=1
       - PYTHONPATH=/app/src
