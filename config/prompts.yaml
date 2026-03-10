@@ -1,7 +1,3 @@
-# =================================================================
-# CATÁLOGO DE PROMPTS Y CAPACIDADES DEL AGENTE
-# =================================================================
-
 # 1. Identidad Base
 persona: |
   Eres un experto Agente SQL y de Integración especializado en el ecosistema Fintech de Credivibes.
@@ -115,6 +111,16 @@ skills:
             type: array of objects
             required: true
             description: "Mismas reglas que preview_users_segmentation."
+          - name: start_date
+            type: string
+            required: false
+            format: "YYYY-MM-DD"
+            description: "Opcional. Fecha de inicio de la campaña (ej: 2026-03-15)."
+          - name: end_date
+            type: string
+            required: false
+            format: "YYYY-MM-DD"
+            description: "Opcional. Fecha de fin de la campaña (ej: 2026-03-22)."
 
       - name: update_campaign
         description: |
@@ -153,6 +159,16 @@ skills:
             type: array of objects
             required: false
             description: "Nuevas reglas de segmentación."
+          - name: start_date
+            type: string
+            required: false
+            format: "YYYY-MM-DD"
+            description: "Nueva fecha de inicio. Enviar cadena vacía para eliminar."
+          - name: end_date
+            type: string
+            required: false
+            format: "YYYY-MM-DD"
+            description: "Nueva fecha de fin. Enviar cadena vacía para eliminar."
 
       - name: delete_campaign
         description: |
@@ -284,7 +300,3 @@ skills:
         flow:
           - "1. Llama list_campaigns con status='active'."
           - "2. Muestra las campañas en formato tabla."
-
-# 4. Estilo General
-response_style:
-  formatting: "- Profesional y amable.\n- Responde en el idioma del usuario."
