@@ -7,6 +7,7 @@ adaptar herramientas desde múltiples servidores MCP en el ecosistema de LangCha
 
 import os
 import logging
+import asyncio
 from typing import List
 from langchain_core.tools import BaseTool
 from langchain_mcp_adapters.tools import load_mcp_tools
@@ -49,13 +50,24 @@ class MCPToolProvider(IToolProvider):
         all_tools = []
         sessions = self.client.get_sessions()
         
-        for name, session in sessions.items():
+        for name in self.client.configs.keys():
+            if name not in sessions:
+                logger.error(f"El servidor '{name}' no tiene sesión activa aunque connect() finalizó.")
+                continue
+                
+            session = sessions[name]
             try:
-                server_tools = await load_mcp_tools(session)
+                server_tools = await asyncio.wait_for(load_mcp_tools(session), timeout=10.0)
                 all_tools.extend(server_tools)
                 logger.info(f"Herramientas cargadas exitosamente del servidor MCP '{name}'.")
+            except asyncio.TimeoutError:
+                logger.error(f"Timeout cargando herramientas del servidor MCP '{name}' (posible conexión rota o colgada).")
+                # Removemos la sesión muerta de forma segura para reconectar
+                await self.client.remove_session(name)
             except Exception as e:
                 logger.warning(f"Error cargando herramientas del servidor MCP '{name}': {e}")
+                # Forzar reconexión eliminando la sesión errónea
+                await self.client.remove_session(name)
         
         self._tools_cache = all_tools
         return all_tools
