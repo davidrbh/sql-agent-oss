@@ -41,13 +41,14 @@ def intent_classifier_node(state: AgentState) -> dict:
     prompt = ChatPromptTemplate.from_template(
         """Eres un clasificador de intenciones experto. Analiza la conversación y clasifica la ÚLTIMA petición en:
         - DATABASE: Consultas de datos de negocio, conteos, tablas o esquemas.
-        - API: Consultas técnicas sobre capacidades del sistema, endpoints disponibles o estado de servicios.
+        - API: Consultas técnicas sobre capacidades generales del sistema o endpoints genéricos.
+        - CAMPAIGNS: Creación, lista, previsualización, edición o borrado de campañas de notificación (Lysto).
         - GENERAL: Saludos o charla casual.
         
         Historial:
         {context}
         
-        Responde ÚNICAMENTE con una palabra: DATABASE, API, o GENERAL.
+        Responde ÚNICAMENTE con una palabra: DATABASE, API, CAMPAIGNS o GENERAL.
         """
     )
     
@@ -63,6 +64,7 @@ def intent_classifier_node(state: AgentState) -> dict:
         chain = prompt | llm
         intent_raw = chain.invoke({"context": context_str}).content.upper()
         if "DATABASE" in intent_raw: intent = "DATABASE"
+        elif "CAMPAIGNS" in intent_raw: intent = "CAMPAIGNS"
         elif "API" in intent_raw: intent = "API"
     except Exception as e:
         logger.error(f"Error en clasificación de intención: {e}")
@@ -140,6 +142,10 @@ def agent_node(state: AgentState, llm_with_tools: dict, system_prompt: str) -> d
         full_system_content += (
             "\n\n[INSTRUCCIÓN DINÁMICA]: Estás en modo API. Usa las herramientas de integración disponibles."
         )
+    elif state["intent"] == "CAMPAIGNS":
+        full_system_content += (
+            "\n\n[INSTRUCCIÓN DINÁMICA]: Estás en modo CAMPAIGNS. Usa las herramientas de Lysto para gestionar campañas de notificación."
+        )
 
     messages = state["messages"]
     # Reemplazamos o insertamos el mensaje de sistema optimizado
@@ -162,9 +168,17 @@ def agent_node(state: AgentState, llm_with_tools: dict, system_prompt: str) -> d
         parsed = parse_deepseek_xml(content_str)
         if parsed:
             response.tool_calls = parsed
-            # Limpiamos el contenido de etiquetas XML para que no se vean en la UI
-            clean_content = re.sub(r"<[|｜]DSML[|｜].*?>", "", content_str, flags=re.DOTALL).strip()
-            response.content = clean_content
+            # Limpiamos el bloque completo de function_calls para que no se vea en la UI.
+            # Eliminamos desde el tag <｜DSML｜function_calls> hasta </｜DSML｜function_calls>
+            clean_content = re.sub(
+                r"<[|｜]DSML[|｜]function_calls>.*?</[|｜]DSML[|｜]function_calls>",
+                "",
+                content_str,
+                flags=re.DOTALL
+            )
+            # Por si acaso quedan tags sueltos sin el wrapper
+            clean_content = re.sub(r"<[|｜]DSML[|｜][^>]*>.*?</[|｜]DSML[|｜][^>]*>", "", clean_content, flags=re.DOTALL)
+            response.content = clean_content.strip()
             
     return {"messages": [response]}
 
@@ -186,10 +200,13 @@ def build_graph(
     )
     
     sql_tools = [t for t in tools if t.name == "query"]
-    api_tools = [t for t in tools if t.name != "query"]
+    campaign_tool_names = ["list_campaigns", "preview_users_segmentation", "create_campaign", "update_campaign", "delete_campaign"]
+    campaign_tools = [t for t in tools if t.name in campaign_tool_names]
+    api_tools = [t for t in tools if t.name not in (["query"] + campaign_tool_names)]
 
     llm_with_tools_map = {
         "DATABASE": llm.bind_tools(sql_tools),
+        "CAMPAIGNS": llm.bind_tools(campaign_tools),
         "API": llm.bind_tools(api_tools),
         "GENERAL": llm 
     }
