@@ -26,6 +26,11 @@ from features.sql_analysis.tools.sql_guard import SQLGuard
 
 logger = logging.getLogger(__name__) 
 
+# -----------------------------------------------------------------------
+# Constantes de módulo (accesibles desde agent_node y build_graph)
+# -----------------------------------------------------------------------
+SHEETS_PAGE_SIZE = 200  # Filas máximas por página de Google Sheets
+
 
 def intent_classifier_node(state: AgentState) -> dict:
     '''
@@ -239,7 +244,6 @@ def build_graph(
     # -----------------------------------------------------------------------
     # Constantes de paginación y protección de contexto
     # -----------------------------------------------------------------------
-    SHEETS_PAGE_SIZE = 200          # Filas máximas por página
     SHEETS_MAX_COL   = "Z"          # Columna máxima por defecto
     MAX_TOOL_OUTPUT_CHARS = 80_000  # Límite duro de caracteres (~20K tokens para DeepSeek)
 
