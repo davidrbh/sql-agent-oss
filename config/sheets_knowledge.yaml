@@ -1,0 +1,413 @@
+# ==============================================================================
+# config/sheets_knowledge.yaml
+#
+# Diccionario de dominio para las hojas de cálculo de LibrePago.
+# Este archivo es la "fuente de verdad" sobre la estructura y semántica de
+# cada spreadsheet. El loader de sheets_analysis lo inyecta en el prompt
+# del sistema para que el agente comprenda los datos sin necesidad de
+# explorarlos en cada consulta.
+#
+# CÓMO ACTUALIZAR ESTE ARCHIVO:
+#   - Cuando se agregue un campo nuevo a una hoja, documéntalo aquí.
+#   - Cuando cambie el ID de un spreadsheet, actualiza el campo `id`.
+#   - Cuando se agregue un agente o canal nuevo, actualiza las tablas de mapeo.
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# Spreadsheets
+# Cada entrada representa un archivo de Google Sheets independiente.
+# Reemplaza los valores de `id` con los Spreadsheet IDs reales de Google Drive.
+# Los IDs se obtienen desde la URL: .../spreadsheets/d/<SPREADSHEET_ID>/edit
+# ------------------------------------------------------------------------------
+spreadsheets:
+  # ----------------------------------------------------------------------------
+  # 1. Libre Pago - Cerradas
+  # Logs de todas las conversaciones finalizadas por cualquier canal.
+  # Caso de uso principal: métricas de volumen, análisis por canal/equipo/agente.
+  # ----------------------------------------------------------------------------
+  cerradas:
+    id: "1S4HlmhwATYDat8y9NGT5-nwsaiKMXgxIDQfTbV_k1s0"
+    title: "Libre Pago - Cerradas"
+    description: >
+      Registro de todas las conversaciones finalizadas. Incluye el canal de origen,
+      el agente responsable, el equipo, la categorización de la consulta y un
+      resumen de lo conversado. Es la fuente principal para métricas de volumen.
+    sheet_name: "Sheet1"
+    fields:
+      - name: "Fecha"
+        description: "Fecha y hora en que se cerró la conversación."
+        type: datetime
+        ignore: false
+      - name: "ID de Contacto"
+        description: "Identificador único del cliente en el CRM."
+        type: string
+        ignore: false
+      - name: "Nombre"
+        description: "Nombre, apellido o nickname del cliente."
+        type: string
+        ignore: false
+      - name: "Correo electrónico"
+        description: "Email de contacto del cliente."
+        type: string
+        ignore: false
+      - name: "Teléfono"
+        description: "Número celular del cliente."
+        type: string
+        ignore: false
+      - name: "Canal"
+        description: >
+          Red social de origen de la conversación.
+          Referencia la Tabla de IDs de Canales para obtener el nombre legible.
+        type: string
+        ignore: false
+      - name: "Cesionario"
+        description: >
+          Agente que cerró la conversación.
+          Referencia la Tabla de IDs de Agentes para obtener el nombre legible.
+        type: string
+        ignore: false
+      - name: "Equipo"
+        description: >
+          Departamento del cesionario.
+          Referencia la Tabla de IDs de Equipos para obtener el nombre legible.
+        type: string
+        ignore: false
+      - name: "Tipificación"
+        description: "Categoría o tema principal de la conversación."
+        type: string
+        ignore: false
+      - name: "Resumen"
+        description: "Síntesis de lo conversado durante la sesión."
+        type: string
+        ignore: false
+    example_queries:
+      - "¿Cuántas conversaciones fueron atendidas en el mes de marzo?"
+      - "Segmenta las conversaciones por canal y por equipo en marzo."
+      - "¿Qué % de consultas ha atendido la IA vs agentes humanos?"
+
+  # ----------------------------------------------------------------------------
+  # 2. LibrePago - Ciclos de Vida
+  # Registro de cambios en etapas del pipeline de ventas (leads).
+  # Caso de uso principal: seguimiento de conversiones, etapas actuales por lead.
+  # ----------------------------------------------------------------------------
+  ciclos_de_vida:
+    id: "18YHReU9trhkeThDStKGmWZffn3iu06dE0JG_a2BAEzU"
+    title: "LibrePago - Ciclos de Vida"
+    description: >
+      Historial de cambios de etapa en el pipeline de ventas, realizados por agentes
+      humanos o la Recepcionista IA. Solo aplica a contactos interesados en puntos
+      de venta. Cada fila representa una transición de etapa, no el estado actual.
+    sheet_name: "Sheet1"
+    fields:
+      - name: "Fecha"
+        description: "Fecha y hora en que se realizó el cambio de etapa."
+        type: datetime
+        ignore: false
+      - name: "ID de Contacto"
+        description: "Identificador único del cliente en el CRM."
+        type: string
+        ignore: false
+      - name: "Ciclo de vida"
+        description: >
+          Etapa del pipeline de ventas en el momento del registro.
+          Valores comunes: New Lead (nuevo), Hot Lead (interesado activo),
+          Customer (ganado/cerrado), Cold Lead (perdido/cerrado).
+        type: string
+        ignore: false
+      - name: "Nombre"
+        description: "Nombre, apellido o nickname del cliente."
+        type: string
+        ignore: false
+      - name: "Correo electrónico"
+        description: "Email de contacto del cliente."
+        type: string
+        ignore: false
+      - name: "Teléfono"
+        description: "Número celular del cliente."
+        type: string
+        ignore: false
+      - name: "País"
+        description: "(IGNORAR) País desde donde escribe el cliente."
+        type: string
+        ignore: true
+      - name: "Cesionario"
+        description: "Nombre del agente que realizó el cambio de etapa."
+        type: string
+        ignore: false
+      - name: "Vendedor"
+        description: "(IGNORAR) Columna vacía sin uso actual."
+        type: string
+        ignore: true
+      - name: "Canal"
+        description: "(IGNORAR) Columna vacía sin uso actual."
+        type: string
+        ignore: true
+    pipeline_stages:
+      - name: "New Lead"
+        meaning: "Lead nuevo, aún sin calificar."
+      - name: "Hot Lead"
+        meaning: "Lead activamente interesado en comprar."
+      - name: "Customer"
+        meaning: "Venta cerrada y ganada."
+      - name: "Cold Lead"
+        meaning: "Lead perdido o descartado."
+    example_queries:
+      - "Dame el ciclo de vida más reciente para el contacto ID 12345."
+      - "Muestra la distribución de etapas de venta actuales a la fecha."
+      - "¿Cuántos leads pasaron a Customer en marzo?"
+
+  # ----------------------------------------------------------------------------
+  # 3. LibrePago - Ads
+  # Registro de leads provenientes de campañas en Meta (Facebook/Instagram) o TikTok.
+  # Caso de uso principal: ROI de campañas, volumen por origen publicitario.
+  # ----------------------------------------------------------------------------
+  ads:
+    id: "1JEnGdtn_zKMkKyqKlxqIo48KIzIgrTp5LH6Gkq3H8mQ"
+    title: "LibrePago - Ads"
+    description: >
+      Leads generados desde campañas publicitarias en Meta (Facebook/Instagram)
+      y TikTok. Permite analizar el volumen de conversaciones por campaña,
+      canal de entrada y estado del anuncio.
+    sheet_name: "Sheet1"
+    fields:
+      - name: "Contact ID"
+        description: "Identificador único del lead en el CRM."
+        type: string
+        ignore: false
+      - name: "Teléfono"
+        description: "Número celular del lead."
+        type: string
+        ignore: false
+      - name: "Nombre"
+        description: "Nombre del lead."
+        type: string
+        ignore: false
+      - name: "Agente"
+        description: "Agente asignado a la conversación."
+        type: string
+        ignore: false
+      - name: "ad_timestamp"
+        description: >
+          Fecha del click en Unix microsegundos. Para convertir a fecha legible
+          usar la fórmula: =(A1/86400000000)+FECHA(1970,1,1)
+          El agente debe aplicar esta conversión al presentar fechas.
+        type: unix_timestamp
+        conversion_formula: "(valor / 86400000000) + FECHA(1970,1,1)"
+        ignore: false
+      - name: "ad_channel_id"
+        description: "ID numérico del canal de entrada del anuncio."
+        type: string
+        ignore: false
+      - name: "type"
+        description: "Nombre del canal de entrada del anuncio."
+        type: string
+        ignore: false
+      - name: "ad_contact_type"
+        description: "Indica si el contacto es Nuevo o Recurrente."
+        type: string
+        ignore: false
+      - name: "ad_adset_id"
+        description: "ID interno del conjunto de anuncios (adset)."
+        type: string
+        ignore: false
+      - name: "ad_adset_name"
+        description: >
+          IMPORTANTE: Nombre de la campaña publicitaria. Es el campo principal
+          para identificar y segmentar por campaña.
+        type: string
+        ignore: false
+      - name: "ad_ad_url"
+        description: "URL del anuncio que generó el click del lead."
+        type: string
+        ignore: false
+      - name: "ad_status"
+        description: "Estado actual del anuncio (Activa / Archivada)."
+        type: string
+        ignore: false
+      # Campos a ignorar explícitamente
+      - name: "ad_first_incoming_message"
+        ignore: true
+      - name: "ad_id"
+        ignore: true
+      - name: "ad_name"
+        ignore: true
+      - name: "ad_campaign_id"
+        ignore: true
+      - name: "ad_campaign_name"
+        ignore: true
+      - name: "ad_reference"
+        ignore: true
+      - name: "ad_objective"
+        ignore: true
+      - name: "ad_optimization_goal"
+        ignore: true
+      - name: "ad_destination_type"
+        ignore: true
+    example_queries:
+      - "Top 3 de campañas con más interacciones en marzo, segmentadas por canal."
+      - "¿Cuántos leads entraron por cada campaña activa este mes?"
+      - >
+        "Dame el total de conversaciones de ads en marzo e indícame cuántas
+        quedaron en cada etapa de ciclo de vida."
+        # Nota: esta query requiere cruzar Ads con Ciclos de Vida por Contact ID.
+
+  # ----------------------------------------------------------------------------
+  # 4. LibrePago - CSAT
+  # Encuestas de satisfacción del cliente (escala 1-5).
+  # Caso de uso principal: calidad del servicio por agente y equipo.
+  # ----------------------------------------------------------------------------
+  csat:
+    id: "1KyQlKvTQzex2NSEEQyKMyjKA6raedtFsZo-ZyGKfNAw"
+    title: "LibrePago - CSAT"
+    description: >
+      Recopilación de encuestas de satisfacción enviadas a clientes después
+      de cada conversación. Evalúa el desempeño del agente y la resolución
+      del caso en una escala del 1 al 5.
+    sheet_name: "Sheet1"
+    fields:
+      - name: "ID de Contacto"
+        description: "Identificador único del cliente evaluado."
+        type: string
+        ignore: false
+      - name: "Fecha"
+        description: "Fecha en que se registró la encuesta."
+        type: datetime
+        ignore: false
+      - name: "Team"
+        description: "Departamento del agente evaluado."
+        type: string
+        ignore: false
+      - name: "CSAT"
+        description: >
+          Calificación de satisfacción del cliente. Escala del 1 (muy insatisfecho)
+          al 5 (muy satisfecho). Es la métrica principal de calidad.
+        type: integer
+        range: [1, 5]
+        ignore: false
+      - name: "ID Cesionario"
+        description: "ID del agente evaluado. Referencia la Tabla de IDs de Agentes."
+        type: string
+        ignore: false
+      - name: "CSAT Follow Up Feedback"
+        description: >
+          Comentario del cliente explicando su calificación. Solo se llena
+          cuando la nota es menor a 5.
+        type: string
+        ignore: false
+      - name: "Tiempo de resolución"
+        description: >
+          Duración total de la conversación desde apertura hasta cierre.
+          Expresada en tiempo (horas/minutos).
+        type: string
+        ignore: false
+      - name: "Tipificación"
+        description: "Categoría del caso evaluado."
+        type: string
+        ignore: false
+      - name: "Resumen"
+        description: "Contexto del caso evaluado."
+        type: string
+        ignore: false
+    example_queries:
+      - "¿Cuál es el CSAT promedio del equipo ATC esta semana?"
+      - "Dame los 5 agentes con mejor CSAT del mes."
+      - "¿Qué casos recibieron CSAT menor a 3 este mes y por qué?"
+
+# ------------------------------------------------------------------------------
+# Tablas de Mapeo de IDs
+# Traducen los identificadores técnicos de los campos CSV al nombre legible.
+# El agente DEBE usar estas tablas al presentar resultados al usuario.
+# ------------------------------------------------------------------------------
+id_mappings:
+  channels:
+    description: "Mapeo de ID de canal a nombre legible del canal de atención."
+    entries:
+      - ids: ["440334", "467245"]
+        name: "Whatsapp ATC"
+      - ids: ["440986"]
+        name: "Whatsapp Comercial"
+      - ids: ["440224"]
+        name: "Facebook"
+      - ids: ["440258"]
+        name: "Instagram"
+      - ids: ["440264"]
+        name: "TikTok"
+      - ids: ["418328"]
+        name: "Telegram"
+
+  agents:
+    description: "Mapeo de ID de agente a nombre legible y tipo (IA o Humano)."
+    entries:
+      - id: "905321"
+        name: "Recepcionista AI"
+        type: "IA"
+      - id: "967370"
+        name: "Alessandra Barrios"
+        type: "Humano"
+      - id: "965224"
+        name: "Daniela Vielma"
+        type: "Humano"
+      - id: "965216"
+        name: "Vicente Benitez"
+        type: "Humano"
+      - id: "965199"
+        name: "Alex Guzman"
+        type: "Humano"
+      - id: "941623"
+        name: "Yusely Azuaje"
+        type: "Humano"
+      - id: "967369"
+        name: "Ana Ruiz"
+        type: "Humano"
+      - id: "851848"
+        name: "Giorgina Gonzalez"
+        type: "Humano"
+      - id: "965205"
+        name: "Emilis Sanchez"
+        type: "Humano"
+      - id: "965704"
+        name: "Alanis Acosta"
+        type: "Humano"
+      - id: "965207"
+        name: "Enyely Hernández"
+        type: "Humano"
+      - id: "965705"
+        name: "Atencion al cliente"
+        type: "Humano"
+      - id: "1037754"
+        name: "Gabriel Noguera"
+        type: "Humano"
+      - id: "836373"
+        name: "JOSE ANGEL MELENDEZ"
+        type: "Humano"
+      - id: "963022"
+        name: "Richard White"
+        type: "Humano"
+      - id: "965218"
+        name: "David Morales"
+        type: "Humano"
+      - id: "965755"
+        name: "Alexander Vasquez"
+        type: "Humano"
+      - id: "965779"
+        name: "Mercadeo LibrePago"
+        type: "Humano"
+      - id: "972390"
+        name: "Adrian Marquez"
+        type: "Humano"
+
+  teams:
+    description: "Mapeo de ID de equipo a nombre legible del departamento."
+    entries:
+      - id: "34369"
+        name: "ATC"
+        description: "Atención al Cliente"
+      - id: "34367"
+        name: "Comercial"
+        description: "Equipo de ventas"
+      - id: "34370"
+        name: "Operaciones"
+        description: "Equipo de operaciones internas"
+      - id: "34218"
+        name: "Test"
+        description: "Equipo de pruebas (excluir de métricas de producción)"
