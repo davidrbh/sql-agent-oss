@@ -52,17 +52,22 @@ def intent_classifier_node(state: AgentState) -> dict:
     context_str = "\n".join(conversation_history)
 
     prompt = ChatPromptTemplate.from_template(
-        """Eres un clasificador de intenciones experto. Analiza la conversación y clasifica la ÚLTIMA petición en:
-        - DATABASE: Consultas a bases de datos SQL (tablas, registros, métricas de BD).
-        - SHEETS: Consultas sobre hojas de cálculo Google Sheets (datos operativos, campañas de ads, ciclos de vida, CSAT).
-        - API: Consultas sobre capacidades generales del sistema o endpoints REST externos.
-        - GENERAL: Saludos, preguntas generales o charla casual.
-        
-        Historial:
-        {context}
-        
-        Responde ÚNICAMENTE con una palabra: DATABASE, SHEETS, API o GENERAL.
-        """
+        """Eres un clasificador de intenciones experto. Este agente está ESPECIALIZADO en Google Sheets como fuente de datos principal.
+
+Clasifica la ÚLTIMA petición del usuario en UNA de estas categorías:
+
+- SHEETS: CUALQUIER consulta sobre datos, métricas, reportes, análisis, contactos, ventas, ciclos de vida, conversaciones, CSAT, ads, campañas, gráficos, distribuciones o estadísticas. Esta es la intención POR DEFECTO cuando el usuario pide información de negocio.
+- DATABASE: SOLO cuando el usuario menciona EXPLÍCITAMENTE "SQL", "base de datos", "tabla SQL", "query" o pide ejecutar una consulta a una base de datos relacional.
+- API: Consultas sobre capacidades del sistema, endpoints REST, integraciones externas o notificaciones (Lysto, campañas push).
+- GENERAL: Saludos, preguntas generales, charla casual, o preguntas que NO involucran datos.
+
+REGLA CLAVE: Si hay duda entre SHEETS y DATABASE, SIEMPRE elige SHEETS.
+
+Historial:
+{context}
+
+Responde ÚNICAMENTE con una palabra: DATABASE, SHEETS, API o GENERAL.
+"""
     )
     
     llm = ChatOpenAI(
