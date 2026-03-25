@@ -149,7 +149,13 @@ def agent_node(state: AgentState, llm_with_tools: dict, system_prompt: str) -> d
     elif state["intent"] == "SHEETS":
         full_system_content += (
             "\n\n[INSTRUCCIÓN DINÁMICA]: Estás en modo SHEETS. Usa las herramientas de Google Sheets "
-            "(get_sheet_data, list_spreadsheets, list_sheets, get_multiple_sheet_data) para responder la consulta."
+            "(get_sheet_data, list_spreadsheets, list_sheets, get_multiple_sheet_data) para responder la consulta.\n\n"
+            "PAGINACIÓN AUTOMÁTICA:\n"
+            f"- Los datos se devuelven en páginas de máximo {SHEETS_PAGE_SIZE} filas.\n"
+            "- Al final de cada respuesta verás un bloque 📄 PAGINACIÓN con el rango de la siguiente página.\n"
+            "- Si necesitas más datos (ej: totales, conteos completos), solicita páginas adicionales usando el rango indicado.\n"
+            "- Si la página devolvió menos filas de las esperadas, ya llegaste al final de los datos.\n"
+            "- SIEMPRE indica al usuario cuántas filas analizaste y si hay más páginas disponibles."
         )
     elif state["intent"] == "API":
         full_system_content += (
@@ -230,37 +236,114 @@ def build_graph(
         "GENERAL"  : llm,
     }
 
-    # Límite de caracteres por respuesta de herramienta (~20K tokens para DeepSeek).
-    MAX_TOOL_OUTPUT_CHARS = 80_000
+    # -----------------------------------------------------------------------
+    # Constantes de paginación y protección de contexto
+    # -----------------------------------------------------------------------
+    SHEETS_PAGE_SIZE = 200          # Filas máximas por página
+    SHEETS_MAX_COL   = "Z"          # Columna máxima por defecto
+    MAX_TOOL_OUTPUT_CHARS = 80_000  # Límite duro de caracteres (~20K tokens para DeepSeek)
 
-    # Herramientas de Google Sheets que usan el parámetro 'sheet'
+    # Herramientas de Google Sheets que aceptan el parámetro 'sheet'
     SHEETS_TOOLS_WITH_SHEET_PARAM = {
         "get_sheet_data", "get_multiple_sheet_data", "update_cells",
         "add_rows", "batch_update_cells", "get_sheet_formulas"
     }
+    # Subconjunto de herramientas de lectura que deben paginarse
+    SHEETS_PAGINATED_TOOLS = {"get_sheet_data"}
+
+    # -----------------------------------------------------------------------
+    # Helpers de sheets: quoting, pagination, truncation
+    # -----------------------------------------------------------------------
 
     def _quote_sheet_name(name: str) -> str:
-        '''Envuelve nombres de hoja con espacios en comillas simples para la API de Google Sheets.'''
+        '''
+        Envuelve nombres de hoja con espacios en comillas simples.
+
+        La API de Google Sheets requiere que los nombres con caracteres
+        especiales o espacios estén entre comillas simples en la notación A1
+        (ej: "'Hoja 1'!A1:F10").
+        '''
         if name and ' ' in name and not name.startswith("'"):
             return f"'{name}'"
         return name
 
-    def _sanitize_sheets_args(name: str, args: dict) -> dict:
-        '''Corrige argumentos de herramientas de Google Sheets antes de la ejecución.'''
-        if name not in SHEETS_TOOLS_WITH_SHEET_PARAM:
+    def _parse_row_from_range(range_str: str) -> tuple:
+        '''
+        Extrae los números de fila de inicio y fin de una cadena en notación A1.
+
+        Args:
+            range_str: Rango en notación A1, ej: "A1:Z200" o "'Hoja 1'!A201:Z400".
+
+        Returns:
+            tuple: (start_row: int, end_row: int) o (None, None) si no se puede parsear.
+        '''
+        # Eliminar prefijo de hoja si existe (ej: "'Hoja 1'!A1:Z200" → "A1:Z200")
+        clean = range_str.split('!')[-1] if '!' in range_str else range_str
+        match = re.match(r'([A-Z]+)(\d+):([A-Z]+)(\d+)', clean)
+        if match:
+            return int(match.group(2)), int(match.group(4))
+        return None, None
+
+    def _apply_default_pagination(name: str, args: dict) -> dict:
+        '''
+        Inyecta un rango paginado por defecto cuando el LLM no especifica uno.
+
+        Si la herramienta es de lectura y no se proporcionó rango, establece
+        automáticamente "A1:Z{PAGE_SIZE}" para acotar la primera página y evitar
+        desbordar el contexto del LLM con hojas gigantes.
+
+        Args:
+            name: Nombre de la herramienta invocada.
+            args: Argumentos originales del tool_call.
+
+        Returns:
+            dict: Argumentos con el rango paginado inyectado si corresponde.
+        '''
+        if name not in SHEETS_PAGINATED_TOOLS:
             return args
-        
-        # Quotear el parámetro 'sheet' si tiene espacios
+
+        range_val = args.get('range', '') or ''
+        if not range_val.strip():
+            default_range = f"A1:{SHEETS_MAX_COL}{SHEETS_PAGE_SIZE}"
+            args['range'] = default_range
+            logger.info(
+                f"[Pagination] Rango vacío en '{name}'. Inyectando página por defecto: {default_range}"
+            )
+
+        return args
+
+    def _sanitize_sheets_args(name: str, args: dict) -> dict:
+        '''
+        Pipeline de sanitización para herramientas de Google Sheets.
+
+        Aplica secuencialmente:
+          1. Paginación por defecto (inyecta rango si falta).
+          2. Quoting de nombres de hoja con espacios.
+
+        Args:
+            name: Nombre de la herramienta.
+            args: Argumentos originales del tool_call.
+
+        Returns:
+            dict: Argumentos corregidos, listos para la API de Google Sheets.
+        '''
+        if name not in SHEETS_TOOLS_WITH_SHEET_PARAM and name not in SHEETS_PAGINATED_TOOLS:
+            return args
+
+        # Paso 1: Inyectar paginación si no hay rango explícito
+        args = _apply_default_pagination(name, args)
+
+        # Paso 2: Quotear el parámetro 'sheet' si tiene espacios
         if 'sheet' in args:
             args['sheet'] = _quote_sheet_name(args['sheet'])
-        
-        # Quotear nombre de hoja dentro del parámetro 'range' (ej: "Hoja 1!A1:F10")
+
+        # Paso 3: Quotear nombre de hoja dentro del parámetro 'range' (ej: "Hoja 1!A1:F10")
         if 'range' in args and args['range'] and '!' in args['range']:
             parts = args['range'].split('!', 1)
             parts[0] = _quote_sheet_name(parts[0])
             args['range'] = '!'.join(parts)
 
-        # Para get_multiple_sheet_data, sanitizar cada query del array
+        # Paso 4: Para get_multiple_sheet_data, sanitizar cada query del array
         if name == 'get_multiple_sheet_data' and 'queries' in args:
             queries = args['queries']
             if isinstance(queries, list):
@@ -271,14 +354,73 @@ def build_graph(
                         parts = q['range'].split('!', 1)
                         parts[0] = _quote_sheet_name(parts[0])
                         q['range'] = '!'.join(parts)
-        
+
         return args
 
+    def _build_pagination_hint(tool_name: str, args: dict, output: str) -> str:
+        '''
+        Construye metadata de paginación para anexar a la respuesta de la herramienta.
+
+        Si la herramienta es paginable, analiza el rango utilizado y genera una
+        indicación estructurada con la siguiente página disponible, permitiendo
+        que el LLM se auto-pagine de forma autónoma.
+
+        Args:
+            tool_name: Nombre de la herramienta ejecutada.
+            args: Argumentos con los que se ejecutó.
+            output: Respuesta original de la herramienta.
+
+        Returns:
+            str: Respuesta original con metadata de paginación anexada,
+                 o la respuesta sin cambios si no corresponde paginar.
+        '''
+        if tool_name not in SHEETS_PAGINATED_TOOLS:
+            return output
+
+        range_used = args.get('range', '')
+        if not range_used:
+            return output
+
+        start_row, end_row = _parse_row_from_range(range_used)
+        if start_row is None or end_row is None:
+            return output
+
+        rows_fetched = end_row - start_row + 1
+        next_start = end_row + 1
+        next_end = next_start + SHEETS_PAGE_SIZE - 1
+
+        # Determinar el spreadsheet_id y sheet para el hint de siguiente página
+        spreadsheet_id = args.get('spreadsheet_id', '<spreadsheet_id>')
+        sheet = args.get('sheet', '')
+        next_range = f"A{next_start}:{SHEETS_MAX_COL}{next_end}"
+
+        pagination_meta = (
+            f"\n\n📄 PAGINACIÓN | Filas {start_row}-{end_row} ({rows_fetched} filas mostradas).\n"
+            f"➡️ Para obtener la siguiente página, llama a get_sheet_data con:\n"
+            f"   spreadsheet_id='{spreadsheet_id}', sheet='{sheet}', range='{next_range}'\n"
+            f"⚠️ Si la respuesta devolvió menos de {SHEETS_PAGE_SIZE} filas, ya no hay más datos."
+        )
+
+        return output + pagination_meta
+
     def _truncate_output(output: str, tool_name: str) -> str:
-        '''Trunca respuestas de herramientas que exceden el límite para evitar desbordar el contexto del LLM.'''
+        '''
+        Red de seguridad: trunca respuestas que aún excedan el límite.
+
+        Opera como último recurso después de la paginación. Si por alguna razón
+        la respuesta paginada sigue siendo demasiado grande, corta el contenido
+        y notifica al LLM para que solicite rangos más acotados.
+
+        Args:
+            output: Respuesta de la herramienta (posiblemente ya paginada).
+            tool_name: Nombre de la herramienta para el mensaje de warning.
+
+        Returns:
+            str: Respuesta truncada con advertencia, o la original si cabe.
+        '''
         if len(output) <= MAX_TOOL_OUTPUT_CHARS:
             return output
-        
+
         truncated = output[:MAX_TOOL_OUTPUT_CHARS]
         warning = (
             f"\n\n⚠️ RESPUESTA TRUNCADA: La herramienta '{tool_name}' devolvió {len(output):,} caracteres. "
@@ -327,8 +469,11 @@ def build_graph(
             try:
                 # Ejecución con timeout estándar
                 output = await asyncio.wait_for(tool.ainvoke(args), timeout=70.0)
-                # Truncar respuestas demasiado grandes para el LLM
-                content = _truncate_output(str(output), name)
+                content = str(output)
+                # Anexar metadata de paginación para herramientas de Sheets
+                content = _build_pagination_hint(name, args, content)
+                # Red de seguridad: truncar si aún excede el límite
+                content = _truncate_output(content, name)
                 return ToolMessage(content=content, tool_call_id=tid, name=name)
             
             except Exception as e:
