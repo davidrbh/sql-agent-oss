@@ -30,9 +30,16 @@ services:
   mcp-google-sheets:
     container_name: mcp-google-sheets
     image: ghcr.io/astral-sh/uv:python3.11-bookworm-slim
-    # mcp-google-sheets acepta --transport como flag CLI.
-    # El binding de red se controla mediante las variables HOST y PORT.
-    command: uvx mcp-google-sheets@latest --transport sse
+    command: >
+      bash -c "
+      if [ -n \"$$GOOGLE_SHEETS_CREDENTIALS_JSON\" ]; then
+        echo \"$$GOOGLE_SHEETS_CREDENTIALS_JSON\" > /tmp/service-account.json;
+      else
+        echo 'Error: GOOGLE_SHEETS_CREDENTIALS_JSON no está definido en el .env';
+        exit 1;
+      fi;
+      export SERVICE_ACCOUNT_PATH=/tmp/service-account.json;
+      uvx mcp-google-sheets@latest --transport sse"
     networks:
       - sql-agent-network
     env_file:
@@ -40,12 +47,7 @@ services:
     environment:
       - HOST=0.0.0.0
       - PORT=3004
-      # Ruta al JSON de la Service Account montado como volumen (más fiable que Base64 en docker-compose)
-      - SERVICE_ACCOUNT_PATH=/secrets/service-account.json
       - DRIVE_FOLDER_ID=${GOOGLE_SHEETS_DRIVE_FOLDER_ID}
-    volumes:
-      # Monta el JSON de la Service Account como archivo de solo lectura dentro del contenedor
-      - ${GOOGLE_SHEETS_SERVICE_ACCOUNT_PATH}:/secrets/service-account.json:ro
     ports:
       - "3004:3004"
     restart: unless-stopped
