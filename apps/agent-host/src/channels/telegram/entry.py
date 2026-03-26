@@ -16,7 +16,7 @@ from langchain_core.messages import HumanMessage
 
 from core.application.workflows.graph import build_graph 
 from core.application.container import Container
-from features.sql_analysis.loader import get_sql_system_prompt
+from features.sheets_analysis.loader import get_sheets_system_prompt
 
 load_dotenv()
 
@@ -34,6 +34,9 @@ init_lock = asyncio.Lock()
 async def initialize_agent():
     """
     Construye el grafo del agente con lógica de reintento y protección de concurrencia.
+    
+    Intenta conectarse a los servidores MCP configurados y cargar todas sus herramientas.
+    Si la conexión falla, reintenta hasta max_retries veces antes de lanzar la excepción.
     """
     global global_graph
     
@@ -49,25 +52,24 @@ async def initialize_agent():
         for attempt in range(max_retries):
             try:
                 tool_provider = Container.get_tool_provider()
-                # Limpiamos cache previo para asegurar frescura
+                # Limpiamos cache previo para asegurar frescura en cada arranque
                 await tool_provider.invalidate_cache()
                 
                 tools = await tool_provider.get_tools()
-                
-                # Ensure critical MCP tools (like Lysto) are loaded before building the graph
                 tool_names = [t.name for t in tools]
-                if "list_campaigns" not in tool_names:
-                    raise RuntimeError("Las herramientas de Lysto no están listas aún. Reintentando...")
 
-                system_prompt = get_sql_system_prompt(channel="telegram")
+                system_prompt = get_sheets_system_prompt(channel="telegram")
 
                 global_graph = build_graph(tools, system_prompt, checkpointer=None)
                 
-                logger.info("Agente conectado y listo (Clasificador + SQL + API).")
+                logger.info("Agente conectado y listo. Herramientas cargadas: %s", tool_names)
                 return global_graph
 
             except Exception as e:
-                logger.warning(f"Intento {attempt + 1}/{max_retries} fallido ({repr(e)}). Reintentando en {retry_delay}s...")
+                logger.warning(
+                    "Intento %d/%d fallido (%r). Reintentando en %ds...",
+                    attempt + 1, max_retries, e, retry_delay
+                )
                 if attempt < max_retries - 1:
                     await asyncio.sleep(retry_delay)
                 else:

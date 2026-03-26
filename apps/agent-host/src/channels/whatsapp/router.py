@@ -16,7 +16,7 @@ from langchain_core.messages import HumanMessage
 
 from core.application.container import Container
 from core.application.workflows.graph import build_graph
-from features.sql_analysis.loader import get_sql_system_prompt
+from features.sheets_analysis.loader import get_sheets_system_prompt
 
 logger = logging.getLogger("channels.whatsapp")
 
@@ -108,7 +108,7 @@ async def process_message(chat_id: str, message_text: str) -> None:
         checkpointer_manager = Container.get_checkpointer()
         
         tools = await tool_provider.get_tools()
-        system_prompt = get_sql_system_prompt(channel="whatsapp")
+        system_prompt = get_sheets_system_prompt(channel="whatsapp")
         
         async with checkpointer_manager.get_saver() as saver:
             agent = build_graph(
