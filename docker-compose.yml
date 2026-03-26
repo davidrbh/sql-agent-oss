@@ -32,10 +32,10 @@ services:
     image: ghcr.io/astral-sh/uv:python3.11-bookworm-slim
     command: >
       bash -c "
-      if [ -n \"$$GOOGLE_SHEETS_CREDENTIALS_JSON\" ]; then
-        python -c \"import os; open('/tmp/service-account.json', 'w').write(os.environ.get('GOOGLE_SHEETS_CREDENTIALS_JSON', ''))\";
+      if [ -n \"$$GOOGLE_SHEETS_CREDENTIALS_B64\" ]; then
+        echo \"$$GOOGLE_SHEETS_CREDENTIALS_B64\" | base64 -d > /tmp/service-account.json;
       else
-        echo 'Error: GOOGLE_SHEETS_CREDENTIALS_JSON no está definido en el .env';
+        echo 'Error: GOOGLE_SHEETS_CREDENTIALS_B64 no está definido en el .env';
         exit 1;
       fi;
       export GOOGLE_APPLICATION_CREDENTIALS=/tmp/service-account.json;
@@ -47,7 +47,7 @@ services:
     environment:
       - HOST=0.0.0.0
       - PORT=3004
-      - GOOGLE_SHEETS_CREDENTIALS_JSON=${GOOGLE_SHEETS_CREDENTIALS_JSON}
+      - GOOGLE_SHEETS_CREDENTIALS_B64=${GOOGLE_SHEETS_CREDENTIALS_B64}
       - DRIVE_FOLDER_ID=${GOOGLE_SHEETS_DRIVE_FOLDER_ID}
     ports:
       - "3004:3004"
