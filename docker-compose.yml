@@ -47,6 +47,7 @@ services:
     environment:
       - HOST=0.0.0.0
       - PORT=3004
+      - GOOGLE_SHEETS_CREDENTIALS_JSON=${GOOGLE_SHEETS_CREDENTIALS_JSON}
       - DRIVE_FOLDER_ID=${GOOGLE_SHEETS_DRIVE_FOLDER_ID}
     ports:
       - "3004:3004"
