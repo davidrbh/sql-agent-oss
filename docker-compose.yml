@@ -33,7 +33,7 @@ services:
     command: >
       bash -c "
       if [ -n \"$$GOOGLE_SHEETS_CREDENTIALS_JSON\" ]; then
-        echo \"$$GOOGLE_SHEETS_CREDENTIALS_JSON\" > /tmp/service-account.json;
+        python -c \"import os; open('/tmp/service-account.json', 'w').write(os.environ.get('GOOGLE_SHEETS_CREDENTIALS_JSON', ''))\";
       else
         echo 'Error: GOOGLE_SHEETS_CREDENTIALS_JSON no está definido en el .env';
         exit 1;
