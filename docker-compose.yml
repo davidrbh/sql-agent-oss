@@ -38,7 +38,7 @@ services:
         echo 'Error: GOOGLE_SHEETS_CREDENTIALS_JSON no está definido en el .env';
         exit 1;
       fi;
-      export SERVICE_ACCOUNT_PATH=/tmp/service-account.json;
+      export GOOGLE_APPLICATION_CREDENTIALS=/tmp/service-account.json;
       uvx mcp-google-sheets@latest --transport sse"
     networks:
       - sql-agent-network
