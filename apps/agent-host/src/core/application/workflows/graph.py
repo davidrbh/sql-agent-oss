@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 # -----------------------------------------------------------------------
 # Constantes de módulo (accesibles desde agent_node y build_graph)
 # -----------------------------------------------------------------------
-SHEETS_PAGE_SIZE = 200  # Filas máximas por página de Google Sheets
+SHEETS_PAGE_SIZE = 50  # Filas máximas por página de Google Sheets
 
 
 def intent_classifier_node(state: AgentState) -> dict:
@@ -250,7 +250,7 @@ def build_graph(
     # Constantes de paginación y protección de contexto
     # -----------------------------------------------------------------------
     SHEETS_MAX_COL   = "Z"          # Columna máxima por defecto
-    MAX_TOOL_OUTPUT_CHARS = 80_000  # Límite duro de caracteres (~20K tokens para DeepSeek)
+    MAX_TOOL_OUTPUT_CHARS = 30_000  # Límite duro de caracteres (~8K tokens para DeepSeek)
 
     # Herramientas de Google Sheets que aceptan el parámetro 'sheet'
     SHEETS_TOOLS_WITH_SHEET_PARAM = {
