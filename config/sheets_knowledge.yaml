@@ -7,31 +7,26 @@
 # del sistema para que el agente comprenda los datos sin necesidad de
 # explorarlos en cada consulta.
 #
-# CÓMO ACTUALIZAR ESTE ARCHIVO:
-#   - Cuando se agregue un campo nuevo a una hoja, documéntalo aquí.
-#   - Cuando cambie el ID de un spreadsheet, actualiza el campo `id`.
-#   - Cuando se agregue un agente o canal nuevo, actualiza las tablas de mapeo.
+# CONTEXTO DE NEGOCIO:
+# El objetivo es obtener insights relevantes para los directivos de la empresa,
+# validando por ejemplo la cantidad de conversaciones atendidas en total y segmentadas
+# por canal, departamento y/o agente. También entender cuántas conversaciones ingresaron
+# por Ads y conocer la etapa de venta en la que se encuentra cada conversación, o evaluar
+# el CSAT de forma general para confirmar que la respuesta dada en la conversación fue de
+# calidad o se debe mejorar.
 # ==============================================================================
 
-# ------------------------------------------------------------------------------
-# Spreadsheets
-# Cada entrada representa un archivo de Google Sheets independiente.
-# Reemplaza los valores de `id` con los Spreadsheet IDs reales de Google Drive.
-# Los IDs se obtienen desde la URL: .../spreadsheets/d/<SPREADSHEET_ID>/edit
-# ------------------------------------------------------------------------------
 spreadsheets:
   # ----------------------------------------------------------------------------
   # 1. Libre Pago - Cerradas
-  # Logs de todas las conversaciones finalizadas por cualquier canal.
-  # Caso de uso principal: métricas de volumen, análisis por canal/equipo/agente.
   # ----------------------------------------------------------------------------
   cerradas:
     id: "1S4HlmhwATYDat8y9NGT5-nwsaiKMXgxIDQfTbV_k1s0"
     title: "Libre Pago - Cerradas"
     description: >
-      Registro de todas las conversaciones finalizadas. Incluye el canal de origen,
-      el agente responsable, el equipo, la categorización de la consulta y un
-      resumen de lo conversado. Es la fuente principal para métricas de volumen.
+      Logs de todas las conversaciones finalizadas. Incluye detalles de fecha del
+      evento cuando se cerro la conversacion, datos del cliente, el agente responsable,
+      canal de la interaccion y la categorización del contacto. Es la fuente principal para métricas de volumen.
     sheet_name: "Sheet1"
     fields:
       - name: "Fecha"
@@ -56,24 +51,26 @@ spreadsheets:
         ignore: false
       - name: "Canal"
         description: >
-          Red social de origen de la conversación.
-          Referencia la Tabla de IDs de Canales para obtener el nombre legible.
+          Red social de origen de la conversación. (Ver Tabla de IDs de Canales
+          para ver el nombre del canal en vez del ID).
         type: string
         ignore: false
       - name: "Cesionario"
         description: >
-          Agente que cerró la conversación.
-          Referencia la Tabla de IDs de Agentes para obtener el nombre legible.
+          Agente que cerró la conversación. (Ver Tabla de IDs de Agentes para
+          ver el nombre del agente en vez del ID).
         type: string
         ignore: false
       - name: "Equipo"
         description: >
-          Departamento del cesionario.
-          Referencia la Tabla de IDs de Equipos para obtener el nombre legible.
+          Departamento del cesionario. (Ver Tabla de IDs de Equipo para ver
+          el nombre del equipo en vez del ID).
         type: string
         ignore: false
       - name: "Tipificación"
-        description: "Categoría o tema principal de la conversación."
+        description: >
+          Categoría o tema principal de la conversación, seleccionado por el
+          agente que finalizó la interacción con el cliente.
         type: string
         ignore: false
       - name: "Resumen"
@@ -81,26 +78,23 @@ spreadsheets:
         type: string
         ignore: false
     example_queries:
-      - "¿Cuántas conversaciones fueron atendidas en el mes de marzo?"
-      - "Segmenta las conversaciones por canal y por equipo en marzo."
-      - "¿Qué % de consultas ha atendido la IA vs agentes humanos?"
+      - "Dime cuántas conversaciones fueron atendidas en el mes de marzo, segméntalas por canal y por equipo."
+      - "Indica el % de consultas que ha atendido la IA en comparación con los agentes humanos."
 
   # ----------------------------------------------------------------------------
   # 2. LibrePago - Ciclos de Vida
-  # Registro de cambios en etapas del pipeline de ventas (leads).
-  # Caso de uso principal: seguimiento de conversiones, etapas actuales por lead.
   # ----------------------------------------------------------------------------
   ciclos_de_vida:
     id: "18YHReU9trhkeThDStKGmWZffn3iu06dE0JG_a2BAEzU"
     title: "LibrePago - Ciclos de Vida"
     description: >
-      Historial de cambios de etapa en el pipeline de ventas, realizados por agentes
-      humanos o la Recepcionista IA. Solo aplica a contactos interesados en puntos
-      de venta. Cada fila representa una transición de etapa, no el estado actual.
+      Registro de cambios en las etapas de venta realizados por agentes humanos o
+      la Recepcionista IA, específicamente para interesados en puntos de venta.
+      Cada fila representa una transición de etapa, no el estado actual.
     sheet_name: "Sheet1"
     fields:
       - name: "Fecha"
-        description: "Fecha y hora en que se realizó el cambio de etapa."
+        description: "Fecha y hora en que se cambió de etapa de venta."
         type: datetime
         ignore: false
       - name: "ID de Contacto"
@@ -109,9 +103,8 @@ spreadsheets:
         ignore: false
       - name: "Ciclo de vida"
         description: >
-          Etapa del pipeline de ventas en el momento del registro.
-          Valores comunes: New Lead (nuevo), Hot Lead (interesado activo),
-          Customer (ganado/cerrado), Cold Lead (perdido/cerrado).
+          Etapa de la venta relacionada al ciclo de venta de LibrePago.
+          (Ver Tabla de Ciclos de Vida para ver el nombre y la descripción de los ciclos).
         type: string
         ignore: false
       - name: "Nombre"
@@ -126,8 +119,8 @@ spreadsheets:
         description: "Número celular del cliente."
         type: string
         ignore: false
-      - name: "País"
-        description: "(IGNORAR) País desde donde escribe el cliente."
+      - name: "PAis"
+        description: "(ignorar) Pais desde donde escribe el cliente."
         type: string
         ignore: true
       - name: "Cesionario"
@@ -135,152 +128,145 @@ spreadsheets:
         type: string
         ignore: false
       - name: "Vendedor"
-        description: "(IGNORAR) Columna vacía sin uso actual."
+        description: "(ignorar) Columna vacía."
         type: string
         ignore: true
       - name: "Canal"
-        description: "(IGNORAR) Columna vacía sin uso actual."
+        description: "(ignorar) Columna vacía."
         type: string
         ignore: true
     pipeline_stages:
       - name: "New Lead"
-        meaning: "Lead nuevo, aún sin calificar."
+        meaning: "Prospecto interesado en obtener información para adquirir un punto de venta."
+      - name: "Contactado"
+        meaning: "Prospecto que ya fue contactado."
       - name: "Hot Lead"
-        meaning: "Lead activamente interesado en comprar."
+        meaning: "Lead que ya conoce la información y precios de los puntos de venta y quiere adquirir uno."
+      - name: "Payment"
+        meaning: "Lead que envió la documentación y tiene los datos para realizar el pago de la compra del punto de venta."
       - name: "Customer"
-        meaning: "Venta cerrada y ganada."
+        meaning: "Cliente que ya compró el equipo (Ganado)."
       - name: "Cold Lead"
-        meaning: "Lead perdido o descartado."
+        meaning: "Cerrado perdido. Lead descartado."
     example_queries:
       - "Dame el ciclo de vida más reciente para el contacto ID 12345."
-      - "Muestra la distribución de etapas de venta actuales a la fecha."
+      - "Dame un gráfico de las etapas de ventas actuales a la fecha."
       - "¿Cuántos leads pasaron a Customer en marzo?"
 
   # ----------------------------------------------------------------------------
   # 3. LibrePago - Ads
-  # Registro de leads provenientes de campañas en Meta (Facebook/Instagram) o TikTok.
-  # Caso de uso principal: ROI de campañas, volumen por origen publicitario.
   # ----------------------------------------------------------------------------
   ads:
     id: "1JEnGdtn_zKMkKyqKlxqIo48KIzIgrTp5LH6Gkq3H8mQ"
     title: "LibrePago - Ads"
     description: >
-      Leads generados desde campañas publicitarias en Meta (Facebook/Instagram)
-      y TikTok. Permite analizar el volumen de conversaciones por campaña,
-      canal de entrada y estado del anuncio.
+      Registro de leads provenientes de campañas publicitarias en Meta (Facebook/Instagram) 
+      o TikTok. Permite analizar el volumen de conversaciones por campaña y canal.
     sheet_name: "Sheet1"
     fields:
       - name: "Contact ID"
         description: "Identificador único del lead en el CRM."
         type: string
         ignore: false
-      - name: "Teléfono"
+      - name: "Telefono"
         description: "Número celular del lead."
         type: string
         ignore: false
       - name: "Nombre"
-        description: "Nombre del lead."
+        description: "Nombre y apellido o nickname del cliente."
         type: string
         ignore: false
       - name: "Agente"
         description: "Agente asignado a la conversación."
         type: string
         ignore: false
-      - name: "ad_timestamp"
+      - name: "{{$clicktochat.ad_timestamp}}"
         description: >
-          Fecha del click en Unix microsegundos. Para convertir a fecha legible
-          usar la fórmula: =(A1/86400000000)+FECHA(1970,1,1)
-          El agente debe aplicar esta conversión al presentar fechas.
+          Fecha del click en Unix microsegundos. Aplicar la fórmula:
+          =(A1/86400000000)+FECHA(1970;1;1) donde A1 es ad_timestamp.
         type: unix_timestamp
         conversion_formula: "(valor / 86400000000) + FECHA(1970,1,1)"
         ignore: false
-      - name: "ad_channel_id"
+      - name: "{{$clicktochat.ad_channel_id}}"
         description: "ID numérico del canal de entrada del anuncio."
         type: string
         ignore: false
-      - name: "type"
-        description: "Nombre del canal de entrada del anuncio."
+      - name: "{{$clicktochat.ad_channel_type}}"
+        description: "Nombre del canal de entrada por donde escribió el cliente."
         type: string
         ignore: false
-      - name: "ad_contact_type"
+      - name: "{{$clicktochat.ad_contact_type}}"
         description: "Indica si el contacto es Nuevo o Recurrente."
         type: string
         ignore: false
-      - name: "ad_adset_id"
+      - name: "{{$clicktochat.ad_adset_id}}"
         description: "ID interno del conjunto de anuncios (adset)."
         type: string
         ignore: false
-      - name: "ad_adset_name"
+      - name: "{{$clicktochat.ad_adset_name}}"
         description: >
           IMPORTANTE: Nombre de la campaña publicitaria. Es el campo principal
           para identificar y segmentar por campaña.
         type: string
         ignore: false
-      - name: "ad_ad_url"
-        description: "URL del anuncio que generó el click del lead."
+      - name: "{{$clicktochat.ad_ad_url}}"
+        description: "Enlace de la publicidad que generó el click del lead."
         type: string
         ignore: false
-      - name: "ad_status"
+      - name: "{{$clicktochat.ad_status}}"
         description: "Estado actual del anuncio (Activa / Archivada)."
         type: string
         ignore: false
       # Campos a ignorar explícitamente
-      - name: "ad_first_incoming_message"
+      - name: "{{$clicktochat.ad_first_incoming_message}}"
         ignore: true
-      - name: "ad_id"
+      - name: "{{$clicktochat.ad_id}}"
         ignore: true
-      - name: "ad_name"
+      - name: "{{$clicktochat.ad_name}}"
         ignore: true
-      - name: "ad_campaign_id"
+      - name: "{{$clicktochat.ad_campaign_id}}"
         ignore: true
-      - name: "ad_campaign_name"
+      - name: "{{$clicktochat.ad_campaign_name}}"
         ignore: true
-      - name: "ad_reference"
+      - name: "{{$clicktochat.ad_reference}}"
         ignore: true
-      - name: "ad_objective"
+      - name: "{{$clicktochat.ad_objective}}"
         ignore: true
-      - name: "ad_optimization_goal"
+      - name: "{{$clicktochat.ad_optimization_goal}}"
         ignore: true
-      - name: "ad_destination_type"
+      - name: "{{$clicktochat.ad_destination_type}}"
         ignore: true
     example_queries:
-      - "Top 3 de campañas con más interacciones en marzo, segmentadas por canal."
-      - "¿Cuántos leads entraron por cada campaña activa este mes?"
-      - >
-        "Dame el total de conversaciones de ads en marzo e indícame cuántas
-        quedaron en cada etapa de ciclo de vida."
-        # Nota: esta query requiere cruzar Ads con Ciclos de Vida por Contact ID.
+      - "Dime el top 3 de campañas con más interacciones en marzo y dame también la segmentación de esas interacciones por canal de atencion."
+      - "Dame el total de conversaciones que entraron en el mes de marzo por ads e indícame cuántas quedaron en cada etapa de ciclo de vida."
 
   # ----------------------------------------------------------------------------
   # 4. LibrePago - CSAT
-  # Encuestas de satisfacción del cliente (escala 1-5).
-  # Caso de uso principal: calidad del servicio por agente y equipo.
   # ----------------------------------------------------------------------------
   csat:
     id: "1KyQlKvTQzex2NSEEQyKMyjKA6raedtFsZo-ZyGKfNAw"
     title: "LibrePago - CSAT"
     description: >
-      Recopilación de encuestas de satisfacción enviadas a clientes después
-      de cada conversación. Evalúa el desempeño del agente y la resolución
-      del caso en una escala del 1 al 5.
+      Recopilación de encuestas de satisfacción (1 al 5). Evalúa el desempeño 
+      del agente y la resolución del caso.
     sheet_name: "Sheet1"
     fields:
       - name: "ID de Contacto"
-        description: "Identificador único del cliente evaluado."
+        description: "Identificador único del cliente."
         type: string
         ignore: false
       - name: "Fecha"
-        description: "Fecha en que se registró la encuesta."
+        description: "Fecha y hora en que se envió la encuesta de satisfacción."
         type: datetime
         ignore: false
       - name: "Team"
-        description: "Departamento del agente evaluado."
+        description: "Departamento del agente que atendió la conversación."
         type: string
         ignore: false
       - name: "CSAT"
         description: >
-          Calificación de satisfacción del cliente. Escala del 1 (muy insatisfecho)
-          al 5 (muy satisfecho). Es la métrica principal de calidad.
+          Calificación de satisfacción del cliente (1 a 5).
+          Es la métrica principal de calidad.
         type: integer
         range: [1, 5]
         ignore: false
@@ -289,28 +275,30 @@ spreadsheets:
         type: string
         ignore: false
       - name: "CSAT Follow Up Feedback"
-        description: >
-          Comentario del cliente explicando su calificación. Solo se llena
-          cuando la nota es menor a 5.
+        description: "Justificación del cliente si la nota es menor a 5."
         type: string
         ignore: false
-      - name: "Tiempo de resolución"
+      - name: "Tiempo de resolución:"
         description: >
-          Duración total de la conversación desde apertura hasta cierre.
-          Expresada en tiempo (horas/minutos).
+          Indica cuánto tardó la conversación en ser cerrada. Expresado en HH:MM:SS
         type: string
         ignore: false
       - name: "Tipificación"
-        description: "Categoría del caso evaluado."
+        description: >
+          Categoría o tema principal de la conversación, seleccionado por el agente.
         type: string
         ignore: false
       - name: "Resumen"
         description: "Contexto del caso evaluado."
         type: string
         ignore: false
+      - name: "Canal"
+        ignore: true
+      - name: "Canal nombre"
+        description: "ID"
+        ignore: true
     example_queries:
       - "¿Cuál es el CSAT promedio del equipo ATC esta semana?"
-      - "Dame los 5 agentes con mejor CSAT del mes."
       - "¿Qué casos recibieron CSAT menor a 3 este mes y por qué?"
 
 # ------------------------------------------------------------------------------

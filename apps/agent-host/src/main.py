@@ -14,7 +14,7 @@ from langchain_core.messages import HumanMessage, AIMessage
 
 from core.application.container import Container
 from core.application.workflows.graph import build_graph
-from features.sql_analysis.loader import get_sql_system_prompt
+from features.sheets_analysis.loader import get_sheets_system_prompt
 
 # Asegurar la correcta resolución de rutas para el paquete 'src'
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -41,7 +41,7 @@ async def on_chat_start():
         await msg.update()
 
         tools = await tool_provider.get_tools()
-        system_prompt = get_sql_system_prompt(channel="web")
+        system_prompt = get_sheets_system_prompt(channel="web")
         
         tool_names = [t.name for t in tools]
         msg.content = f"🔧 Herramientas cargadas: {tool_names}. Configurando persistencia..."
@@ -54,13 +54,15 @@ async def on_chat_start():
             
         cl.user_session.set("history", [])
 
-        msg.content = """👋 **¡Hola! Soy SQL Agent v4.0 (SOA Ready)**
-        
-Estoy operando bajo una arquitectura orientada a servicios y persistencia robusta.
+        msg.content = f"""👋 **¡Hola! Soy tu Agente de Análisis de Datos**
+
+Herramientas activas: `{', '.join(tool_names) if tool_names else 'ninguna'}`
+
 Puedo ayudarte a:
-* 📊 Consultar datos históricos SQL con validación AST.
-* 🔌 Interactuar con múltiples micro-servicios MCP.
-* 💾 Mantener el contexto de nuestra charla incluso tras reinicios.
+* 📊 Consultar y analizar hojas de cálculo de Google Sheets.
+* 🗄️ Ejecutar consultas en bases de datos relacionales (SQL).
+* 🔌 Integrarme con múltiples servicios vía MCP.
+* 💾 Mantener el contexto de la conversación entre sesiones.
 
 _¿Qué consulta deseas realizar?_"""
         await msg.update()

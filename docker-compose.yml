@@ -25,7 +25,33 @@ services:
     restart: unless-stopped
 
   # -------------------------------------------------------
-  # 1.2 SIDECAR: API (Python)
+  # 1.2 SIDECAR: Google Sheets (uvx, SSE)
+  # -------------------------------------------------------
+  mcp-google-sheets:
+    container_name: mcp-google-sheets
+    image: ghcr.io/astral-sh/uv:python3.11-bookworm-slim
+    # mcp-google-sheets acepta --transport como flag CLI.
+    # El binding de red se controla mediante las variables HOST y PORT.
+    command: uvx mcp-google-sheets@latest --transport sse
+    networks:
+      - sql-agent-network
+    env_file:
+      - .env
+    environment:
+      - HOST=0.0.0.0
+      - PORT=3004
+      # Ruta al JSON de la Service Account montado como volumen (más fiable que Base64 en docker-compose)
+      - SERVICE_ACCOUNT_PATH=/secrets/service-account.json
+      - DRIVE_FOLDER_ID=${GOOGLE_SHEETS_DRIVE_FOLDER_ID}
+    volumes:
+      # Monta el JSON de la Service Account como archivo de solo lectura dentro del contenedor
+      - ${GOOGLE_SHEETS_SERVICE_ACCOUNT_PATH}:/secrets/service-account.json:ro
+    ports:
+      - "3004:3004"
+    restart: unless-stopped
+
+  # -------------------------------------------------------
+  # 1.3 SIDECAR: API (Python)
   # -------------------------------------------------------
   mcp-api:
     container_name: mcp-api
@@ -108,6 +134,7 @@ services:
       - ./data:/app/data
     depends_on:
       - mcp-mysql
+      - mcp-google-sheets
       - agent-memory
     ports:
       - "8000:8000"
