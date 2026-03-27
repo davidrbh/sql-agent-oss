@@ -165,6 +165,7 @@ def agent_node(state: AgentState, llm_with_tools: dict, system_prompt: str) -> d
             "- Al final de cada respuesta verás un bloque 📄 PAGINACIÓN con el rango de la siguiente página.\n"
             "- Si necesitas más datos (ej: totales, conteos completos), solicita páginas adicionales usando el rango indicado.\n"
             "- Si la página devolvió menos filas de las esperadas, ya llegaste al final de los datos.\n"
+            "- Si ves fechas en formato timestamp UNIX (ej: 1715000000), conviértelas tú mismo mentalmente para tu análisis. NUNCA le pidas al usuario que agregue fórmulas en Sheets para esto.\n"
             "- SIEMPRE indica al usuario cuántas filas analizaste y si hay más páginas disponibles."
         )
     elif state["intent"] == "API":
